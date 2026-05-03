@@ -2,6 +2,58 @@
 
 ---
 
+## Visual Overview (Mermaid)
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#e3f2fd', 'edgeLabelBackground':'#ffffff', 'tertiaryColor': '#fff'}}}%%
+graph TD
+    %% Entry Point
+    Start((START)) --> User["👤 USER: /go command"]
+    
+    subgraph Discovery ["STAGE 0: DISCOVERY"]
+        User -->|"[1] Quick Storm"| STORM["🤖 ARCHITECT (Opus): Storming"]
+        User -->|"[3] External PRD"| IMPORT["📥 /prd-import: Reads BMAD file"]
+    end
+
+    subgraph Planning ["STAGE 2: PLANNING"]
+        STORM --> PLAN["🤖 PLANNER (Sonnet): Create Plan Files"]
+    end
+
+    PLAN --> PAUSE1[["✋ HUMAN GATE: Review Architecture & Stories"]]
+    IMPORT -->|"Bypasses Storm/Plan"| PAUSE1
+
+    subgraph Execution ["STAGE 3: IMPLEMENTATION LOOP"]
+        PAUSE1 -->|"go"| BUILD["🤖 BUILDER (Sonnet): Coding Convs"]
+        BUILD --> REVIEW["🤖 REVIEWER (Sonnet): Adversarial Audit"]
+        REVIEW -->|"Review Failed"| BUILD
+        BUILD -->|"Logic Loop / Zero-Diff"| STALL[["🛑 STALL: Human Intervention"]]
+    end
+
+    REVIEW -->|"Review Passed"| PAUSE2[["✋ HUMAN GATE: Commit & Verify"]]
+
+    subgraph Testing ["STAGE 4: TESTING"]
+        PAUSE2 -->|"continue"| TEST["🤖 TESTER (Sonnet): AC Mapping"]
+        TEST -->|"Test Failed"| BUILD
+    end
+
+    TEST -->|"All ACs Pass"| PAUSE3[["✋ HUMAN GATE: Final Approval"]]
+
+    subgraph Closure ["STAGE 5: RETRO & ARCHIVE"]
+        PAUSE3 -->|"done"| RETRO["🤖 QUICK (Haiku): Retro & Lessons"]
+        RETRO --> ARCHIVE["📦 /archive: Move to .archive/"]
+    end
+
+    ARCHIVE --> End((FINISH))
+
+    classDef human fill:#fff9c4,stroke:#fbc02d,stroke-width:3px;
+    classDef agent fill:#f1f8e9,stroke:#558b2f,stroke-width:2px;
+
+    class PAUSE1,PAUSE2,PAUSE3,STALL human;
+    class STORM,PLAN,BUILD,REVIEW,TEST,RETRO agent;
+```
+
+---
+
 ## Full Lifecycle
 
 ```
