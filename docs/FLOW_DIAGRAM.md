@@ -76,13 +76,16 @@
 ║  │                                             │    ║
 ║  │   implementation violation?                 │    ║
 ║  │   → REVIEW_FAILURES.md → builder fixes      │    ║
-║  │     builder fixes → reviewer re-checks      │    ║
+║  │     zero git diff after fix?                │    ║
+║  │     → HUMAN_QUESTIONS.md [STALL] → user     │    ║
+║  │     diff present → reviewer re-checks       │    ║
 ║  │                                             │    ║
 ║  │   PASS → advance to next conversation       │    ║
 ║  └─────────────────────────────────────────────┘    ║
 ║                                                      ║
 ║  max 2 retry cycles per conversation                 ║
 ║  exceeded → STOP, surface to user                    ║
+║  zero-diff detected → STALL → HUMAN_QUESTIONS.md     ║
 ╚══════════════════════════════════════════════════════╝
    │
    │  PAUSE: "Commit. continue / stop"
@@ -158,12 +161,14 @@
 
   tester   ──► TEST_FAILURES.md    ──► builder
 
-  any      ──► HUMAN_QUESTIONS.md  ──► user         (V2 — not yet wired)
-               unresolvable by any agent → pipeline blocks, user resolves in chat
+  orchestrator ──► HUMAN_QUESTIONS.md [STALL]   ──► user   zero-diff loop detected
+  any agent    ──► HUMAN_QUESTIONS.md [BLOCKED]  ──► user   unresolvable by agents
+               pipeline blocks until file deleted, user resolves in chat
 
   File present = issue open
   File deleted = resolved
   Max 2 cycles per conversation before hard stop
+  Zero git diff after builder fix → immediate STALL escalation (no retry consumed)
 ```
 
 ---

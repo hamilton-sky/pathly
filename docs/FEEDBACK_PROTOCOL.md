@@ -133,23 +133,26 @@ builder
 
 ---
 
-### HUMAN_QUESTIONS.md — any agent → user *(reserved — V2)*
+### HUMAN_QUESTIONS.md — any agent → user
 
-**Status:** Slot documented, routing not yet wired. Use `[UNSURE]` for now.
+**Trigger — two cases:**
 
-**Trigger:** A question that no agent can resolve — it requires a human product or business decision that sits outside the domain of planner, architect, or builder.
+1. **`[STALL]` — zero-diff loop (auto-escalation):** Builder claimed to fix `REVIEW_FAILURES.md` but `git diff` shows no code changed. The orchestrator writes this file immediately without incrementing retryCount. Format:
+   ```
+   [STALL] Conversation N — builder and reviewer in zero-diff loop.
+   Builder claimed to fix REVIEW_FAILURES.md but no code changed.
+   Violations: <paste original REVIEW_FAILURES.md content>
+   Human decision required: accept as-is, override the rule, or rewrite the conversation scope.
+   ```
 
-Examples:
-- "Should this feature exist at all given the new product direction?"
-- "Two acceptance criteria directly contradict each other — which takes priority?"
-- "The plan assumes X but the codebase shows Y — which is the source of truth?"
+2. **`[BLOCKED]` — unresolvable by any agent:** A question requiring a human product or business decision outside the domain of planner, architect, or builder.
+   Examples:
+   - "Two acceptance criteria directly contradict each other — which takes priority?"
+   - "The plan assumes X but the codebase shows Y — which is the source of truth?"
 
-**When wired (V2):**
-- Written by: builder or hook (when `[UNSURE]` repeatedly fails to resolve)
-- Read and resolved by: user — answers the question directly in chat
-- Effect: orchestrator pauses pipeline (same as `ARCH_FEEDBACK`) until file is deleted
-
-**For now:** if you hit a question like this, write it to both IMPL_QUESTIONS.md and DESIGN_QUESTIONS.md with `[UNSURE]`, and surface it to the user in your blocked report. The user resolves it in chat.
+**Written by:** orchestrator (`[STALL]`) or any agent (`[BLOCKED]`)
+**Resolved by:** user — answer directly in chat, then delete the file
+**Effect:** pipeline blocks until file is deleted (same as `ARCH_FEEDBACK`)
 
 ---
 
@@ -161,6 +164,11 @@ Examples:
 2. **Max 2 retry cycles per conversation.** If a feedback loop triggers more than
    twice for the same conversation, stop and report to the user. Infinite loops
    mean the plan itself is broken.
+
+3. **Zero-diff escalation (STALL).** If builder resolves `REVIEW_FAILURES.md` but
+   `git diff` shows no implementation changes, the orchestrator immediately writes
+   `HUMAN_QUESTIONS.md` with tag `[STALL]` and stops — without consuming a retry cycle.
+   This catches loops where the builder acknowledges violations without actually fixing them.
 
 3. **Feedback is blocking.** The pipeline does not advance to the next conversation
    until all feedback files for the current conversation are resolved.

@@ -120,7 +120,9 @@ when you need to jump into the middle of a pipeline.
        ├─ builder hits [REQ] blocker → IMPL_QUESTIONS.md → planner
        ├─ builder hits [ARCH] blocker → DESIGN_QUESTIONS.md → architect
        ├─ builder hits [UNSURE] blocker → both files → correct owner discards
-       └─ reviewer finds violation → REVIEW_FAILURES.md → builder
+       ├─ reviewer finds violation → REVIEW_FAILURES.md → builder
+       │    └─ builder fixes nothing (zero git diff) → HUMAN_QUESTIONS.md [STALL]
+       └─ reviewer passes → advance
        PAUSE: "Commit. continue / stop"
   Stage 4 — Test       tester maps ACs to tests → TEST_FAILURES.md → builder
   Stage 5 — Retro      quick writes RETRO.md
@@ -156,7 +158,7 @@ conversations are caught before any agent spawns.
 | `IMPL_QUESTIONS.md` | builder `[REQ]` | planner |
 | `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect |
 | `TEST_FAILURES.md` | tester | builder |
-| `HUMAN_QUESTIONS.md` | any agent | user *(V2 — reserved, not yet wired)* |
+| `HUMAN_QUESTIONS.md` | any agent / `[STALL]` | user *(blocks pipeline)* |
 
 `ARCH_FEEDBACK.md` is blocking — no building until architect resolves it.
 

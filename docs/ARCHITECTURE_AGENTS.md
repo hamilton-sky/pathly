@@ -281,7 +281,7 @@ The orchestrator checks after every agent spawn. Never advances past open feedba
 | `IMPL_QUESTIONS.md` | builder `[REQ]` | planner | requirement is ambiguous ("what should this do?") |
 | `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect | technical blocker ("how is this possible?") |
 | `TEST_FAILURES.md` | tester | builder | acceptance criterion FAIL or NOT COVERED |
-| `HUMAN_QUESTIONS.md` | any agent | user | unresolvable by any agent — *V2, not yet wired* |
+| `HUMAN_QUESTIONS.md` | orchestrator `[STALL]` / any agent `[BLOCKED]` | user | zero-diff loop or unresolvable question — blocks pipeline |
 
 ### Escalation paths
 
@@ -305,6 +305,7 @@ tester   ──► TEST_FAILURES.md    ──► builder    (fix → tester re-c
 
 - Agent that resolves the issue **deletes the feedback file** when done.
 - **Max 2 retry cycles per conversation.** If exceeded: stop and surface to user.
+- **Zero-diff escalation.** If builder resolves `REVIEW_FAILURES.md` but `git diff` shows no code changes, orchestrator immediately writes `HUMAN_QUESTIONS.md [STALL]` — pipeline blocks without consuming a retry cycle.
 - **ARCH_FEEDBACK blocks all further building.** Must be resolved by architect first.
 - Feedback is blocking — pipeline never advances past an open feedback file.
 
