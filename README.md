@@ -18,14 +18,14 @@ files. An open feedback file blocks the pipeline. A deleted file means resolved.
 
 **Linux / macOS:**
 ```bash
-git clone https://github.com/hamilton/claude-agents-framework
+git clone https://github.com/hamilton-sky/claude-agents-framework
 cd claude-agents-framework
 chmod +x install.sh && ./install.sh
 ```
 
 **Windows (PowerShell):**
 ```powershell
-git clone https://github.com/hamilton/claude-agents-framework
+git clone https://github.com/hamilton-sky/claude-agents-framework
 cd claude-agents-framework
 .\install.ps1
 ```
