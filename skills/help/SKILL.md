@@ -219,6 +219,7 @@ On '5': print full command reference
   /lessons                           promote candidate lessons → LESSONS.md
   /archive <feature>                 move completed feature to plans/.archive/
   /prd-import <feature> <file>       translate PRD file → 8 plan files
+  /verify-state [feature]            check stale feedback, PROGRESS drift, dead references
 
 ───────────────────────────────────────────
   FEEDBACK FILES  (plans/<feature>/feedback/)
