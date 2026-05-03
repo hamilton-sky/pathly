@@ -101,11 +101,13 @@ Add `auto` to skip pause points:
 /team-flow payment-flow auto
 ```
 
-Jump into the middle of a pipeline with `--from-<stage>`:
+Jump into the middle of a pipeline:
 ```
-/team-flow payment-flow --from-build   ← plan exists, start implementing
-/team-flow payment-flow --from-test    ← all built, run tests only
-/team-flow payment-flow --from-plan    ← skip discovery, start planning
+/team-flow payment-flow build   ← plan exists, start implementing
+/team-flow payment-flow test    ← all built, run tests only
+/team-flow payment-flow plan    ← skip discovery, start planning
+/team-flow payment-flow fast    ← no pauses, run to completion
+/team-flow payment-flow build fast  ← resume build with no pauses
 ```
 
 Each flag runs a health check first — missing plan files or incomplete
