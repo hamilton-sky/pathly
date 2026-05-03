@@ -39,24 +39,23 @@ For each `.md` file found in `plans/$FEATURE/feedback/`:
 
 ---
 
-### Check B — PROGRESS.md DONE items with no matching commits
+### Check B — PROGRESS.md DONE items with no matching file coverage
 
-Read `plans/$FEATURE/PROGRESS.md`.
+Read `plans/$FEATURE/PROGRESS.md` and `plans/$FEATURE/IMPLEMENTATION_PLAN.md`.
 
-For each conversation marked DONE:
-- Extract the conversation name/description from the row
-- Check if any git commit message or changed file references work from that conversation:
+For each conversation marked DONE in PROGRESS.md:
+- Extract the files that conversation was expected to touch from IMPLEMENTATION_PLAN.md (look for file paths listed under that conversation's phase/section)
+- Get the full set of files changed on this branch vs. the base branch:
   ```bash
-  git log --oneline -20 --format="%s" 2>/dev/null
+  git diff $(git merge-base HEAD main)...HEAD --name-only -- . ":(exclude)plans/" 2>/dev/null
   ```
-- **Flag if:** a conversation is DONE in PROGRESS.md but `git log` shows fewer than (DONE count) non-plan commits since the feature was started
+- **Flag if:** a conversation is marked DONE but **none** of its expected files appear in the branch diff
 
-Simpler heuristic: count DONE rows vs. count commits that touch non-plan files:
-```bash
-git log --oneline -- . ":(exclude)plans/" 2>/dev/null | wc -l
-```
+If IMPLEMENTATION_PLAN.md does not list expected files per conversation (some plans are higher-level), fall back to:
+- Count DONE conversations vs. count files changed on branch outside `plans/`
+- Flag if DONE count > 0 and changed file count is 0 (nothing was ever committed)
 
-Report as: `[PROGRESS DRIFT] $FEATURE — X conversations DONE but only Y implementation commits found`
+Report as: `[PROGRESS DRIFT] $FEATURE — conversation 'N' marked DONE but none of its expected files appear in branch diff`
 
 ---
 
