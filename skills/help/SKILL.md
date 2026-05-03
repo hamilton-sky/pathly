@@ -192,7 +192,8 @@ On '5': print full command reference
   ENTRY POINTS
 ───────────────────────────────────────────
 
-  /go <what you want>                describe intent → routes automatically
+  /go                                prompts "What do you want?" → routes
+  /go <what you want>                skip prompt, routes immediately
   /help [feature]                    detect state → show this menu
 
 ───────────────────────────────────────────

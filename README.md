@@ -45,7 +45,8 @@ Claude routes you to the right skill automatically and confirms before running. 
 
 **If you already know the pipeline**, use skills directly:
 ```
-/go I want to add user authentication     ← plain English, routes automatically
+/go                                       ← prompts "What do you want?" then routes
+/go I want to add user authentication     ← skip the prompt, routes immediately
 /team-flow <feature-name>                 ← direct pipeline entry
 ```
 

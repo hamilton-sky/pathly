@@ -530,8 +530,9 @@ The rest of the pipeline is identical.
 /help                            ← detect state → numbered menu
                                  #   pick [1] → describe in plain English → /go routes you
 
-# Plain English entry (power users)
-/go <what you want>              ← classifies intent → confirms → routes automatically
+# Plain English entry
+/go                              ← prompts "What do you want?" → classifies → routes
+/go <what you want>              ← skip the prompt, routes immediately
 
 # Direct pipeline entry
 /team-flow <feature>

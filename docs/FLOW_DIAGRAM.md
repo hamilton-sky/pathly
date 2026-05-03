@@ -7,7 +7,8 @@
 ```
   USER
    │
-   │  /go <plain English>   ← routes automatically (recommended entry point)
+   │  /go                   ← prompts "What do you want?" then routes
+   │  /go <plain English>   ← skip the prompt, routes immediately
    │  /team-flow <feature>  ← direct pipeline entry (power users)
    ▼
 ╔══════════════════════════════════════╗
@@ -195,7 +196,8 @@
   ┌─────────────────────────────────────────────────────┐
   │  POWER USER                                         │
   │                                                     │
-  │  /go I want to add user auth    ← plain English     │
+  │  /go                            ← prompts then routes│
+  │  /go I want to add user auth    ← routes immediately │
   │  /team-flow <feature>           ← direct entry      │
   │  /team-flow <feature> build     ← resume build      │
   │  /team-flow <feature> test      ← test only         │
