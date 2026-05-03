@@ -32,8 +32,8 @@ class State:
     previous_state: Optional[str] = None  # state before last BLOCKED transition
 
     # Timestamps
-    created_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
-    updated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    created_at: str = field(default_factory=lambda: datetime.now(datetime.UTC).isoformat())
+    updated_at: str = field(default_factory=lambda: datetime.now(datetime.UTC).isoformat())
 
     # Event tracking
     event_count: int = 0

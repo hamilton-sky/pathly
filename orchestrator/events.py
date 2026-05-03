@@ -11,7 +11,7 @@ class Event:
     """Base event class. All events are immutable once created."""
 
     type: str
-    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    timestamp: str = field(default_factory=lambda: datetime.now(datetime.UTC).isoformat())
     metadata: dict = field(default_factory=dict)
 
     def to_jsonl(self) -> str:

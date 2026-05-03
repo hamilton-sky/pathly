@@ -29,7 +29,7 @@ def reduce(state: State, event: Event) -> State:
         last_actor=state.last_actor,
         previous_state=state.previous_state,
         created_at=state.created_at,
-        updated_at=datetime.utcnow().isoformat(),
+        updated_at=datetime.now(datetime.UTC).isoformat(),
         event_count=state.event_count + 1,
         last_event_type=event.type,
     )
