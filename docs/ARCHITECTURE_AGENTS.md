@@ -194,8 +194,11 @@ project's conventions. The same agents work in any project — only the rules fi
 Start any feature with one command:
 
 ```
-/team-flow <feature-name>        ← pauses at every stage (default)
-/team-flow <feature-name> auto   ← runs to completion, no pauses
+/team-flow <feature-name>            ← pauses at every stage (default)
+/team-flow <feature-name> fast       ← runs to completion, no pauses
+/team-flow <feature-name> build      ← skip discovery+plan, resume build
+/team-flow <feature-name> test       ← skip to test stage only
+/team-flow <feature-name> build fast ← resume build, no pauses
 ```
 
 ### Pipeline with feedback loops
@@ -508,17 +511,27 @@ The rest of the pipeline is identical.
 ## Quick Reference
 
 ```bash
-# Start a feature end-to-end (with feedback loops)
+# Start a feature end-to-end (path selector opens)
 /team-flow <feature>
 
-# Start with no pauses (automated)
-/team-flow <feature> auto
+# Run with no pauses
+/team-flow <feature> fast
 
-# Jump to a specific stage manually
-/storm                          ← architect explores the idea
-/plan <feature>                 ← planner creates plans/<feature>/
-/build <feature>                ← builder implements next conversation
-/retro <feature>                ← quick runs the retrospective
+# Resume mid-pipeline
+/team-flow <feature> build       ← skip to build stage
+/team-flow <feature> test        ← skip to test stage
+/team-flow <feature> plan        ← skip discovery, start planning
+/team-flow <feature> build fast  ← resume build, no pauses
+
+# Get context-aware help + numbered action menu
+/help
+/help <feature>
+
+# Individual stages (manual control)
+/storm                           ← architect explores the idea
+/plan <feature>                  ← planner creates plans/<feature>/
+/build <feature>                 ← builder implements next conversation
+/retro <feature>                 ← quick runs the retrospective
 
 # Code quality
 /review                         ← reviewer checks staged changes

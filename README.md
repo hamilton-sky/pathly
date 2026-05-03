@@ -96,9 +96,9 @@ when you need to jump into the middle of a pipeline.
   Stage 5 — Retro      quick writes RETRO.md
 ```
 
-Add `auto` to skip pause points:
+Add `fast` to skip pause points:
 ```
-/team-flow payment-flow auto
+/team-flow payment-flow fast
 ```
 
 Jump into the middle of a pipeline:
