@@ -43,15 +43,15 @@ For each `.md` file found in `plans/$FEATURE/feedback/`:
 
 Read `plans/$FEATURE/PROGRESS.md` and `plans/$FEATURE/IMPLEMENTATION_PLAN.md`.
 
-For each conversation marked DONE in PROGRESS.md:
-- Extract the files that conversation was expected to touch from IMPLEMENTATION_PLAN.md (look for file paths listed under that conversation's phase/section)
+For each conversation marked DONE in `PROGRESS.md`:
+- Extract the files that conversation was expected to touch from `IMPLEMENTATION_PLAN.md` (look for file paths listed under that conversation's phase/section)
 - Get the full set of files changed on this branch vs. the base branch:
   ```bash
   git diff $(git merge-base HEAD main)...HEAD --name-only -- . ":(exclude)plans/" 2>/dev/null
   ```
 - **Flag if:** a conversation is marked DONE but **none** of its expected files appear in the branch diff
 
-If IMPLEMENTATION_PLAN.md does not list expected files per conversation (some plans are higher-level), fall back to:
+If `IMPLEMENTATION_PLAN.md` does not list expected files per conversation, fall back to:
 - Count DONE conversations vs. count files changed on branch outside `plans/`
 - Flag if DONE count > 0 and changed file count is 0 (nothing was ever committed)
 
@@ -79,8 +79,7 @@ Report as: `[DEAD REFERENCE] plans/$FEATURE — '<path>' mentioned in plan but n
 ## Step 3 — Report
 
 Print a structured summary:
-
-```
+```text
 ╔══════════════════════════════════════════╗
   verify-state — $FEATURE (or: all features)
 ╚══════════════════════════════════════════╝
@@ -101,7 +100,8 @@ If issues found: list each one. Do NOT auto-fix. Report only.
 
 ## Rules
 
-- Read-only. Never edit files, never delete feedback files.
-- Do not make assumptions about correctness — report what the data shows.
-- If a check cannot run (git not available, file unreadable), report that check as SKIPPED, not PASS.
-- Dead references in CONVERSATION_PROMPTS.md are common and expected (future work) — only flag ARCHITECTURE_PROPOSAL.md and IMPLEMENTATION_PLAN.md.
+- **Read-only:** Never edit files, never delete feedback files.
+- **Objective:** Do not make assumptions about correctness — report what the data shows.
+- **Robustness:** If a check cannot run (git not available, file unreadable), report that check as SKIPPED, not PASS.
+- **Context:** Dead references in `CONVERSATION_PROMPTS.md` are common and expected (future work) — only flag `ARCHITECTURE_PROPOSAL.md` and `IMPLEMENTATION_PLAN.md`.
+```
