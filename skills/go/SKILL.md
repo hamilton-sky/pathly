@@ -1,12 +1,24 @@
 ---
 name: go
-description: Natural language entry point — describe what you want in plain English and Claude routes you to the right skill automatically. No need to know /team-flow, /build, or /plan.
-argument-hint: "<free text description of what you want>"
+description: Natural language entry point — type /go alone to be prompted, or /go <description> to route directly. Claude reads project state, classifies intent, and confirms before running.
+argument-hint: "[optional: free text description of what you want]"
 ---
 
-You are the entry point for the agent pipeline. The user described what they want in plain English via `$ARGUMENTS`. Your job is to read the project state, classify intent, confirm with the user, and invoke the right skill.
+You are the entry point for the agent pipeline. Your job is to read the project state, classify intent, confirm with the user, and invoke the right skill.
 
 Never execute the work yourself. Route to the right skill and let it run.
+
+---
+
+## Step 0 — Get intent if not provided
+
+If `$ARGUMENTS` is empty, ask:
+
+```
+What do you want to build or do?
+```
+
+Wait for the user's reply. Use that reply as `$ARGUMENTS` for the rest of the skill.
 
 ---
 
