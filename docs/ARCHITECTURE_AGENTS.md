@@ -526,12 +526,14 @@ The rest of the pipeline is identical.
 ## Quick Reference
 
 ```bash
-# Entry points
-/go <what you want>              ← describe in plain English — routes automatically
-/help                            ← detect state → show numbered action menu
-/help <feature>                  ← same, scoped to one feature
+# Recommended entry (new users)
+/help                            ← detect state → numbered menu
+                                 #   pick [1] → describe in plain English → /go routes you
 
-# Start a feature end-to-end (path selector opens)
+# Plain English entry (power users)
+/go <what you want>              ← classifies intent → confirms → routes automatically
+
+# Direct pipeline entry
 /team-flow <feature>
 
 # Run with no pauses

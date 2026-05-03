@@ -179,13 +179,31 @@
 ## Entry Points
 
 ```
-  /team-flow <feature>          full pipeline from discovery
-  /team-flow <feature> plan     skip discovery → start at plan
-  /team-flow <feature> build    skip discovery+plan → resume build
-  /team-flow <feature> test     skip to test stage only
-  /team-flow <feature> fast     full pipeline, no pause points
-  /team-flow <feature> build fast  resume build, no pauses
+  ┌─────────────────────────────────────────────────────┐
+  │  NEW USER                                           │
+  │                                                     │
+  │  /help                                              │
+  │    → [1] Describe what you want (plain English)     │
+  │    → asks: "What do you want to build?"             │
+  │    → /go <answer>                                   │
+  │         → reads project state                       │
+  │         → classifies intent                         │
+  │         → confirms route                            │
+  │         → /team-flow <feature>                      │
+  └─────────────────────────────────────────────────────┘
 
-  /help [feature]               detect state → show numbered actions
+  ┌─────────────────────────────────────────────────────┐
+  │  POWER USER                                         │
+  │                                                     │
+  │  /go I want to add user auth    ← plain English     │
+  │  /team-flow <feature>           ← direct entry      │
+  │  /team-flow <feature> build     ← resume build      │
+  │  /team-flow <feature> test      ← test only         │
+  │  /team-flow <feature> fast      ← no pause points   │
+  │  /team-flow <feature> build fast                    │
+  └─────────────────────────────────────────────────────┘
+
+  /help [feature]               detect state → numbered menu
   /archive <feature>            close out a completed feature
+  /lessons                      promote candidate lessons → LESSONS.md
 ```

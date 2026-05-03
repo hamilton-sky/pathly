@@ -30,17 +30,23 @@ cd claude-agents-framework
 .\install.ps1
 ```
 
-Then open any project in Claude Code and describe what you want:
+Then open any project in Claude Code and run:
 ```
-/go I want to add user authentication
+/help
 ```
 
-Claude reads the project state, figures out the right pipeline, and confirms before running.
-No need to know any other commands to get started.
+Claude detects the current project state and shows a numbered menu. Pick `[1]` and describe what you want in plain English:
+```
+What do you want to build?
+> I want to add user authentication with Google OAuth
+```
+
+Claude routes you to the right skill automatically and confirms before running. No need to know any other commands to get started.
 
 **If you already know the pipeline**, use skills directly:
 ```
-/team-flow <feature-name>
+/go I want to add user authentication     ← plain English, routes automatically
+/team-flow <feature-name>                 ← direct pipeline entry
 ```
 
 `/team-flow` opens with a path selector:
