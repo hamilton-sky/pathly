@@ -101,6 +101,16 @@ Add `auto` to skip pause points:
 /team-flow payment-flow auto
 ```
 
+Jump into the middle of a pipeline with `--from-<stage>`:
+```
+/team-flow payment-flow --from-build   ← plan exists, start implementing
+/team-flow payment-flow --from-test    ← all built, run tests only
+/team-flow payment-flow --from-plan    ← skip discovery, start planning
+```
+
+Each flag runs a health check first — missing plan files or incomplete
+conversations are caught before any agent spawns.
+
 ---
 
 ## Feedback File Protocol

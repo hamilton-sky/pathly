@@ -1,12 +1,20 @@
 ---
 name: team-flow
-description: Full feature pipeline with feedback loops — discovery → plan → (implement → review → fix?) × N → test → (fix?) → retro. Reviewer runs after every conversation. Feedback files route issues to the right agent automatically. Add 'auto' to skip human pause points.
-argument-hint: "<feature-name> [auto]"
+description: Full feature pipeline with feedback loops — discovery → plan → (implement → review → fix?) × N → test → (fix?) → retro. Reviewer runs after every conversation. Feedback files route issues to the right agent automatically. Add 'auto' to skip human pause points. Use --from-<stage> to enter mid-pipeline.
+argument-hint: "<feature-name> [auto] [--from-plan|--from-build|--from-test]"
 ---
 
 Run the full feature pipeline for `$ARGUMENTS`.
 
-Parse arguments: first word = feature name. If "auto" is present, set autoFlow = true.
+## Argument parsing
+
+Parse `$ARGUMENTS` for these tokens (order doesn't matter):
+- First non-flag word = `FEATURE` (the feature name)
+- `auto` → set `autoFlow = true`
+- `--from-plan` → set `entryStage = plan`
+- `--from-build` → set `entryStage = build`
+- `--from-test` → set `entryStage = test`
+- Default: `entryStage = discovery`
 
 ## Core rules
 
@@ -17,6 +25,26 @@ Parse arguments: first word = feature name. If "auto" is present, set autoFlow =
 - After every agent completes, check for feedback files before advancing.
 - Max 2 feedback cycles per conversation. If exceeded, stop and report.
 - If a stage fails, report the failure and manual recovery command. Do not retry.
+
+## Health checks before skipping stages
+
+Run these before jumping to the entry stage. Fail fast with a clear error.
+
+**--from-plan:**
+- No pre-requisite check needed. Feature name is enough.
+- Print: `[SKIPPED] Stage 0 (discovery) via --from-plan`
+
+**--from-build:**
+- Check `plans/$FEATURE/` exists. If not: stop → `plans/$FEATURE/ not found. Run /team-flow $FEATURE first to create the plan.`
+- Check all 8 plan files exist: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, CONVERSATION_PROMPTS.md, HAPPY_FLOW.md, EDGE_CASES.md, ARCHITECTURE_PROPOSAL.md, FLOW_DIAGRAM.md. If any missing: stop → list the missing files.
+- Read PROGRESS.md — resume from last TODO conversation (do not clear or restart).
+- Print: `[SKIPPED] Stages 0–2 (discovery + plan) via --from-build`
+- Print: `Resuming from: Conversation N (last TODO in PROGRESS.md)`
+
+**--from-test:**
+- Check `plans/$FEATURE/` exists with all 8 files (same as --from-build).
+- Check PROGRESS.md — all conversations must be DONE. If any TODO: stop → `Not all conversations are complete. Run /team-flow $FEATURE --from-build first.`
+- Print: `[SKIPPED] Stages 0–3 (discovery + plan + implementation) via --from-test`
 
 ## Feedback file locations
 
@@ -49,8 +77,11 @@ A file existing = issue open. A file absent or deleted = resolved.
 ---
 
 ## Stage 0 — Discovery Path
+*(skip if entryStage = plan, build, or test)*
 
-Print exactly this and wait for user input:
+If skipping: print the health check output from above and jump to the correct stage.
+
+If running: print exactly this and wait for user input:
 
 ```
 ═══════════════════════════════════════════
