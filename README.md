@@ -53,6 +53,7 @@ when you need to jump into the middle of a pipeline.
 
 | Doc | What's in it |
 |---|---|
+| [docs/FLOW_DIAGRAM.md](docs/FLOW_DIAGRAM.md) | Full ASCII flow diagram — lifecycle, feedback loops, agents, entry points |
 | [docs/ARCHITECTURE_AGENTS.md](docs/ARCHITECTURE_AGENTS.md) | Full pipeline, agent map, file handoff protocol, quick reference |
 | [docs/FEEDBACK_PROTOCOL.md](docs/FEEDBACK_PROTOCOL.md) | Each feedback file format with templates + escalation rules |
 | [docs/CONCEPTS.md](docs/CONCEPTS.md) | Philosophy — why files as protocol, why feedback loops |
