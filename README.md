@@ -6,7 +6,7 @@ route issues back to the right agent automatically.
 
 ## What this is
 
-8 specialized agents + 9 lifecycle skills that give Claude Code a structured
+8 specialized agents + 10 lifecycle skills that give Claude Code a structured
 development pipeline: brainstorm → plan → implement → review → test → retro → learn.
 
 Unlike conversation-based workflows, state lives on disk. Agents hand off via
@@ -103,6 +103,7 @@ when you need to jump into the middle of a pipeline.
 | `lessons` | `/lessons` | Promotes candidate lessons to LESSONS.md for planner |
 | `archive` | `/archive <feature>` | Moves completed plan to `plans/.archive/` |
 | `prd-import` | `/prd-import <feature> <prd.md>` | Translates any PRD file into plan files |
+| `verify-state` | `/verify-state [feature]` | Checks stale feedback files, PROGRESS drift, dead code references |
 
 ---
 
