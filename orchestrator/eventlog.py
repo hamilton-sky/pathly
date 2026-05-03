@@ -35,17 +35,15 @@ class EventLog:
 
     def read_all(self) -> List[Event]:
         """Read all events from the log in order."""
-        if not os.path.exists(self.filepath):
+        try:
+            with open(self.filepath, "r") as f:
+                return [
+                    event_factory(json.loads(line))
+                    for line in f
+                    if line.strip()
+                ]
+        except FileNotFoundError:
             return []
-
-        events = []
-        with open(self.filepath, "r") as f:
-            for line in f:
-                if line.strip():
-                    event = event_factory(json.loads(line))
-                    events.append(event)
-
-        return events
 
     def reconstruct_state(self) -> State:
         """Replay all events to reconstruct current state."""
@@ -60,5 +58,7 @@ class EventLog:
 
     def clear(self) -> None:
         """Clear the event log (for testing only)."""
-        if os.path.exists(self.filepath):
+        try:
             os.remove(self.filepath)
+        except FileNotFoundError:
+            pass

@@ -233,9 +233,11 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 ├── hooks/           ← auto-classification hooks
 │   └── classify_feedback.py  ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
 ├── orchestrator/    ← FSM core (Python): state, events, reducer, eventlog
-│   ├── state.py     ← 14-state immutable State dataclass
+│   ├── constants.py ← named constants for FSMState, Agent, FeedbackFile, Mode, Rigor
+│   ├── utils.py     ← utc_now() shared timestamp helper
+│   ├── state.py     ← 14-state immutable State dataclass; state_stack for nested blocks
 │   ├── events.py    ← 9 event classes (COMMAND, AGENT_DONE, FILE_CREATED, …)
-│   ├── reducer.py   ← pure reduce(state, event) → new_state
+│   ├── reducer.py   ← pure reduce(state, event) → new_state; _AGENT_TRANSITIONS dict
 │   ├── eventlog.py  ← per-feature EVENTS.jsonl + STATE.json writer
 │   └── test_fsm.py  ← 9 passing tests
 └── templates/plan/  ← 8 plan file templates

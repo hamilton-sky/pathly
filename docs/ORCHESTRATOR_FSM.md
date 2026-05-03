@@ -78,7 +78,7 @@ interface Context {
   rigor: "lite" | "standard" | "strict"
   currentConversation?: number
   retryCountByKey: Record<string, number>
-  previousState?: State
+  stateStack: State[]          // pushed on FILE_CREATED, popped on FILE_DELETED — supports nested blocks
   activeFeedbackFile?: FeedbackFile
   activeTarget?: AgentName | "human"
   lastActor?: AgentName
@@ -220,7 +220,7 @@ Entering `BLOCKED_ON_FEEDBACK` selects the highest-priority open feedback file a
 
 ```text
 BLOCKED_ON_FEEDBACK + FILE_DELETED(activeFeedbackFile)
--> previous logical state
+-> stateStack.pop()   (restores the state that was active before FILE_CREATED)
 ```
 
 If a retry key exceeds 2:

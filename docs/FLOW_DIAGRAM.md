@@ -54,6 +54,88 @@ graph TD
 
 ---
 
+## Detailed Pipeline (Mermaid)
+
+```mermaid
+graph TD
+    %% STAGE: START / USER ENTRY
+    USER_ENTRY[USER ENTRY]
+    USER_ENTRY -->|"/go"| GO_PROMPT[<b>Prompts:</b> 'What do you want?'<br/>Then Routes]
+    USER_ENTRY -->|"/go plain-English"| STAGE_0
+    USER_ENTRY -->|"/team-flow"| STAGE_0
+    GO_PROMPT --> STAGE_0
+    
+    subgraph S0 [STAGE 0 — Discovery Path]
+        STAGE_0[Discovery Choice]
+        D_STORM["[1] Quick storm"]
+        D_SKIP["[2] Skip discovery"]
+        D_IMPORT["[3] Import PRD"]
+
+        STAGE_0 --> D_STORM
+        STAGE_0 --> D_SKIP
+        STAGE_0 --> D_IMPORT
+    end
+
+    %% PATH [1]: STORM
+    D_STORM --> A_OPUS_STORM[<b>Actor:</b> arch. opus]
+
+    %% PATH [3]: IMPORT PRD
+    subgraph PRD_IMPORT_PROC [PRD IMPORT Process]
+        PRD_CMD["/prd-import"]
+        PRD_READ[Reads PRD file]
+        PRD_PLAN_GEN[→ plan files]
+        PRD_CMD --> PRD_READ --> PRD_PLAN_GEN
+    end
+    D_IMPORT --> PRD_CMD
+
+    %% STAGE 2: PLAN
+    subgraph S2 [STAGE 2 — Plan]
+        A_SONNET_PLAN[<b>Actor:</b> planner sonnet]
+        PLAN_FILES[<b>Generated Plan Files:</b><br/>USER_STORIES.md<br/>IMPLEMENTATION_PLAN.md<br/>PROGRESS.md<br/>CONVERSATION_PROMPTS]
+    end
+    A_OPUS_STORM --> A_SONNET_PLAN
+    D_SKIP --> A_SONNET_PLAN
+    A_SONNET_PLAN --> PLAN_FILES
+
+    %% STAGE 3: IMPLEMENT
+    PLAN_FILES --> PAUSE_REVIEW{PAUSE: Review Plan}
+    PAUSE_REVIEW -->|go| S3_LOOP
+
+    subgraph S3 [STAGE 3 — Implement + Review]
+        S3_LOOP[Builder: implements PROGRESS.md]
+        S3_REV[Reviewer: checks contracts]
+        S3_LOOP --> S3_REV
+    end
+    
+    PRD_PLAN_GEN --> S3_LOOP
+
+    %% STAGE 4: TEST
+    S3_REV --> PAUSE_COMMIT{PAUSE: Commit}
+    PAUSE_COMMIT -->|continue| S4_TEST
+    
+    subgraph S4 [STAGE 4 — Test + Fix]
+        S4_TEST[Tester: maps ACs]
+        S4_FIX[Builder: fixes failures]
+        S4_TEST -->|FAIL| S4_FIX
+        S4_FIX --> S4_TEST
+    end
+
+    %% STAGE 5: RETRO & ARCHIVE
+    S4_TEST -->|PASS| S5_RETRO
+    
+    subgraph S5 [STAGE 5 — Retro & Archive]
+        S5_RETRO[Haiku: Retro.md]
+        S5_LESSONS["/lessons: LESSONS.md"]
+        S5_ARCHIVE["/archive: Move to .archive/"]
+        S5_RETRO --> S5_LESSONS --> S5_ARCHIVE
+    end
+
+    S5_ARCHIVE --> NEXT[NEXT FEATURE]
+    NEXT --> STAGE_0
+```
+
+---
+
 ## Full Lifecycle
 
 ```

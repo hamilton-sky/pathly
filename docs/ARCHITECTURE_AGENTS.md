@@ -599,9 +599,11 @@ The rest of the pipeline is identical.
 │   ├── discoverer.md
 │   └── orchestrator.md
 ├── orchestrator/           ← FSM runtime (Python)
-│   ├── state.py            ← 14-state immutable State dataclass + Context fields
+│   ├── constants.py        ← named constants for FSMState, Agent, FeedbackFile, Mode, Rigor
+│   ├── utils.py            ← utc_now() timestamp helper (single source across all modules)
+│   ├── state.py            ← 14-state immutable State dataclass; state_stack for nested blocks
 │   ├── events.py           ← 9 event classes + event_factory() deserializer
-│   ├── reducer.py          ← pure reduce(state, event) → new_state
+│   ├── reducer.py          ← pure reduce(state, event) → new_state; _AGENT_TRANSITIONS dict
 │   ├── eventlog.py         ← per-feature EVENTS.jsonl + STATE.json writer
 │   └── test_fsm.py         ← 9 FSM unit tests
 ├── skills/
