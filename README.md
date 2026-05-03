@@ -35,6 +35,18 @@ Then open any project in Claude Code and run:
 /team-flow <feature-name>
 ```
 
+**Always start with `/team-flow`.** It opens with a path selector:
+
+```
+[1] Quick storm    — architect explores the idea first
+[2] Skip discovery — you know what to build, go straight to planning
+[3] Import PRD     — you have a requirements file (from BMAD or hand-written)
+```
+
+Pick your path, type the number, and the pipeline runs from there.
+The other skills (`/storm`, `/plan`, `/prd-import`) exist for manual control
+when you need to jump into the middle of a pipeline.
+
 ---
 
 ## The 8 Agents
