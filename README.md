@@ -116,8 +116,9 @@ when you need to jump into the middle of a pipeline.
   Stage 2 — Plan       planner creates 8 files  →  plans/payment-flow/
        PAUSE: "Review plan. go / stop"
   Stage 3 — Implement  builder + reviewer loop  →  code + PROGRESS.md
-       ├─ builder hits blocker → IMPL_QUESTIONS.md → planner
-       ├─ builder hits design gap → DESIGN_QUESTIONS.md → architect
+       ├─ builder hits [REQ] blocker → IMPL_QUESTIONS.md → planner
+       ├─ builder hits [ARCH] blocker → DESIGN_QUESTIONS.md → architect
+       ├─ builder hits [UNSURE] blocker → both files → correct owner discards
        └─ reviewer finds violation → REVIEW_FAILURES.md → builder
        PAUSE: "Commit. continue / stop"
   Stage 4 — Test       tester maps ACs to tests → TEST_FAILURES.md → builder
@@ -151,8 +152,8 @@ conversations are caught before any agent spawns.
 |---|---|---|
 | `ARCH_FEEDBACK.md` | reviewer | architect |
 | `REVIEW_FAILURES.md` | reviewer | builder |
-| `IMPL_QUESTIONS.md` | builder | planner |
-| `DESIGN_QUESTIONS.md` | builder | architect |
+| `IMPL_QUESTIONS.md` | builder `[REQ]` | planner |
+| `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect |
 | `TEST_FAILURES.md` | tester | builder |
 
 `ARCH_FEEDBACK.md` is blocking — no building until architect resolves it.

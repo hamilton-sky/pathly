@@ -56,11 +56,13 @@
 ║  │   implements conversation N                 │    ║
 ║  │   updates PROGRESS.md                       │    ║
 ║  │                                             │    ║
-║  │   hits requirement gap?                     │    ║
+║  │   hits requirement gap? [REQ]               │    ║
 ║  │   → IMPL_QUESTIONS.md → planner clarifies   │    ║
 ║  │                                             │    ║
-║  │   hits technical blocker?                   │    ║
+║  │   hits technical blocker? [ARCH]            │    ║
 ║  │   → DESIGN_QUESTIONS.md → architect fixes   │    ║
+║  │                                             │    ║
+║  │   unclear which? [UNSURE] → both files      │    ║
 ║  └──────────────────┬──────────────────────────┘    ║
 ║                     │                               ║
 ║                     ▼                               ║
@@ -150,8 +152,9 @@
   reviewer ──► ARCH_FEEDBACK.md    ──► architect   BLOCKING
            └─► REVIEW_FAILURES.md  ──► builder
 
-  builder  ──► IMPL_QUESTIONS.md   ──► planner
-           └─► DESIGN_QUESTIONS.md ──► architect
+  builder  ──► IMPL_QUESTIONS.md   ──► planner      [REQ] questions
+           └─► DESIGN_QUESTIONS.md ──► architect    [ARCH] questions
+           (both if [UNSURE] — correct owner discards)
 
   tester   ──► TEST_FAILURES.md    ──► builder
 

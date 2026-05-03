@@ -73,8 +73,9 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 ├─ builder.md        role: executor       model: sonnet
 │   "Build exactly what was planned. No more, no less."
 │   Reads before editing. Verifies before reporting done.
-│   Writes: IMPL_QUESTIONS.md (requirement ambiguity)
-│           DESIGN_QUESTIONS.md (technical blocker)
+│   Writes: IMPL_QUESTIONS.md ([REQ] — requirement ambiguity → planner)
+│           DESIGN_QUESTIONS.md ([ARCH] — technical blocker → architect)
+│           both files if [UNSURE] — correct owner discards
 │   Resolves: REVIEW_FAILURES.md, TEST_FAILURES.md
 │   skills: [build]
 │
@@ -228,8 +229,9 @@ You: /team-flow payment-flow
    │  Stage 3 — Implement + Review Loop           │
    │                                              │
    │  ┌─────────┐                                 │
-   │  │ builder │── IMPL_QUESTIONS.md ──► planner │
-   │  │(sonnet) │── DESIGN_QUESTIONS.md ─► arch.  │
+   │  │ builder │── [REQ] IMPL_QUESTIONS.md ──► planner │
+   │  │(sonnet) │── [ARCH] DESIGN_QUESTIONS.md ─► arch. │
+   │  │         │── [UNSURE] → both files               │
    │  └────┬────┘                                 │
    │       │ code written                         │
    │       ▼                                      │
@@ -285,15 +287,17 @@ The orchestrator checks after every agent spawn. Never advances past open feedba
 reviewer ──► ARCH_FEEDBACK.md    ──► architect  (redesign → builder re-implements)
          └─► REVIEW_FAILURES.md  ──► builder    (fix → reviewer re-checks)
 
-builder  ──► IMPL_QUESTIONS.md   ──► planner    (clarify → builder continues)
-         └─► DESIGN_QUESTIONS.md ──► architect  (resolve → builder continues)
+builder  ──► IMPL_QUESTIONS.md   ──► planner    ([REQ] — clarify → builder continues)
+         └─► DESIGN_QUESTIONS.md ──► architect  ([ARCH] — resolve → builder continues)
+         (both files if [UNSURE] — correct owner discards)
 
 tester   ──► TEST_FAILURES.md    ──► builder    (fix → tester re-checks)
 ```
 
-**Key distinction for builder:**
-- `IMPL_QUESTIONS` = "what should this do?" → planner owns requirements
-- `DESIGN_QUESTIONS` = "how is this technically possible?" → architect owns design
+**Tag rule for builder:**
+- `[REQ]` = "what should this do?" → IMPL_QUESTIONS.md → planner
+- `[ARCH]` = "how is this technically possible?" → DESIGN_QUESTIONS.md → architect
+- `[UNSURE]` = genuinely unclear → write to both files, correct owner discards
 
 ### Resolution rules
 
