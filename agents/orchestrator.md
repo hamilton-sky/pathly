@@ -32,12 +32,16 @@ Read `plans/<feature>/feedback/` after every agent completes.
 ```
 ARCH_FEEDBACK.md    ──► architect  (redesign before any further build)
 REVIEW_FAILURES.md  ──► builder    (fix violations, then re-review)
-IMPL_QUESTIONS.md   ──► planner    (what should this do? — clarify requirement)
-DESIGN_QUESTIONS.md ──► architect  (how is this technically possible? — resolve blocker)
+IMPL_QUESTIONS.md   ──► planner    (what should this do? — [REQ] tagged questions)
+DESIGN_QUESTIONS.md ──► architect  (how is this technically possible? — [ARCH] tagged questions)
 TEST_FAILURES.md    ──► builder    (fix failing criteria, then re-test)
 ```
 
 A file existing = issue open. No file = resolved. Continue only when no files remain.
+
+**Both IMPL_QUESTIONS.md and DESIGN_QUESTIONS.md can exist at the same time.**
+When both exist: route to planner and architect in sequence (planner first, then architect).
+Do not wait for one to resolve before spawning the other — they are independent blockers.
 
 ## Behavior rules
 

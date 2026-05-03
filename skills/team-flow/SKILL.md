@@ -195,16 +195,26 @@ While any conversation row has status TODO:
   Report: files changed, verify result, stories delivered.
   ```
 
-  After builder completes — check for `IMPL_QUESTIONS.md`:
+  After builder completes — check for feedback files:
 
-  → If `IMPL_QUESTIONS.md` exists:
+  → If `IMPL_QUESTIONS.md` exists (contains [REQ] tagged questions):
     **Spawn** `planner`:
     ```
     Read plans/[feature]/feedback/IMPL_QUESTIONS.md.
-    Clarify the requirement in USER_STORIES.md or CONVERSATION_PROMPTS.md.
+    Answer each [REQ] question — clarify in USER_STORIES.md or CONVERSATION_PROMPTS.md.
     Delete plans/[feature]/feedback/IMPL_QUESTIONS.md when resolved.
     ```
-    After planner resolves → builder re-implements (do not increment retryCount for this).
+
+  → If `DESIGN_QUESTIONS.md` exists (contains [ARCH] tagged questions):
+    **Spawn** `architect`:
+    ```
+    Read plans/[feature]/feedback/DESIGN_QUESTIONS.md.
+    Resolve each [ARCH] question — update ARCHITECTURE_PROPOSAL.md with the approach.
+    Delete plans/[feature]/feedback/DESIGN_QUESTIONS.md when resolved.
+    ```
+
+  Both files can exist at the same time. Route planner first, then architect — they are independent.
+  After both resolve → builder re-implements (do not increment retryCount for these).
 
   **3b. Reviewer checks**
 

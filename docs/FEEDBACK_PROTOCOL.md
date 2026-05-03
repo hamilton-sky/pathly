@@ -85,10 +85,13 @@ contradictory, or missing a decision about what the feature should do.
 **Read and resolved by:** planner — clarifies in USER_STORIES.md or CONVERSATION_PROMPTS.md, then deletes file  
 **Then:** builder resumes the blocked conversation
 
+Each question must be tagged `[REQ]`. If a question is architectural ("how should this be built?"), it does not belong here — write it to DESIGN_QUESTIONS.md instead.
+
 ```markdown
 # Implementation Questions — Conv N
-## Blocked on
-[what specific decision or clarification is needed]
+## Questions
+- [REQ] [what specific requirement decision is needed]
+- [REQ] [what specific requirement decision is needed]
 ## Context
 [what the builder tried, why it's ambiguous]
 ## Raised by
@@ -113,14 +116,15 @@ Examples:
 **Read and resolved by:** architect — updates ARCHITECTURE_PROPOSAL.md with a revised approach, then deletes file  
 **Then:** builder re-reads ARCHITECTURE_PROPOSAL.md and continues with the new approach
 
+Each question must be tagged `[ARCH]`. If a question is about requirements ("what should this do?"), it does not belong here — write it to IMPL_QUESTIONS.md instead.
+
 ```markdown
 # Design Questions — Conv N
-## Technical Blocker
-[what the architecture specifies and why it doesn't work in practice]
+## Questions
+- [ARCH] [what the architecture specifies and why it doesn't work in practice]
+- [ARCH] [the specific design decision needed]
 ## Constraint discovered
 [what the builder found — e.g. "button has no role, only a data-testid"]
-## Question for architect
-[the specific design decision needed — e.g. "should we fall back to css resolver?"]
 ## Raised by
 builder
 ```
@@ -158,5 +162,7 @@ builder  ──► IMPL_QUESTIONS.md   ──► planner   ──► clarifies r
 ```
 
 **Rule:** Use IMPL_QUESTIONS for "what should this do?" Use DESIGN_QUESTIONS for "how is this technically possible?" They go to different agents for a reason. Sending a technical question to the planner wastes time — they can't answer it.
+
+**Tag rule:** Every question in a feedback file must carry its tag (`[REQ]` or `[ARCH]`). If you have both types of questions in one sitting, write both files. Mixed files without tags will be routed incorrectly.
 
 No other escalation paths exist. Agents do not communicate outside these defined channels.
