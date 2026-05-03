@@ -52,13 +52,24 @@ def main():
     if not classified:
         return
 
-    req_items = [q for q in classified if q["tag"] in ("[REQ]", "[UNSURE]")]
-    arch_items = [q for q in classified if q["tag"] in ("[ARCH]", "[UNSURE]")]
+    req_items  = [q for q in classified if q["tag"] == "[REQ]"]
+    arch_items = [q for q in classified if q["tag"] == "[ARCH]"]
+    unsure_items = [q for q in classified if q["tag"] == "[UNSURE]"]
+
+    # observability — printed to hook stdout, visible in Claude Code session
+    total = len(classified)
+    print(
+        f"[classify_feedback] {total} question(s): "
+        f"{len(req_items)} [REQ] → planner, "
+        f"{len(arch_items)} [ARCH] → architect"
+        + (f", {len(unsure_items)} [UNSURE] → both" if unsure_items else "")
+        + (" | DESIGN_QUESTIONS.md written" if arch_items or unsure_items else "")
+    )
 
     rewrite_impl(file_path, content, classified)
 
-    if arch_items:
-        write_design(file_path, arch_items)
+    if arch_items or unsure_items:
+        write_design(file_path, arch_items + unsure_items)
 
 
 def extract_questions(content):
