@@ -1,6 +1,6 @@
 ---
 name: team-flow
-description: Full feature pipeline with feedback loops — storm → plan → (implement → review → fix?) × N → test → (fix?) → retro. Reviewer runs after every conversation. Feedback files route issues to the right agent automatically. Add 'auto' to skip human pause points.
+description: Full feature pipeline with feedback loops — discovery → plan → (implement → review → fix?) × N → test → (fix?) → retro. Reviewer runs after every conversation. Feedback files route issues to the right agent automatically. Add 'auto' to skip human pause points.
 argument-hint: "<feature-name> [auto]"
 ---
 
@@ -48,7 +48,52 @@ A file existing = issue open. A file absent or deleted = resolved.
 
 ---
 
+## Stage 0 — Discovery Path
+
+Print exactly this and wait for user input:
+
+```
+═══════════════════════════════════════════
+  [feature-name] — Choose discovery path
+═══════════════════════════════════════════
+
+  [1] Quick storm
+      Architect explores the idea now (~10 min)
+      Best for: rough idea that needs shaping,
+                technical unknowns to surface
+
+  [2] Skip discovery
+      Go straight to planning
+      Best for: you already know what to build,
+                small or familiar feature
+
+  [3] Import PRD
+      You have a requirements file ready
+      Best for: BMAD output, hand-written PRD,
+                any structured requirements doc
+
+Reply with 1, 2, or 3:
+```
+
+**On '1'** → proceed to Stage 1 (Storm), then Stage 2 (Plan)
+
+**On '2'** → skip Stage 1, go straight to Stage 2 (Plan)
+  - Print: `Skipping discovery. Starting planning...`
+
+**On '3'** → ask:
+  ```
+  Path to your PRD file? (e.g. docs/feature-prd.md)
+  ```
+  Wait for path input. Then:
+  - Run `/prd-import [feature] [path]`
+  - Print: `PRD imported. Plan files ready in plans/[feature]/`
+  - Skip Stage 1 and Stage 2 entirely (prd-import already generated all 8 plan files)
+  - Jump directly to Stage 3 (Implement)
+
+---
+
 ## Stage 1 — Storm
+*(only runs if user chose path 1)*
 
 **Spawn** `architect`:
 ```
@@ -69,6 +114,7 @@ On 'no': stop.
 ---
 
 ## Stage 2 — Plan
+*(only runs if user chose path 1 or 2)*
 
 **Spawn** `planner`:
 ```

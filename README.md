@@ -62,7 +62,7 @@ Then open any project in Claude Code and run:
 | `review` | `/review` | Reviewer audits code against rules |
 | `retro` | `/retro <feature>` | Writes RETRO.md with seed for next storm |
 | `team-flow` | `/team-flow <feature>` | Full pipeline: storm→plan→build×N→retro |
-| `bmad-import` | `/bmad-import <feature> <prd.md>` | Translates a BMAD PRD into plan files |
+| `prd-import` | `/prd-import <feature> <prd.md>` | Translates any PRD file into plan files |
 
 ---
 
@@ -107,20 +107,22 @@ Add `auto` to skip pause points:
 
 ---
 
-## BMAD Integration
+## PRD Import (BMAD or any requirements doc)
 
-If you use BMAD for discovery and PRD generation, import its output directly:
+If you have a PRD from BMAD, a hand-written spec, or any structured requirements file:
 
 ```
-/bmad-import hotel-search docs/hotel-search-prd.md
+/prd-import hotel-search docs/hotel-search-prd.md
 ```
 
-This reads the BMAD PRD and generates all 8 plan files — translating:
+This reads the PRD and generates all 8 plan files — translating:
 - Acceptance Criteria → verify commands
 - Edge Cases → workflow conversation prompts
 - Out of Scope → Do NOT lists in every builder prompt
 
 Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
+
+**No PRD?** Use `/team-flow` — it asks you to choose: quick storm, skip discovery, or import a PRD.
 
 ---
 

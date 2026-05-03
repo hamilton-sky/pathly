@@ -136,7 +136,7 @@ build          ← read PROGRESS.md → implement next TODO conversation → ver
 retro          ← ask 3 questions → write RETRO.md with seed for next storm
 review         ← check code against architectural rules; report violations
 team-flow      ← full pipeline with feedback loops: storm→plan→implement→test→retro
-bmad-import    ← read a BMAD PRD → translate ACs + edge cases → generate all 8 plan files
+prd-import     ← read any PRD file → translate ACs + edge cases → generate all 8 plan files
 ```
 
 ### Project-local skills (`.claude/skills/`)
@@ -554,7 +554,7 @@ The rest of the pipeline is identical.
 │   ├── retro/SKILL.md
 │   ├── review/SKILL.md
 │   ├── team-flow/SKILL.md
-│   └── bmad-import/SKILL.md
+│   └── prd-import/SKILL.md
 └── templates/plan/
     ├── USER_STORIES.template.md
     ├── IMPLEMENTATION_PLAN.template.md

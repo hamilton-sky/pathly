@@ -97,7 +97,7 @@ Status: <one of below>
   BMAD INTEGRATION
 ───────────────────────────────────────────
 
-  /bmad-import <feature> <path/to/prd.md>
+  /prd-import <feature> <path/to/prd.md>
       Reads a BMAD PRD and generates all 8 plan files.
       Translates: ACs → verify commands
                   edge cases → workflow conversations
