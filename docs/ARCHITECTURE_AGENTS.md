@@ -594,6 +594,8 @@ The rest of the pipeline is identical.
 │   ├── lessons/SKILL.md
 │   ├── archive/SKILL.md
 │   └── prd-import/SKILL.md
+├── hooks/
+│   └── classify_feedback.py    ← PostToolUse/Write — auto-tags IMPL_QUESTIONS.md
 └── templates/plan/
     ├── USER_STORIES.template.md
     ├── IMPLEMENTATION_PLAN.template.md

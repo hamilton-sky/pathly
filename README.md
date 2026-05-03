@@ -184,11 +184,15 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 ```
 ~/.claude/
 ├── agents/          ← 8 behavioral contracts (.md files)
-├── skills/          ← 8 lifecycle skills (storm, plan, build, archive, ...)
+├── skills/          ← 9 lifecycle skills (storm, plan, build, lessons, archive, ...)
 │   └── */SKILL.md
+├── hooks/           ← auto-classification hooks
+│   └── classify_feedback.py  ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
 └── templates/plan/  ← 8 plan file templates
     └── *.template.md
 ```
+
+`settings.json` is updated automatically by the installer to register the hook.
 
 Your existing `~/.claude/` content is backed up before install.
 

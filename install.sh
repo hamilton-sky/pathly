@@ -29,6 +29,7 @@ fi
 # Create target directories
 mkdir -p "$CLAUDE_DIR/agents"
 mkdir -p "$CLAUDE_DIR/templates/plan"
+mkdir -p "$CLAUDE_DIR/hooks"
 
 # Install agents
 echo "Installing agents..."
@@ -53,6 +54,46 @@ echo ""
 echo "Installing docs..."
 cp -v "$REPO_DIR/docs/"*.md "$CLAUDE_DIR/"
 
+# Install hooks
+echo ""
+echo "Installing hooks..."
+cp -v "$REPO_DIR/hooks/classify_feedback.py" "$CLAUDE_DIR/hooks/"
+
+# Merge hook config into settings.json
+SETTINGS_FILE="$CLAUDE_DIR/settings.json"
+echo ""
+echo "Configuring settings.json..."
+python3 - <<'PYEOF'
+import json, os, sys
+
+settings_file = os.path.expanduser("~/.claude/settings.json")
+hook_entry = {
+    "matcher": "Write",
+    "hooks": [{"type": "command", "command": "python3 ~/.claude/hooks/classify_feedback.py"}]
+}
+
+if os.path.exists(settings_file):
+    with open(settings_file) as f:
+        settings = json.load(f)
+else:
+    settings = {}
+
+settings.setdefault("hooks", {}).setdefault("PostToolUse", [])
+existing = settings["hooks"]["PostToolUse"]
+already = any(
+    h.get("matcher") == "Write" and
+    any("classify_feedback.py" in hh.get("command", "") for hh in h.get("hooks", []))
+    for h in existing
+)
+if not already:
+    existing.append(hook_entry)
+    with open(settings_file, "w") as f:
+        json.dump(settings, f, indent=2)
+    print("  Hook config added to settings.json")
+else:
+    print("  Hook config already present in settings.json — skipped")
+PYEOF
+
 echo ""
 echo "==================================="
 echo "Install complete."
@@ -60,6 +101,7 @@ echo ""
 echo "Agents installed  : $(ls "$CLAUDE_DIR/agents/"*.md 2>/dev/null | wc -l | tr -d ' ')"
 echo "Skills installed  : $(ls -d "$CLAUDE_DIR/skills/"*/ 2>/dev/null | wc -l | tr -d ' ')"
 echo "Templates installed: $(ls "$CLAUDE_DIR/templates/plan/"*.md 2>/dev/null | wc -l | tr -d ' ')"
+echo "Hooks installed   : $(ls "$CLAUDE_DIR/hooks/"*.py 2>/dev/null | wc -l | tr -d ' ')"
 echo ""
 echo "Start a new Claude Code session in any project and run:"
 echo "  /go <what you want to build> — natural language entry point (recommended)"

@@ -27,6 +27,7 @@ if ((Test-Path "$ClaudeDir\agents") -or (Test-Path "$ClaudeDir\skills")) {
 # Create target directories
 New-Item -ItemType Directory -Path "$ClaudeDir\agents" -Force | Out-Null
 New-Item -ItemType Directory -Path "$ClaudeDir\templates\plan" -Force | Out-Null
+New-Item -ItemType Directory -Path "$ClaudeDir\hooks" -Force | Out-Null
 
 # Install agents
 Write-Host "Installing agents..."
@@ -51,6 +52,48 @@ Write-Host ""
 Write-Host "Installing docs..."
 Copy-Item "$RepoDir\docs\*.md" "$ClaudeDir\" -Force -Verbose
 
+# Install hooks
+Write-Host ""
+Write-Host "Installing hooks..."
+Copy-Item "$RepoDir\hooks\classify_feedback.py" "$ClaudeDir\hooks\" -Force -Verbose
+
+# Merge hook config into settings.json
+Write-Host ""
+Write-Host "Configuring settings.json..."
+$SettingsFile = "$ClaudeDir\settings.json"
+$PythonScript = @'
+import json, os, sys
+
+settings_file = os.path.join(os.environ["USERPROFILE"], ".claude", "settings.json")
+hook_cmd = "python ~/.claude/hooks/classify_feedback.py"
+hook_entry = {
+    "matcher": "Write",
+    "hooks": [{"type": "command", "command": hook_cmd}]
+}
+
+if os.path.exists(settings_file):
+    with open(settings_file) as f:
+        settings = json.load(f)
+else:
+    settings = {}
+
+settings.setdefault("hooks", {}).setdefault("PostToolUse", [])
+existing = settings["hooks"]["PostToolUse"]
+already = any(
+    h.get("matcher") == "Write" and
+    any("classify_feedback.py" in hh.get("command", "") for hh in h.get("hooks", []))
+    for h in existing
+)
+if not already:
+    existing.append(hook_entry)
+    with open(settings_file, "w") as f:
+        json.dump(settings, f, indent=2)
+    print("  Hook config added to settings.json")
+else:
+    print("  Hook config already present in settings.json -- skipped")
+'@
+python $PythonScript
+
 Write-Host ""
 Write-Host "==================================="
 Write-Host "Install complete."
@@ -58,9 +101,11 @@ Write-Host ""
 $agentCount = (Get-ChildItem "$ClaudeDir\agents\*.md" -ErrorAction SilentlyContinue).Count
 $skillCount  = (Get-ChildItem "$ClaudeDir\skills" -Directory -ErrorAction SilentlyContinue).Count
 $tmplCount   = (Get-ChildItem "$ClaudeDir\templates\plan\*.md" -ErrorAction SilentlyContinue).Count
+$hookCount  = (Get-ChildItem "$ClaudeDir\hooks\*.py" -ErrorAction SilentlyContinue).Count
 Write-Host "Agents installed   : $agentCount"
 Write-Host "Skills installed   : $skillCount"
 Write-Host "Templates installed: $tmplCount"
+Write-Host "Hooks installed    : $hookCount"
 Write-Host ""
 Write-Host "Start a new Claude Code session in any project and run:"
 Write-Host "  /go <what you want to build>  -- natural language entry point (recommended)"
