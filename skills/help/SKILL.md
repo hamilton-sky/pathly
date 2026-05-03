@@ -166,16 +166,18 @@ On '4': print full command reference
 
   What do you want to do?
 
-  [1] Start next feature        → /team-flow <new-feature>
-  [2] Read the retro            → show RETRO.md
-  [3] See all commands
+  [1] Archive this feature      → moves to plans/.archive/
+  [2] Start next feature        → /team-flow <new-feature>
+  [3] Read the retro            → show RETRO.md
+  [4] See all commands
 
-Reply with 1, 2, or 3:
+Reply with 1–4:
 ```
 
-On '1': ask "New feature name?" → run `/team-flow <name>`
-On '2': read and print RETRO.md
-On '3': print full command reference
+On '1': run `/archive <feature>`
+On '2': ask "New feature name?" → run `/team-flow <name>`
+On '3': read and print RETRO.md
+On '4': print full command reference
 
 ---
 
@@ -202,6 +204,7 @@ On '3': print full command reference
   /build <feature>                   builder implements next TODO conversation
   /review                            reviewer audits staged changes
   /retro <feature>                   quick writes RETRO.md
+  /archive <feature>                 move completed feature to plans/.archive/
   /prd-import <feature> <file>       translate PRD file → 8 plan files
 
 ───────────────────────────────────────────
