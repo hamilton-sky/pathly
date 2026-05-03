@@ -65,8 +65,9 @@ A file existing = issue open. A file absent or deleted = resolved.
 | `ARCH_FEEDBACK.md` | reviewer | architect |
 | `REVIEW_FAILURES.md` | reviewer | builder |
 | `TEST_FAILURES.md` | tester | builder |
-| `IMPL_QUESTIONS.md` | builder | planner (what should this do?) |
-| `DESIGN_QUESTIONS.md` | builder | architect (how is this technically possible?) |
+| `IMPL_QUESTIONS.md` | builder `[REQ]` | planner (what should this do?) |
+| `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect (how is this technically possible?) |
+| `HUMAN_QUESTIONS.md` | any agent | user — pipeline blocks *(V2, not yet wired)* |
 
 ## Subagent map
 

@@ -277,9 +277,10 @@ The orchestrator checks after every agent spawn. Never advances past open feedba
 |---|---|---|---|
 | `ARCH_FEEDBACK.md` | reviewer | architect | structural/architectural violation found |
 | `REVIEW_FAILURES.md` | reviewer | builder | implementation-level bug found |
-| `IMPL_QUESTIONS.md` | builder | planner | requirement is ambiguous ("what should this do?") |
-| `DESIGN_QUESTIONS.md` | builder | architect | technical blocker ("how is this possible?") |
+| `IMPL_QUESTIONS.md` | builder `[REQ]` | planner | requirement is ambiguous ("what should this do?") |
+| `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect | technical blocker ("how is this possible?") |
 | `TEST_FAILURES.md` | tester | builder | acceptance criterion FAIL or NOT COVERED |
+| `HUMAN_QUESTIONS.md` | any agent | user | unresolvable by any agent — *V2, not yet wired* |
 
 ### Escalation paths
 

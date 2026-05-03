@@ -226,9 +226,10 @@ On '5': print full command reference
 
   ARCH_FEEDBACK.md     reviewer → architect   (BLOCKING)
   REVIEW_FAILURES.md   reviewer → builder
-  IMPL_QUESTIONS.md    builder  → planner
-  DESIGN_QUESTIONS.md  builder  → architect
+  IMPL_QUESTIONS.md    builder [REQ]  → planner
+  DESIGN_QUESTIONS.md  builder [ARCH] → architect
   TEST_FAILURES.md     tester   → builder
+  HUMAN_QUESTIONS.md   any agent → user (BLOCKING — V2, not yet wired)
 
   File present = issue open. Deleted = resolved.
 

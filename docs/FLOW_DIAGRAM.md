@@ -158,6 +158,9 @@
 
   tester   ──► TEST_FAILURES.md    ──► builder
 
+  any      ──► HUMAN_QUESTIONS.md  ──► user         (V2 — not yet wired)
+               unresolvable by any agent → pipeline blocks, user resolves in chat
+
   File present = issue open
   File deleted = resolved
   Max 2 cycles per conversation before hard stop

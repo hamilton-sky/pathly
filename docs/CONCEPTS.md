@@ -45,14 +45,16 @@ This system routes problems to their exact owner through typed feedback files:
 ```
 reviewer finds architectural flaw  → ARCH_FEEDBACK.md    → architect redesigns
 reviewer finds implementation bug  → REVIEW_FAILURES.md  → builder fixes
-builder has requirement ambiguity  → IMPL_QUESTIONS.md   → planner clarifies
-builder has technical blocker      → DESIGN_QUESTIONS.md → architect resolves
+builder has [REQ] ambiguity        → IMPL_QUESTIONS.md   → planner clarifies
+builder has [ARCH] blocker         → DESIGN_QUESTIONS.md → architect resolves
 tester finds failing criterion     → TEST_FAILURES.md    → builder fixes
 ```
 
 Not "broadcast an error." Not "go back to start." Each problem travels back to the specific role that owns it. The pipeline bends back and heals without breaking.
 
 **File present = issue open. Deleted = resolved.** The orchestrator never advances past an open feedback file.
+
+A `PostToolUse` hook (`classify_feedback.py`) fires whenever `IMPL_QUESTIONS.md` is written. It classifies each question as `[REQ]`, `[ARCH]`, or `[UNSURE]` via Haiku, rewrites the file with tags, and auto-splits `[ARCH]` questions into `DESIGN_QUESTIONS.md`. Classification is enforced by the system — not left to builder discipline.
 
 ---
 

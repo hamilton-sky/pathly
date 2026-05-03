@@ -155,6 +155,7 @@ conversations are caught before any agent spawns.
 | `IMPL_QUESTIONS.md` | builder `[REQ]` | planner |
 | `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect |
 | `TEST_FAILURES.md` | tester | builder |
+| `HUMAN_QUESTIONS.md` | any agent | user *(V2 — reserved, not yet wired)* |
 
 `ARCH_FEEDBACK.md` is blocking — no building until architect resolves it.
 
