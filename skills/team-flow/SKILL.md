@@ -310,5 +310,8 @@ Report:
 ```
 [Stage 5 — Retro complete]
 Pipeline complete. RETRO.md written to plans/[feature]/.
+Lessons appended to LESSONS_CANDIDATE.md (if any were extracted).
 Feature '[feature]' is DONE.
+
+To promote lessons to active memory: /lessons
 ```

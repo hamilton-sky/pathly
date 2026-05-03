@@ -55,12 +55,41 @@ Write `plans/$ARGUMENTS/RETRO.md`:
 [2-3 sentence summary of the key learning from this retro]
 ```
 
-## Step 4: Report
+## Step 4: Extract lessons
+
+From the user's answers and RETRO.md, extract 1–3 lessons — patterns that a planner should know before starting a similar feature. Only write a lesson if something concrete went wrong or was missing. If nothing stands out, skip this step.
+
+For each lesson, append to `LESSONS_CANDIDATE.md` in the project root (create if it doesn't exist):
+
+```markdown
+## [$ARGUMENTS] <brief pattern title>
+
+### Pattern
+<what repeatedly went wrong or was missing — one sentence>
+
+### Rule
+<what must be true in the plan to prevent this — one sentence, starts with MUST or NEVER>
+
+### Injection
+- <specific line or section to add to a plan file>
+- <add more only if needed>
+
+### Source
+Feature: $ARGUMENTS | Stage: <planning/implementation/review/test> | Date: <today>
+```
+
+Do NOT invent lessons. Only extract from what the user actually said.
+
+## Step 5: Report
 
 ```
 Retro written: plans/$ARGUMENTS/RETRO.md
+Lessons appended: LESSONS_CANDIDATE.md
 
 To use in your next storm session:
 1. Run /storm
 2. Paste the "Seed for Next Storm" block from RETRO.md as opening context
+
+To promote lessons to active memory:
+  /lessons
 ```

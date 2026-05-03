@@ -6,8 +6,8 @@ route issues back to the right agent automatically.
 
 ## What this is
 
-8 specialized agents + 7 lifecycle skills that give Claude Code a structured
-development pipeline: brainstorm → plan → implement → review → test → retro.
+8 specialized agents + 9 lifecycle skills that give Claude Code a structured
+development pipeline: brainstorm → plan → implement → review → test → retro → learn.
 
 Unlike conversation-based workflows, state lives on disk. Agents hand off via
 files. An open feedback file blocks the pipeline. A deleted file means resolved.
@@ -83,7 +83,7 @@ when you need to jump into the middle of a pipeline.
 
 ---
 
-## The 8 Skills
+## The 9 Skills
 
 | Skill | Command | What it does |
 |---|---|---|
@@ -92,7 +92,8 @@ when you need to jump into the middle of a pipeline.
 | `plan` | `/plan <feature>` | Creates `plans/<feature>/` with 8 files |
 | `build` | `/build <feature>` | Implements the next TODO conversation |
 | `review` | `/review` | Reviewer audits code against rules |
-| `retro` | `/retro <feature>` | Writes RETRO.md with seed for next storm |
+| `retro` | `/retro <feature>` | Writes RETRO.md + appends to LESSONS_CANDIDATE.md |
+| `lessons` | `/lessons` | Promotes candidate lessons to LESSONS.md for planner |
 | `archive` | `/archive <feature>` | Moves completed plan to `plans/.archive/` |
 | `prd-import` | `/prd-import <feature> <prd.md>` | Translates any PRD file into plan files |
 
