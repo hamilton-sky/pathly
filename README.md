@@ -6,11 +6,13 @@ route issues back to the right agent automatically.
 
 ## What this is
 
-8 specialized agents + 10 lifecycle skills that give Claude Code a structured
+8 specialized agents + lifecycle skills that give Claude Code a structured
 development pipeline: brainstorm → plan → implement → review → test → retro → learn.
 
 Unlike conversation-based workflows, state lives on disk. Agents hand off via
-files. An open feedback file blocks the pipeline. A deleted file means resolved.
+files, and the orchestrator behaves as a deterministic filesystem state
+machine. An open feedback file blocks the pipeline. A deleted file means
+resolved.
 
 ---
 
@@ -58,8 +60,18 @@ Claude routes you to the right skill automatically and confirms before running. 
 ```
 
 Pick your path, type the number, and the pipeline runs from there.
-The other skills (`/storm`, `/plan`, `/prd-import`) exist for manual control
+The other skills (`/storm`, `/plan`, `/prd-import`, `/bmad-import`) exist for manual control
 when you need to jump into the middle of a pipeline.
+
+Choose process rigor with `lite`, `standard`, or `strict`:
+```
+/team-flow small-ui-copy lite       ← 4-file plan, lighter gates
+/team-flow payment-flow standard    ← default full pipeline
+/team-flow auth-migration strict    ← mandatory approvals, audit logs, full gates
+```
+
+`fast` controls pauses. Rigor controls process depth. `strict` rejects `fast`
+because strict mode requires human approval gates.
 
 ---
 
@@ -69,6 +81,7 @@ when you need to jump into the middle of a pipeline.
 |---|---|
 | [docs/FLOW_DIAGRAM.md](docs/FLOW_DIAGRAM.md) | Full ASCII flow diagram — lifecycle, feedback loops, agents, entry points |
 | [docs/ARCHITECTURE_AGENTS.md](docs/ARCHITECTURE_AGENTS.md) | Full pipeline, agent map, file handoff protocol, quick reference |
+| [docs/ORCHESTRATOR_FSM.md](docs/ORCHESTRATOR_FSM.md) | Deterministic state machine model, events, recovery, guards |
 | [docs/FEEDBACK_PROTOCOL.md](docs/FEEDBACK_PROTOCOL.md) | Each feedback file format with templates + escalation rules |
 | [docs/CONCEPTS.md](docs/CONCEPTS.md) | Philosophy — why files as protocol, why feedback loops |
 | [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md) | Roadmap for Cursor / Windsurf / BMAD adapter layer |
@@ -86,24 +99,43 @@ when you need to jump into the middle of a pipeline.
 | `tester` | Sonnet | Verification | AC coverage, reports bugs only |
 | `discoverer` | Sonnet | Site tracing | Follows visible paths, captures trace |
 | `quick` | Haiku | Fast lookups | 2 tool calls max |
-| `orchestrator` | Haiku | Pipeline sequencing | Spawns agents, routes feedback files |
+| `orchestrator` | Haiku | FSM sequencing | Recovers state, processes events, emits one agent action |
 
 ---
 
-## The 10 Skills
+## Core Skills
 
 | Skill | Command | What it does |
 |---|---|---|
 | `team-flow` | `/team-flow <feature>` | Full pipeline: discovery→plan→build×N→test→retro |
 | `storm` | `/storm` | Architect explores the idea with ASCII diagrams |
-| `plan` | `/plan <feature>` | Creates `plans/<feature>/` with 8 files |
+| `plan` | `/plan <feature> [lite|standard|strict]` | Creates `plans/<feature>/` with 4 or 8 files depending on rigor |
 | `build` | `/build <feature>` | Implements the next TODO conversation |
 | `review` | `/review` | Reviewer audits code against rules |
 | `retro` | `/retro <feature>` | Writes RETRO.md + appends to LESSONS_CANDIDATE.md |
 | `lessons` | `/lessons` | Promotes candidate lessons to LESSONS.md for planner |
 | `archive` | `/archive <feature>` | Moves completed plan to `plans/.archive/` |
-| `prd-import` | `/prd-import <feature> <prd.md>` | Translates any PRD file into plan files |
+| `prd-import` | `/prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file into plan files |
+| `bmad-import` | `/bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
 | `verify-state` | `/verify-state [feature]` | Checks stale feedback files, PROGRESS drift, dead code references |
+
+---
+
+## Rigor Modes
+
+| Rigor | Best for | Plan files | Gates |
+|---|---|---|---|
+| `lite` | Small, low-risk changes | 4 files: stories, implementation plan, progress, conversation prompts | Build-focused, review/test can be final-only |
+| `standard` | Normal product features | Current 8-file plan | Review after every conversation, test, retro |
+| `strict` | Auth, payments, migrations, compliance, production-risk work | 8 files plus required FSM state/event logs | Mandatory approvals, review, test mapping, audit trail |
+
+Default is `standard`.
+
+To move a feature between rigor levels, do not delete files. Upgrade by running
+`/plan <feature> standard` or `/plan <feature> strict` to add missing plan
+sections/files. Downgrade by running `/team-flow <feature> standard` or
+`/team-flow <feature> lite`; extra files remain as references while future gates
+become lighter.
 
 ---
 
@@ -114,7 +146,7 @@ when you need to jump into the middle of a pipeline.
 
   Stage 1 — Storm      architect explores idea  →  STORM_SEED.md
        PAUSE: "Ready to plan?"
-  Stage 2 — Plan       planner creates 8 files  →  plans/payment-flow/
+  Stage 2 — Plan       planner creates rigor-specific files → plans/payment-flow/
        PAUSE: "Review plan. go / stop"
   Stage 3 — Implement  builder + reviewer loop  →  code + PROGRESS.md
        ├─ builder hits [REQ] blocker → IMPL_QUESTIONS.md → planner
@@ -161,18 +193,25 @@ conversations are caught before any agent spawns.
 | `HUMAN_QUESTIONS.md` | any agent / `[STALL]` | user *(blocks pipeline)* |
 
 `ARCH_FEEDBACK.md` is blocking — no building until architect resolves it.
+The full transition model is defined in [docs/ORCHESTRATOR_FSM.md](docs/ORCHESTRATOR_FSM.md).
 
 ---
 
-## PRD Import (BMAD or any requirements doc)
+## PRD Import
 
-If you have a PRD from BMAD, a hand-written spec, or any structured requirements file:
+If you have a hand-written spec, AI-generated PRD, or any structured requirements file:
 
 ```
-/prd-import hotel-search docs/hotel-search-prd.md
+/prd-import hotel-search docs/hotel-search-prd.md standard
 ```
 
-This reads the PRD and generates all 8 plan files — translating:
+If the PRD came from BMAD, use the BMAD-specific importer:
+
+```
+/bmad-import hotel-search docs/hotel-search-prd.md standard
+```
+
+This reads the PRD and generates plan files for the selected rigor — translating:
 - Acceptance Criteria → verify commands
 - Edge Cases → workflow conversation prompts
 - Out of Scope → Do NOT lists in every builder prompt
@@ -188,7 +227,7 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 ```
 ~/.claude/
 ├── agents/          ← 8 behavioral contracts (.md files)
-├── skills/          ← 10 lifecycle skills (storm, plan, build, lessons, archive, ...)
+├── skills/          ← lifecycle skills (storm, plan, build, imports, archive, ...)
 │   └── */SKILL.md
 ├── hooks/           ← auto-classification hooks
 │   └── classify_feedback.py  ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
@@ -205,7 +244,7 @@ Your existing `~/.claude/` content is backed up before install.
 ## Philosophy
 
 1. **Agent = behavioral contract, not persona.** The role defines HOW the agent thinks, not a character it plays.
-2. **Files are the contract between roles.** No agent calls another directly. State lives on disk.
+2. **Files are the contract between roles.** No agent calls another directly. State lives on disk and is recovered by the orchestrator FSM.
 3. **Human checkpoints are the point.** The pipeline pauses at every stage transition.
 4. **Feedback loops, not a linear chain.** Wrong problem routes to the right role automatically.
 

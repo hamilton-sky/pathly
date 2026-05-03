@@ -61,7 +61,7 @@ Report as: `[PROGRESS DRIFT] $FEATURE — conversation 'N' marked DONE but none 
 
 ### Check C — Plan files pointing to deleted code
 
-Read `plans/$FEATURE/ARCHITECTURE_PROPOSAL.md` and `plans/$FEATURE/IMPLEMENTATION_PLAN.md`.
+Read `plans/$FEATURE/IMPLEMENTATION_PLAN.md`. If `plans/$FEATURE/ARCHITECTURE_PROPOSAL.md` exists, read it too. Lite plans may not have ARCHITECTURE_PROPOSAL.md.
 
 Extract all file paths mentioned (patterns: `poms/`, `stepper/`, `.py`, `.ts`, `.js`):
 ```bash
@@ -103,5 +103,4 @@ If issues found: list each one. Do NOT auto-fix. Report only.
 - **Read-only:** Never edit files, never delete feedback files.
 - **Objective:** Do not make assumptions about correctness — report what the data shows.
 - **Robustness:** If a check cannot run (git not available, file unreadable), report that check as SKIPPED, not PASS.
-- **Context:** Dead references in `CONVERSATION_PROMPTS.md` are common and expected (future work) — only flag `ARCHITECTURE_PROPOSAL.md` and `IMPLEMENTATION_PLAN.md`.
-```
+- **Context:** Dead references in `CONVERSATION_PROMPTS.md` are common and expected (future work) — only flag `IMPLEMENTATION_PLAN.md` and `ARCHITECTURE_PROPOSAL.md` when present.

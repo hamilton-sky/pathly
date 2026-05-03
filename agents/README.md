@@ -14,7 +14,7 @@ A role defines HOW the agent thinks. Skills are the abilities that role can exec
 | `quick` | analyst | haiku | retro | fast lookups, short summaries, focused tasks |
 | `reviewer` | reviewer | sonnet | review, verify-layers, security-review | adversarial review, contract violations, security |
 | `discoverer` | discoverer | sonnet | discover-site, generate-poms | navigating live sites, tracing user journeys, POM generation |
-| `orchestrator` | orchestrator | haiku | team-flow | running the full pipeline — use `/team-flow <feature>` |
+| `orchestrator` | orchestrator | haiku | team-flow | recovering FSM state and running the full pipeline — use `/team-flow <feature>` |
 
 ## Architecture
 
@@ -51,7 +51,7 @@ role: discoverer     (discoverer)
             generate-poms ──────────► build three-layer impl
 
 role: orchestrator   (orchestrator)
-  behavior: sequences pipeline, enforces pauses, spawns subagents
+  behavior: filesystem FSM, enforces pauses, emits one subagent action
   skills:   team-flow ────────────► full storm→retro pipeline
 ```
 

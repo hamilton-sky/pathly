@@ -73,6 +73,7 @@ claude-agents-framework/
 │   ├── ARCHITECTURE_AGENTS.md
 │   ├── CONCEPTS.md
 │   ├── FEEDBACK_PROTOCOL.md
+│   ├── ORCHESTRATOR_FSM.md
 │   └── MULTI_TOOL_DESIGN.md       ← this file
 │
 └── README.md
@@ -148,7 +149,7 @@ alwaysApply: false
 - Optional: plans/STORM_SEED.md (pre-filled from /storm)
 
 ## Output
-- plans/<feature>/ with 8 files
+- plans/<feature>/ with rigor-specific files (4 in lite, 8 in standard/strict)
 
 ## Steps
 

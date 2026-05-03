@@ -3,8 +3,9 @@
 Feedback files are how agents communicate problems back up the chain.
 They live in `plans/<feature>/feedback/` and are **deleted when resolved**.
 
-The orchestrator checks for feedback files after every stage.
-If one exists → route to the responsible agent → wait for resolution → delete → continue.
+The orchestrator FSM checks for feedback files after every event.
+If one exists, the FSM enters `BLOCKED_ON_FEEDBACK`, routes to the responsible
+agent, waits for deletion, then returns to the previous logical state.
 
 ---
 
@@ -16,7 +17,7 @@ If one exists → route to the responsible agent → wait for resolution → del
 wrong abstraction, design decision that must change before implementation can continue.
 
 **Written by:** reviewer  
-**Read and resolved by:** architect — updates ARCHITECTURE_PROPOSAL.md, then notifies orchestrator  
+**Read and resolved by:** architect — updates ARCHITECTURE_PROPOSAL.md, or IMPLEMENTATION_PLAN.md for lite plans, then notifies orchestrator  
 **Then:** planner updates IMPLEMENTATION_PLAN.md if phases change → builder re-implements
 
 ```markdown
@@ -113,8 +114,8 @@ Examples:
 - A resolver strategy is specified that conflicts with how the page actually renders
 
 **Written by:** builder  
-**Read and resolved by:** architect — updates ARCHITECTURE_PROPOSAL.md with a revised approach, then deletes file  
-**Then:** builder re-reads ARCHITECTURE_PROPOSAL.md and continues with the new approach
+**Read and resolved by:** architect — updates ARCHITECTURE_PROPOSAL.md with a revised approach, or IMPLEMENTATION_PLAN.md for lite plans, then deletes file  
+**Then:** builder re-reads the updated design source and continues with the new approach
 
 Each question must be tagged `[ARCH]`. If a question is about requirements ("what should this do?"), it does not belong here — write it to IMPL_QUESTIONS.md instead.
 
@@ -152,18 +153,19 @@ builder
 
 **Written by:** orchestrator (`[STALL]`) or any agent (`[BLOCKED]`)
 **Resolved by:** user — answer directly in chat, then delete the file
-**Effect:** pipeline blocks until file is deleted (same as `ARCH_FEEDBACK`)
+**Effect:** pipeline enters `BLOCKED_ON_HUMAN` until the file is deleted.
 
 ---
 
 ## Resolution Rules
 
 1. **Deleting the file = resolved.** The agent that fixes the issue deletes the
-   feedback file when done. The orchestrator seeing no file means clear to proceed.
+   feedback file when done. The orchestrator FSM seeing no file means the
+   blocking event is resolved.
 
-2. **Max 2 retry cycles per conversation.** If a feedback loop triggers more than
-   twice for the same conversation, stop and report to the user. Infinite loops
-   mean the plan itself is broken.
+2. **Max 2 retry cycles per conversation and feedback file.** If a feedback loop
+   triggers more than twice for the same retry key, stop and report to the user.
+   Infinite loops mean the plan itself is broken.
 
 3. **Zero-diff escalation (STALL).** If builder resolves `REVIEW_FAILURES.md` but
    `git diff` shows no implementation changes, the orchestrator immediately writes
@@ -177,12 +179,15 @@ builder
    patched by the builder — it must be resolved by the architect before any
    further implementation happens.
 
+5. **Deterministic priority.** If multiple feedback files exist, route one at a
+   time using the order in `docs/ORCHESTRATOR_FSM.md`.
+
 ---
 
 ## Escalation Paths (who talks to whom)
 
 ```
-reviewer ──► ARCH_FEEDBACK.md    ──► architect ──► updates ARCHITECTURE_PROPOSAL.md
+reviewer ──► ARCH_FEEDBACK.md    ──► architect ──► updates ARCHITECTURE_PROPOSAL.md or IMPLEMENTATION_PLAN.md
          └─► REVIEW_FAILURES.md  ──► builder   ──► fixes violations
 
 tester   ──► TEST_FAILURES.md    ──► builder   ──► fixes failing criteria

@@ -16,7 +16,17 @@ Check in this order:
 
 3. Check `plans/$FEATURE/feedback/` for open files.
 
-4. Classify into one of these states:
+4. Infer current rigor:
+   - **lite** — required 4 files exist, but one or more standard files are missing:
+     `HAPPY_FLOW.md`, `EDGE_CASES.md`, `ARCHITECTURE_PROPOSAL.md`, `FLOW_DIAGRAM.md`
+   - **standard** — all 8 plan files exist, but strict audit files or strict markers are missing
+   - **strict** — all 8 plan files exist and `STATE.json` + `EVENTS.jsonl` exist, or the plan explicitly says `Rigor: strict`
+   - **unknown** — no plan folder exists yet
+
+5. Print the inferred rigor in every feature-specific menu banner:
+   `Rigor: lite|standard|strict|unknown`
+
+6. Classify into one of these states:
    - **no-feature** — no plans/ folder or no feature found
    - **storm-done** — `plans/STORM_SEED.md` exists, no plans folder yet
    - **plan-done** — plans folder exists, at least one conversation TODO, no open feedback
@@ -42,7 +52,7 @@ Print the banner, then the numbered options for the detected state. Wait for use
 
   [1] Describe what you want (plain English)  → /go
   [2] Start a new feature (full pipeline)     → /team-flow
-  [3] Start a new feature with a PRD file
+  [3] Start a new feature with a PRD/BMAD file
   [4] See all commands
 
 Reply with 1, 2, 3, or 4:
@@ -50,7 +60,7 @@ Reply with 1, 2, 3, or 4:
 
 On '1': ask "What do you want to build?" → run `/go <answer>`
 On '2': ask "Feature name?" → run `/team-flow <name>`
-On '3': ask "Feature name?" then "PRD file path?" → run `/team-flow <name>` and user selects [3] at the path selector
+On '3': ask "Feature name?" then "PRD or BMAD file path?" → run `/team-flow <name>` and user selects [3] at the path selector
 On '4': print full command reference (Step 3)
 
 ---
@@ -85,6 +95,7 @@ Read PROGRESS.md: X conversations done, Y remaining.
 ═══════════════════════════════════════════
   <feature> — Plan ready
   Conv: X done · Y remaining
+  Rigor: lite|standard|strict
 ═══════════════════════════════════════════
 
   What do you want to do?
@@ -93,16 +104,18 @@ Read PROGRESS.md: X conversations done, Y remaining.
   [2] Run full pipeline         → build + review + test + retro
   [3] Run full pipeline (fast)  → no pause points
   [4] Review current code       → /review
-  [5] See all commands
+  [5] Change rigor              → see options
+  [6] See all commands
 
-Reply with 1–5:
+Reply with 1–6:
 ```
 
 On '1': run `/team-flow <feature> build`
 On '2': run `/team-flow <feature> build`  (with pauses)
 On '3': run `/team-flow <feature> build fast`
 On '4': run `/review`
-On '5': print full command reference
+On '5': print the "CHANGING RIGOR" section from Step 3
+On '6': print full command reference
 
 ---
 
@@ -113,6 +126,7 @@ List which feedback files exist and who must act.
 ```
 ═══════════════════════════════════════════
   <feature> — Open feedback requires action
+  Rigor: lite|standard|strict
 ═══════════════════════════════════════════
 
   Open files:
@@ -139,6 +153,7 @@ On '3': print full command reference
 ```
 ═══════════════════════════════════════════
   <feature> — All conversations complete
+  Rigor: lite|standard|strict
 ═══════════════════════════════════════════
 
   What do you want to do?
@@ -164,6 +179,7 @@ On '4': print full command reference
 ═══════════════════════════════════════════
   <feature> — DONE ✓
   RETRO.md written
+  Rigor: lite|standard|strict
 ═══════════════════════════════════════════
 
   What do you want to do?
@@ -200,7 +216,10 @@ On '5': print full command reference
   MAIN COMMAND
 ───────────────────────────────────────────
 
-  /team-flow <feature>               full pipeline, path selector at start
+  /team-flow <feature>               full pipeline, standard rigor by default
+  /team-flow <feature> lite          small change, 4-file plan, lighter gates
+  /team-flow <feature> standard      current full 8-file pipeline
+  /team-flow <feature> strict        mandatory approvals + audit-grade gates
   /team-flow <feature> build         skip to build stage
   /team-flow <feature> test          skip to test stage
   /team-flow <feature> plan          skip discovery, start planning
@@ -212,14 +231,39 @@ On '5': print full command reference
 ───────────────────────────────────────────
 
   /storm                             architect explores idea → STORM_SEED.md
-  /plan <feature>                    planner creates 8 plan files
+  /plan <feature> [rigor]            planner creates 4 or 8 plan files
   /build <feature>                   builder implements next TODO conversation
   /review                            reviewer audits staged changes
   /retro <feature>                   quick writes RETRO.md + extracts lessons
   /lessons                           promote candidate lessons → LESSONS.md
   /archive <feature>                 move completed feature to plans/.archive/
-  /prd-import <feature> <file>       translate PRD file → 8 plan files
+  /prd-import <feature> <file> [rigor] translate any PRD file → plan files
+  /bmad-import <feature> <file> [rigor] translate BMAD PRD → plan files
   /verify-state [feature]            check stale feedback, PROGRESS drift, dead references
+
+───────────────────────────────────────────
+  CHANGING RIGOR
+───────────────────────────────────────────
+
+  /help [feature] should show the inferred current rigor.
+
+  Upgrade lite → standard:
+    /plan <feature> standard
+    Adds missing standard files. Keeps existing plan content.
+
+  Upgrade standard → strict:
+    /plan <feature> strict
+    Adds strict risk, rollback, approval, and verification mapping.
+
+  Downgrade strict → standard:
+    /team-flow <feature> standard
+    Uses standard gates from now on. Do not delete audit files.
+
+  Downgrade standard → lite:
+    /team-flow <feature> lite
+    Uses lighter gates from now on. Keep extra plan files as references.
+
+  Never delete plan files just to downgrade. Rigor controls future gates.
 
 ───────────────────────────────────────────
   FEEDBACK FILES  (plans/<feature>/feedback/)
@@ -230,7 +274,7 @@ On '5': print full command reference
   IMPL_QUESTIONS.md    builder [REQ]  → planner
   DESIGN_QUESTIONS.md  builder [ARCH] → architect
   TEST_FAILURES.md     tester   → builder
-  HUMAN_QUESTIONS.md   any agent → user (BLOCKING — V2, not yet wired)
+  HUMAN_QUESTIONS.md   any agent → user (BLOCKED_ON_HUMAN)
 
   File present = issue open. Deleted = resolved.
 
@@ -239,6 +283,7 @@ On '5': print full command reference
 ───────────────────────────────────────────
 
   docs/ARCHITECTURE_AGENTS.md   full pipeline + agent map
+  docs/ORCHESTRATOR_FSM.md      deterministic workflow state machine
   docs/FEEDBACK_PROTOCOL.md     feedback file formats
   docs/CONCEPTS.md              philosophy
   https://github.com/hamilton-sky/claude-agents-framework

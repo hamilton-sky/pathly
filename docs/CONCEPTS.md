@@ -6,12 +6,12 @@
 
 ## 1. Files are the protocol, not function calls
 
-Most multi-agent systems pass messages between agents — direct calls, shared queues, in-memory state. This system does not. Every agent writes a file when its job is done. The next agent reads that file. Nothing else.
+Most multi-agent systems pass messages between agents — direct calls, shared queues, in-memory state. This system does not. Every agent writes a file when its job is done. The orchestrator reads the filesystem, applies a deterministic transition, and emits the next single action. Nothing else.
 
 This means:
 
 - **Any agent can stop and resume** because the file is always there.
-- **State is inspectable** — open `plans/<feature>/` and you know exactly where things stand.
+- **State is inspectable** — open `plans/<feature>/`, `STATE.json`, `EVENTS.jsonl`, `PROGRESS.md`, and `feedback/` to know exactly where things stand.
 - **Agents are replaceable** — swap the builder, the planner still reads the same plan files.
 
 The file is not a side effect of the process. It *is* the process.
@@ -52,7 +52,7 @@ tester finds failing criterion     → TEST_FAILURES.md    → builder fixes
 
 Not "broadcast an error." Not "go back to start." Each problem travels back to the specific role that owns it. The pipeline bends back and heals without breaking.
 
-**File present = issue open. Deleted = resolved.** The orchestrator never advances past an open feedback file.
+**File present = issue open. Deleted = resolved.** The orchestrator FSM never advances past an open feedback file.
 
 A `PostToolUse` hook (`classify_feedback.py`) fires whenever `IMPL_QUESTIONS.md` is written. It classifies each question as `[REQ]`, `[ARCH]`, or `[UNSURE]` via Haiku, rewrites the file with tags, and auto-splits `[ARCH]` questions into `DESIGN_QUESTIONS.md`. Classification is enforced by the system — not left to builder discipline.
 
@@ -66,13 +66,19 @@ AI agents fail in long chains. Wrong assumptions compound. An architectural deci
 
 The fast mode (`/team-flow <feature> fast`) exists for when you are confident. The default is pauses, because the default assumption is that you are not yet confident.
 
+Rigor is separate from speed. `lite`, `standard`, and `strict` decide how much process structure the feature needs:
+
+- `lite` is for small, low-risk changes. It keeps the build-critical plan files and reduces ceremony.
+- `standard` is the default full feature pipeline.
+- `strict` is for high-risk work where human approvals, audit logs, review gates, and test mapping are required.
+
 ---
 
 ## 5. The shape: narrow nodes, explicit joints, typed return paths
 
 Every unit in this system does exactly one job. Not "roughly one job" — one job. The reviewer never fixes. The builder never makes architecture decisions. The orchestrator never implements. Narrow nodes are where bugs surface cleanly; fat nodes are where bugs hide.
 
-The connections between units are named contracts — feedback files with specific formats, plan files with specific sections, behavioral rules written into each agent. You cannot pass something through without naming it, making it visible, making it checkable.
+The connections between units are named contracts — feedback files with specific formats, plan files with specific sections, behavioral rules written into each agent, and state transitions recorded in `EVENTS.jsonl`. You cannot pass something through without naming it, making it visible, making it checkable.
 
 The return paths are precise. Not a loop back to the start. `ARCH_FEEDBACK` goes to the architect specifically. `IMPL_QUESTIONS` goes to the planner specifically. Problems travel to their exact owner along labeled paths.
 
@@ -115,4 +121,5 @@ Every design decision in this framework expresses the same answer to the same qu
 3. Route problems back to their owners through a structured protocol.
 4. Catch things early, before the next stage begins.
 5. Store state on disk so the system survives any interruption.
-6. Let repeated failures tighten the plan, not complicate the agent.
+6. Recover the pipeline by deriving state from disk, not from chat memory.
+7. Let repeated failures tighten the plan, not complicate the agent.

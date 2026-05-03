@@ -1,14 +1,14 @@
 ---
 name: prd-import
-description: Read any PRD file (from BMAD, hand-written, or AI-generated) and generate all 8 plan files in plans/<feature>/. Translates user stories, acceptance criteria, edge cases, and out-of-scope sections into the pipeline format — including verify commands, Do NOT lists, and workflow conversation splits.
-argument-hint: "<feature-name> <path/to/PRD.md>  — e.g., hotel-search docs/hotel-search-prd.md"
+description: Read any PRD file (from BMAD, hand-written, or AI-generated) and generate plan files in plans/<feature>/. Lite creates 4 required files; standard/strict create all 8 files.
+argument-hint: "<feature-name> <path/to/PRD.md> [lite|standard|strict]  — e.g., hotel-search docs/hotel-search-prd.md strict"
 model: opus
 ---
 
 ## Skill Contract
 
 **Consumes:** Any PRD file (path provided as second argument)
-**Produces:** `plans/$FEATURE/` — all 8 plan files, pre-populated from the PRD
+**Produces:** `plans/$FEATURE/` — 4 files in lite, all 8 plan files in standard/strict, pre-populated from the PRD
 **Consumed by:** `build` skill reads `CONVERSATION_PROMPTS.md` and `PROGRESS.md`
 
 ---
@@ -18,6 +18,8 @@ model: opus
 Split `$ARGUMENTS` on the first space:
 - `FEATURE` = first token (the feature name, e.g., `hotel-search`)
 - `PRD_PATH` = remaining tokens (the file path, e.g., `docs/hotel-search-prd.md`)
+- If the final token is `lite`, `standard`, or `strict`, remove it from `PRD_PATH` and set `rigor` accordingly.
+- Default: `rigor = standard`
 
 If either is missing, stop and tell the user:
 ```
@@ -114,9 +116,21 @@ Each edge case from the PRD becomes either:
 
 ---
 
-## Step 6: Generate the 8 Plan Files
+## Step 6: Generate Plan Files
 
-Create `plans/$FEATURE/` and write all 8 files.
+Create `plans/$FEATURE/`.
+
+If `rigor = lite`, write only:
+- USER_STORIES.md
+- IMPLEMENTATION_PLAN.md
+- PROGRESS.md
+- CONVERSATION_PROMPTS.md
+
+Merge happy flow, edge cases, architecture notes, and flow notes into those four files.
+
+If `rigor = standard` or `strict`, write all 8 files.
+
+If `rigor = strict`, add explicit risk, rollback, verification mapping, and approval notes.
 
 ### FILE 1: USER_STORIES.md
 Read `~/.claude/templates/plan/USER_STORIES.template.md` for structure.
@@ -134,15 +148,19 @@ Each conversation prompt must be self-contained, scoped to specific files and la
 `After done, update plans/$FEATURE/PROGRESS.md phase X to DONE.`
 
 ### FILE 5: HAPPY_FLOW.md
+Standard/strict only. Skip in lite.
 Read `~/.claude/templates/plan/HAPPY_FLOW.template.md` for structure.
 
 ### FILE 6: EDGE_CASES.md
+Standard/strict only. Skip in lite.
 Read `~/.claude/templates/plan/EDGE_CASES.template.md` for structure.
 
 ### FILE 7: ARCHITECTURE_PROPOSAL.md
+Standard/strict only. Skip in lite; merge short architecture notes into IMPLEMENTATION_PLAN.md.
 Read `~/.claude/templates/plan/ARCHITECTURE_PROPOSAL.template.md` for structure.
 
 ### FILE 8: FLOW_DIAGRAM.md
+Standard/strict only. Skip in lite unless the flow is unclear without a diagram.
 Read `~/.claude/templates/plan/FLOW_DIAGRAM.template.md` for structure.
 ASCII only. Max ~70 chars wide.
 
@@ -150,11 +168,13 @@ ASCII only. Max ~70 chars wide.
 
 ## Step 7: Verify Output
 
-After writing all 8 files, confirm all 8 exist in `plans/$FEATURE/`.
+After writing files, confirm the selected rigor's required files exist in `plans/$FEATURE/`.
 
 Then report:
 ```
-PRD import complete. Created plans/$FEATURE/ with 8 files.
+PRD import complete. Created plans/$FEATURE/.
+
+Rigor: [lite / standard / strict]
 
 Stories imported: [count] ([story IDs])
 Conversations planned: [count]

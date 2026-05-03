@@ -132,7 +132,7 @@ Reply with a number, or describe what you want.
 ## Step 5 — Invoke the skill
 
 Run the routed skill exactly as you would if the user had typed it directly.
-Pass the feature name and any inferred flags (do not add `fast` unless user asked for it).
+Pass the feature name and any inferred rigor flags (`lite`, `standard`, `strict`) when the user clearly asks for them. Do not add `fast` unless user asked for it.
 
 Examples:
 ```

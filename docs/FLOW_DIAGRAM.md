@@ -7,9 +7,10 @@
 ```
   USER
    │
-   │  /go                   ← prompts "What do you want?" then routes
-   │  /go <plain English>   ← skip the prompt, routes immediately
-   │  /team-flow <feature>  ← direct pipeline entry (power users)
+  │  /go                   ← prompts "What do you want?" then routes
+  │  /go <plain English>   ← skip the prompt, routes immediately
+  │  /team-flow <feature>  ← direct pipeline entry (power users)
+  │  /team-flow <feature> lite|standard|strict
    ▼
 ╔══════════════════════════════════════╗
 ║  STAGE 0 — Discovery Path           ║
@@ -25,7 +26,7 @@
 ╔════════╗   │    ╔══════════════════╗
 ║ STORM  ║   │    ║  /prd-import     ║
 ║ arch.  ║   │    ║  reads PRD file  ║
-║ (opus) ║   │    ║  → 8 plan files  ║
+║ (opus) ║   │    ║  → plan files    ║
 ╚════════╝   │    ╚══════════════════╝
    │         │              │
    │         │    (skips stages 1+2)
@@ -83,7 +84,7 @@
 ║  │   PASS → advance to next conversation       │    ║
 ║  └─────────────────────────────────────────────┘    ║
 ║                                                      ║
-║  max 2 retry cycles per conversation                 ║
+║  max 2 retry cycles per conversation + feedback file ║
 ║  exceeded → STOP, surface to user                    ║
 ║  zero-diff detected → STALL → HUMAN_QUESTIONS.md     ║
 ╚══════════════════════════════════════════════════════╝
@@ -167,7 +168,7 @@
 
   File present = issue open
   File deleted = resolved
-  Max 2 cycles per conversation before hard stop
+  Max 2 cycles per conversation + feedback file before hard stop
   Zero git diff after builder fix → immediate STALL escalation (no retry consumed)
 ```
 
@@ -182,7 +183,7 @@
   reviewer    ── sonnet ──  adversarial check, writes ARCH + REVIEW files
   tester      ── sonnet ──  AC verification, writes TEST_FAILURES
   discoverer  ── sonnet ──  live site tracing, POM generation
-  orchestrator── haiku  ──  pipeline sequencing, feedback routing
+  orchestrator── haiku  ──  filesystem FSM, one event → one action
   quick       ── haiku  ──  retro, fast lookups
 ```
 
@@ -210,6 +211,9 @@
   │  /go                            ← prompts then routes│
   │  /go I want to add user auth    ← routes immediately │
   │  /team-flow <feature>           ← direct entry      │
+  │  /team-flow <feature> lite      ← lighter rigor     │
+  │  /team-flow <feature> standard  ← default rigor     │
+  │  /team-flow <feature> strict    ← audit-grade gates │
   │  /team-flow <feature> build     ← resume build      │
   │  /team-flow <feature> test      ← test only         │
   │  /team-flow <feature> fast      ← no pause points   │

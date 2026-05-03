@@ -42,6 +42,7 @@ skills/   ← lifecycle abilities
 templates/← plan file templates
 ARCHITECTURE.md   ← this file
 FEEDBACK_PROTOCOL.md ← feedback file formats
+ORCHESTRATOR_FSM.md ← deterministic workflow state machine
 ```
 
 **Global** (`~/.claude/`) — available in every project on this machine.
@@ -103,8 +104,8 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 │   skills: project-local (defined per project in .claude/skills/)
 │
 └─ orchestrator.md   role: orchestrator   model: haiku
-    "Sequence the pipeline. Spawn the right agent. Route feedback files."
-    Checks for feedback files after every spawn. Never advances past open feedback.
+    "Recover state. Process one event. Emit one next action."
+    Enforces the filesystem FSM in ORCHESTRATOR_FSM.md.
     skills: [team-flow]
 ```
 
@@ -118,7 +119,7 @@ sonnet  ← tester         careful verification, gap analysis
 sonnet  ← reviewer       adversarial analysis, rule checking
 sonnet  ← discoverer     site navigation, pattern recognition
 haiku   ← quick          fast lookups, no reasoning needed
-haiku   ← orchestrator   sequencing + routing, no deep reasoning needed
+haiku   ← orchestrator   deterministic FSM transitions, no deep reasoning needed
 ```
 
 ---
@@ -132,14 +133,15 @@ Skills are `.md` files in a `<skill-name>/SKILL.md` structure with frontmatter:
 
 ```
 team-flow      ← full pipeline with feedback loops: discovery→plan→build→test→retro
+                 supports rigor: lite, standard, strict
 storm          ← brainstorm a feature idea; write STORM_SEED.md on /stop plan
-plan           ← interview + research → create plans/<feature>/ with 8 files
+plan           ← interview + research → create plans/<feature>/ with 4 or 8 files by rigor
 build          ← read PROGRESS.md → implement next TODO conversation → verify
 review         ← check code against architectural rules; report violations
 retro          ← ask 3 questions → write RETRO.md + append to LESSONS_CANDIDATE.md
 lessons        ← promote repeated patterns from LESSONS_CANDIDATE.md → LESSONS.md
 archive        ← move completed plan to plans/.archive/ (requires RETRO.md + all DONE)
-prd-import     ← read any PRD file → translate ACs + edge cases → generate all 8 plan files
+prd-import     ← read any PRD file → translate ACs + edge cases → generate rigor-specific plan files
 verify-state   ← check stale feedback files, PROGRESS drift from git, dead code references
 ```
 
@@ -165,7 +167,7 @@ Bridge — one command:
     translates: ACs → verify commands
                 edge cases → workflow conversation scopes
                 out-of-scope → Do NOT lists in every prompt
-    generates: plans/<feature>/ (all 8 files)
+    generates: plans/<feature>/ (4 files in lite, 8 in standard/strict)
 
 Agent Pipeline (this framework)
   /team-flow <feature>    ← or /build <feature> per conversation
@@ -179,7 +181,7 @@ agent pipeline runs from there. No shared infrastructure, no coupling.
 ```
 ~/.claude/                    Global — available in every project
   agents/                     8 behavioral contracts
-  skills/                     10 lifecycle skills (including archive + prd-import + verify-state)
+  skills/                     lifecycle skills (including archive + prd-import + verify-state)
   templates/plan/             8 plan file templates
 
 your-project/                 Local — teaches agents YOUR rules
@@ -198,7 +200,10 @@ project's conventions. The same agents work in any project — only the rules fi
 Start any feature with one command:
 
 ```
-/team-flow <feature-name>            ← pauses at every stage (default)
+/team-flow <feature-name>            ← standard rigor, pauses at every stage (default)
+/team-flow <feature-name> lite       ← 4-file plan, lighter gates
+/team-flow <feature-name> standard   ← current full 8-file pipeline
+/team-flow <feature-name> strict     ← mandatory approvals + audit-grade gates
 /team-flow <feature-name> fast       ← runs to completion, no pauses
 /team-flow <feature-name> build      ← skip discovery+plan, resume build
 /team-flow <feature-name> test       ← skip to test stage only
@@ -270,7 +275,8 @@ You: /team-flow payment-flow
 
 Feedback files live in `plans/<feature>/feedback/`.
 **A file existing = issue open. No file = resolved.**
-The orchestrator checks after every agent spawn. Never advances past open feedback.
+The orchestrator FSM checks after every event. Never advances past open feedback.
+See `docs/ORCHESTRATOR_FSM.md` for states, events, priority, and recovery.
 
 ### The 5 feedback files
 
@@ -304,7 +310,7 @@ tester   ──► TEST_FAILURES.md    ──► builder    (fix → tester re-c
 ### Resolution rules
 
 - Agent that resolves the issue **deletes the feedback file** when done.
-- **Max 2 retry cycles per conversation.** If exceeded: stop and surface to user.
+- **Max 2 retry cycles per conversation and feedback file.** If exceeded: stop and surface to user.
 - **Zero-diff escalation.** If builder resolves `REVIEW_FAILURES.md` but `git diff` shows no code changes, orchestrator immediately writes `HUMAN_QUESTIONS.md [STALL]` — pipeline blocks without consuming a retry cycle.
 - **ARCH_FEEDBACK blocks all further building.** Must be resolved by architect first.
 - Feedback is blocking — pipeline never advances past an open feedback file.
@@ -372,10 +378,10 @@ planner           plans/<feature>/               STORM_SEED.md (then deletes)
                     ├─ IMPLEMENTATION_PLAN.md
                     ├─ PROGRESS.md
                     ├─ CONVERSATION_PROMPTS.md
-                    ├─ HAPPY_FLOW.md
-                    ├─ EDGE_CASES.md
-                    ├─ ARCHITECTURE_PROPOSAL.md
-                    └─ FLOW_DIAGRAM.md
+                    ├─ HAPPY_FLOW.md              (standard/strict)
+                    ├─ EDGE_CASES.md              (standard/strict)
+                    ├─ ARCHITECTURE_PROPOSAL.md   (standard/strict)
+                    └─ FLOW_DIAGRAM.md            (standard/strict)
                             │
                             ▼
 builder           PROGRESS.md (TODO→DONE/conv)   CONVERSATION_PROMPTS.md
@@ -400,7 +406,7 @@ quick             RETRO.md                        PROGRESS.md
                             │
                             ▼
 user              plans/.archive/<feature>/        plans/<feature>/
-(archive)           all 8 files + RETRO.md          moved, not deleted
+(archive)           plan files + RETRO.md           moved, not deleted
                     recoverable via git             plans/ stays clean
                             │
                             ▼
@@ -543,6 +549,9 @@ The rest of the pipeline is identical.
 
 # Direct pipeline entry
 /team-flow <feature>
+/team-flow <feature> lite
+/team-flow <feature> standard
+/team-flow <feature> strict
 
 # Run with no pauses
 /team-flow <feature> fast
@@ -577,6 +586,7 @@ The rest of the pipeline is identical.
 ~/.claude/
 ├── ARCHITECTURE.md         ← this file
 ├── FEEDBACK_PROTOCOL.md    ← feedback file formats + escalation rules
+├── ORCHESTRATOR_FSM.md     ← deterministic workflow state machine
 ├── agents/
 │   ├── README.md
 │   ├── architect.md

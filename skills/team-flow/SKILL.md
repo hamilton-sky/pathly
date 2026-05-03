@@ -1,7 +1,7 @@
 ---
 name: team-flow
-description: Full feature pipeline with feedback loops — discovery → plan → (implement → review → fix?) × N → test → (fix?) → retro. Reviewer runs after every conversation. Feedback files route issues to the right agent automatically. Add 'fast' to skip pause points. Add 'build', 'plan', or 'test' to enter mid-pipeline.
-argument-hint: "<feature-name> [fast] [plan|build|test]"
+description: Full feature pipeline with feedback loops — discovery → plan → (implement → review → fix?) × N → test → (fix?) → retro. Standard/strict review every conversation; lite can review final-only. Feedback files route issues to the right agent automatically. Add 'lite', 'standard', or 'strict' to choose rigor. Add 'fast' to skip pause points outside strict mode. Add 'build', 'plan', or 'test' to enter mid-pipeline.
+argument-hint: "<feature-name> [lite|standard|strict] [fast] [plan|build|test]"
 ---
 
 Run the full feature pipeline for `$ARGUMENTS`.
@@ -10,11 +10,18 @@ Run the full feature pipeline for `$ARGUMENTS`.
 
 Parse `$ARGUMENTS` for these tokens (order doesn't matter):
 - First word that is not a keyword = `FEATURE` (the feature name)
+- `lite` → set `rigor = lite` (4 required plan files, fewer gates)
+- `standard` → set `rigor = standard` (default current pipeline)
+- `strict` → set `rigor = strict` (mandatory gates, audit logs)
 - `fast` → set `autoFlow = true` (no pause points)
 - `plan` → set `entryStage = plan`
 - `build` → set `entryStage = build`
 - `test` → set `entryStage = test`
 - Default: `entryStage = discovery`
+- Default: `rigor = standard`
+
+If both `strict` and `fast` are present, stop and report:
+`strict mode requires human approval gates; remove fast or choose standard fast.`
 
 Examples:
 ```
@@ -23,17 +30,29 @@ Examples:
 /team-flow hotel-search test         ← skip to test stage
 /team-flow hotel-search fast         ← full pipeline, no pauses
 /team-flow hotel-search build fast   ← resume build, no pauses
+/team-flow hotel-search lite         ← small change, 4-file plan, lighter gates
+/team-flow hotel-search strict       ← high-risk change, mandatory gates + audit
 ```
 
 ## Core rules
 
 - Spawn the right subagent for each stage — never execute work yourself.
+- Treat `/team-flow` as a deterministic filesystem FSM. Before each action:
+  read disk, recover state, process one event, and emit one next action.
+- Store workflow checkpoints in `plans/$FEATURE/STATE.json` and append events
+  to `plans/$FEATURE/EVENTS.jsonl` when runtime support exists.
+- Rigor controls process depth:
+  - `lite`: 4 plan files, fewer gates, review/test can be final-only when risk is low.
+  - `standard`: current 8-file pipeline with review after every conversation.
+  - `strict`: 8 files plus mandatory `STATE.json`, `EVENTS.jsonl`, human approvals, review, and test gates.
 - Default: pause at every stage transition, require human acknowledgement.
 - Auto mode: skip pauses, run to completion.
-- **Reviewer runs after every implemented conversation** — not just at the end.
+- In `standard` and `strict`, reviewer runs after every implemented conversation.
+- In `lite`, reviewer may run final-only unless feedback, touched files, or user preference requires earlier review.
 - After every agent completes, check for feedback files before advancing.
-- Max 2 feedback cycles per conversation. If exceeded, stop and report.
+- Max 2 feedback cycles per conversation and feedback file. If exceeded, stop and report.
 - If a stage fails, report the failure and manual recovery command. Do not retry.
+- Canonical FSM reference: `docs/ORCHESTRATOR_FSM.md`.
 
 ## Health checks before skipping stages
 
@@ -45,13 +64,15 @@ Run these before jumping to the entry stage. Fail fast with a clear error.
 
 **build:**
 - Check `plans/$FEATURE/` exists. If not: stop → `plans/$FEATURE/ not found. Run /team-flow $FEATURE first to create the plan.`
-- Check all 8 plan files exist: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, CONVERSATION_PROMPTS.md, HAPPY_FLOW.md, EDGE_CASES.md, ARCHITECTURE_PROPOSAL.md, FLOW_DIAGRAM.md. If any missing: stop → list the missing files.
+- If `rigor = lite`, check the 4 required plan files exist: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, CONVERSATION_PROMPTS.md.
+- If `rigor = standard` or `strict`, check all 8 plan files exist: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, CONVERSATION_PROMPTS.md, HAPPY_FLOW.md, EDGE_CASES.md, ARCHITECTURE_PROPOSAL.md, FLOW_DIAGRAM.md. If any missing: stop → list the missing files.
+- If `rigor = strict`, also require STATE.json and EVENTS.jsonl.
 - Read PROGRESS.md — resume from last TODO conversation (do not clear or restart).
 - Print: `[SKIPPED] Discovery + plan → entering at build`
 - Print: `Resuming from: Conversation N (last TODO in PROGRESS.md)`
 
 **test:**
-- Check `plans/$FEATURE/` exists with all 8 files (same as build).
+- Check `plans/$FEATURE/` exists with required files for the selected rigor (same as build).
 - Check PROGRESS.md — all conversations must be DONE. If any TODO: stop → `Not all conversations are complete. Run /team-flow $FEATURE build first.`
 - Print: `[SKIPPED] Discovery + plan + implementation → entering at test`
 
@@ -67,7 +88,11 @@ A file existing = issue open. A file absent or deleted = resolved.
 | `TEST_FAILURES.md` | tester | builder |
 | `IMPL_QUESTIONS.md` | builder `[REQ]` | planner (what should this do?) |
 | `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect (how is this technically possible?) |
-| `HUMAN_QUESTIONS.md` | any agent | user — pipeline blocks *(V2, not yet wired)* |
+| `HUMAN_QUESTIONS.md` | any agent | user — pipeline enters `BLOCKED_ON_HUMAN` |
+
+If multiple feedback files exist, route one at a time in this priority order:
+`HUMAN_QUESTIONS.md`, `ARCH_FEEDBACK.md`, `DESIGN_QUESTIONS.md`,
+`IMPL_QUESTIONS.md`, `REVIEW_FAILURES.md`, `TEST_FAILURES.md`.
 
 ## Subagent map
 
@@ -126,9 +151,9 @@ Reply with 1, 2, or 3:
   Path to your PRD file? (e.g. docs/feature-prd.md)
   ```
   Wait for path input. Then:
-  - Run `/prd-import [feature] [path]`
+  - Run `/prd-import [feature] [path] [rigor]`
   - Print: `PRD imported. Plan files ready in plans/[feature]/`
-  - Skip Stage 1 and Stage 2 entirely (prd-import already generated all 8 plan files)
+  - Skip Stage 1 and Stage 2 entirely (prd-import already generated the selected rigor's plan files)
   - Jump directly to Stage 3 (Implement)
 
 ---
@@ -159,17 +184,17 @@ On 'no': stop.
 
 **Spawn** `planner`:
 ```
-Run /plan [feature name].
+Run /plan [feature name] [rigor].
 If plans/STORM_SEED.md exists, consume it as pre-filled answers.
 Ensure every story references which phase/conversation delivers it.
 Ensure every phase references which stories it fulfills.
-After creating the 8 plan files, list them as a summary.
+After creating the selected rigor's plan files, list them as a summary.
 ```
 
 If not autoFlow — **PAUSE:**
 ```
 [Stage 2 — Plan complete]
-plans/[feature]/ created with 8 files.
+plans/[feature]/ created with the selected rigor's required files.
 Review USER_STORIES.md and CONVERSATION_PROMPTS.md.
 Reply 'go' to start implementation, or 'stop' to pause here.
 ```
@@ -210,16 +235,20 @@ While any conversation row has status TODO:
     **Spawn** `architect`:
     ```
     Read plans/[feature]/feedback/DESIGN_QUESTIONS.md.
-    Resolve each [ARCH] question — update ARCHITECTURE_PROPOSAL.md with the approach.
+    Resolve each [ARCH] question — update ARCHITECTURE_PROPOSAL.md with the approach, or IMPLEMENTATION_PLAN.md if this is a lite plan without ARCHITECTURE_PROPOSAL.md.
     Delete plans/[feature]/feedback/DESIGN_QUESTIONS.md when resolved.
     ```
 
-  Both files can exist at the same time. Route planner first, then architect — they are independent.
+  Both files can exist at the same time. Route one agent at a time using the FSM priority order.
   After both resolve → builder re-implements (do not increment retryCount for these).
 
   **3b. Reviewer checks**
 
-  **Spawn** `reviewer`:
+  If `rigor = lite`, reviewer may run once after the final builder conversation unless feedback files, risky touched files, or user preference require per-conversation review.
+
+  If `rigor = standard` or `strict`, reviewer runs after every builder conversation.
+
+  If review is required for this point in the selected rigor, **spawn** `reviewer`:
   ```
   Review the changes from conversation N of [feature].
   Run /review last (or /review staged if not yet committed).
@@ -230,6 +259,8 @@ While any conversation row has status TODO:
   If all clear: report PASS.
   ```
 
+  If lite skips review for this conversation, continue to **3c. Advance** after checking feedback files.
+
   After reviewer completes — check feedback files:
 
   → If `ARCH_FEEDBACK.md` exists:
@@ -238,7 +269,7 @@ While any conversation row has status TODO:
     **Spawn** `architect`:
     ```
     Read plans/[feature]/feedback/ARCH_FEEDBACK.md.
-    Redesign the affected architecture in plans/[feature]/ARCHITECTURE_PROPOSAL.md.
+    Redesign the affected architecture in plans/[feature]/ARCHITECTURE_PROPOSAL.md, or plans/[feature]/IMPLEMENTATION_PLAN.md for lite plans without ARCHITECTURE_PROPOSAL.md.
     If phases need to change, update plans/[feature]/IMPLEMENTATION_PLAN.md.
     Delete plans/[feature]/feedback/ARCH_FEEDBACK.md when resolved.
     Report: what changed in the design.
@@ -299,6 +330,12 @@ For each criterion: PASS / FAIL / NOT COVERED.
 If any FAIL or NOT COVERED: write plans/[feature]/feedback/TEST_FAILURES.md
 using the format in ~/.claude/FEEDBACK_PROTOCOL.md.
 ```
+
+In `lite`, testing may be limited to the verify commands and directly relevant checks from the plan.
+
+In `standard`, tester verifies acceptance criteria before retro.
+
+In `strict`, tester must map every acceptance criterion to PASS / FAIL / NOT COVERED and cannot proceed with NOT COVERED criteria.
 
 After tester completes — check for `TEST_FAILURES.md`:
 

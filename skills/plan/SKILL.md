@@ -1,113 +1,186 @@
 ---
 name: plan
-description: Plan a new feature by creating a plans folder with 8 files: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, CONVERSATION_PROMPTS.md (max 4 conversations per folder), HAPPY_FLOW.md, EDGE_CASES.md, ARCHITECTURE_PROPOSAL.md, and FLOW_DIAGRAM.md.
-argument-hint: "[feature-name, e.g., add-saucedemo-checkout, new-resolver-strategy]"
+description: Plan a new feature. Standard and strict rigor create the full 8-file plan. Lite rigor creates the 4 files required by build: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, and CONVERSATION_PROMPTS.md.
+argument-hint: "[feature-name] [lite|standard|strict]"
 model: opus
 ---
 
 ## Skill Contract
 
-**Consumes (optional):** `plans/STORM_SEED.md` — pre-filled answers for Step 1 interview
-**Produces:** `plans/$ARGUMENTS/` — 8 plan files
-**Consumed by:** `build` skill reads `plans/$ARGUMENTS/CONVERSATION_PROMPTS.md` and `PROGRESS.md`
+**Consumes (optional):** `plans/STORM_SEED.md` - pre-filled answers for the interview
+**Produces:** `plans/$FEATURE/` - 4 files in lite, 8 files in standard/strict
+**Consumed by:** `build` skill reads `plans/$FEATURE/CONVERSATION_PROMPTS.md` and `PROGRESS.md`
 
-## Step 0: Apply active lessons
+## Step 0: Parse Arguments
+
+Parse `$ARGUMENTS`:
+- First token that is not `lite`, `standard`, or `strict` = `FEATURE`
+- `lite` -> `rigor = lite`
+- `standard` -> `rigor = standard`
+- `strict` -> `rigor = strict`
+- Default: `rigor = standard`
+
+Use `FEATURE` for the folder name, not the full `$ARGUMENTS` string.
+
+If `plans/$FEATURE/` already exists, treat this as a rigor change or plan completion task:
+- `lite -> standard`: keep existing files and add missing standard files.
+- `standard -> strict`: keep existing files and add strict risk, rollback, approval, and verification mapping.
+- `strict -> standard` or `standard -> lite`: do not delete files; report that downgrades change future gates only.
+- Never overwrite existing plan content without asking the user.
+
+## Step 1: Apply Active Lessons
 
 If `LESSONS.md` exists in the project root, read it now.
-Apply the `Injection` field of each lesson when generating the relevant plan file in Step 3.
-Do not restate lesson reasoning — just apply the injection silently.
+Apply the `Injection` field of each lesson when generating the relevant plan file.
+Do not restate lesson reasoning - just apply the injection silently.
 If two lessons conflict, prefer the one with more sources listed.
 
-## Step 1: Understand the feature
+## Step 2: Understand The Feature
 
 Check if `plans/STORM_SEED.md` exists.
 
-**If it exists:** Read it, pre-fill interview answers (Decisions Made → architecture decisions, Constraints → scope limits, Open Questions → unknowns), confirm with user, then delete the seed file.
+If it exists: read it, pre-fill interview answers, confirm with user, then delete the seed file.
 
-**If it does not exist:** Interview the user — What does it do? Which layers does it touch? Dependencies? Complexity (Small/Medium/Large)? Skip if user already gave a detailed description.
+If it does not exist: interview the user. Ask what it does, which layers it touches, dependencies, and complexity (Small/Medium/Large). Skip only if the user already gave a detailed description.
 
-## Step 2: Research the codebase
+If `rigor = strict`, do not skip risk questions. Explicitly ask about security, data loss, migrations, compliance, production impact, and rollback expectations unless the user already answered them.
 
-1. Read CLAUDE.md and linked rules files — layer structure, dependency direction, naming conventions
-2. Find similar existing components — use as reference patterns
-3. Identify files to create or modify
-4. Check test directory conventions if tests are in scope
+## Step 3: Research The Codebase
 
-## Step 3: Create the plans folder
+1. Read `CLAUDE.md` and linked rules files for layer structure, dependency direction, naming conventions, and test commands.
+2. Find similar existing components and use them as reference patterns.
+3. Identify files to create or modify.
+4. Check test directory conventions if tests are in scope.
 
-Create `plans/$ARGUMENTS/` with **8 files**.
+## Step 4: Create The Plans Folder
 
-> **Conversation cap rule**: Max 4 conversations per folder. If more needed, split into `plans/$ARGUMENTS-part-1/` (foundation) and `plans/$ARGUMENTS-part-2/` (depends on part-1 DONE).
+Create `plans/$FEATURE/` if it does not exist. If it exists, add or update only the files/sections needed for the selected rigor.
 
-### 3a. USER_STORIES.md
-Read ~/.claude/templates/plan/USER_STORIES.template.md for the exact file structure.
+### Rigor File Sets
 
-### 3b. IMPLEMENTATION_PLAN.md
-Read ~/.claude/templates/plan/IMPLEMENTATION_PLAN.template.md for the exact file structure.
+Lite produces 4 required files:
+- `USER_STORIES.md`
+- `IMPLEMENTATION_PLAN.md`
+- `PROGRESS.md`
+- `CONVERSATION_PROMPTS.md`
 
-### 3c. PROGRESS.md
-Read ~/.claude/templates/plan/PROGRESS.template.md for the exact file structure.
+Lite merges happy path, edge cases, architecture notes, and flow notes into the relevant sections of those four files. Keep the plan small: target 1-2 conversations and only include detail the builder needs.
 
-### 3d. CONVERSATION_PROMPTS.md
-Key file — verbatim copy-paste prompts for each conversation. Max 4 conversations per folder.
-Read ~/.claude/templates/plan/CONVERSATION_PROMPTS.template.md for the exact file structure.
+Standard produces 8 files:
+- `USER_STORIES.md`
+- `IMPLEMENTATION_PLAN.md`
+- `PROGRESS.md`
+- `CONVERSATION_PROMPTS.md`
+- `HAPPY_FLOW.md`
+- `EDGE_CASES.md`
+- `ARCHITECTURE_PROPOSAL.md`
+- `FLOW_DIAGRAM.md`
 
-### 3e. HAPPY_FLOW.md
-Read ~/.claude/templates/plan/HAPPY_FLOW.template.md for the exact file structure.
+Standard is the current default.
 
-### 3f. EDGE_CASES.md
-Read ~/.claude/templates/plan/EDGE_CASES.template.md for the exact file structure.
+Strict produces the same 8 files plus stronger audit expectations:
+- Add explicit risk, rollback, verification, and approval notes to `IMPLEMENTATION_PLAN.md`.
+- Ensure every acceptance criterion maps to a verification step.
+- Keep all assumptions and unresolved questions visible.
+- Do not mark ambiguous requirements as implementation-ready.
 
-### 3g. ARCHITECTURE_PROPOSAL.md
-Read ~/.claude/templates/plan/ARCHITECTURE_PROPOSAL.template.md for the exact file structure.
+Conversation cap rule: max 4 conversations per folder. If more are needed, split into `plans/$FEATURE-part-1/` and `plans/$FEATURE-part-2/`.
 
-### 3h. FLOW_DIAGRAM.md
-ASCII only (`[]`, `──►`, `├─`, `└─`, `│`). Show only layers touched. Include happy path + resolver fallback. Label arrows with action name or cfg key. Max ~70 chars wide.
-Read ~/.claude/templates/plan/FLOW_DIAGRAM.template.md for the exact file structure.
+### 4a. USER_STORIES.md
 
----
+Read `~/.claude/templates/plan/USER_STORIES.template.md` for the exact file structure.
+
+In lite, include only the stories and acceptance criteria needed for the small change.
+
+### 4b. IMPLEMENTATION_PLAN.md
+
+Read `~/.claude/templates/plan/IMPLEMENTATION_PLAN.template.md` for the exact file structure.
+
+In lite, add short sections for happy path, edge cases, and architecture notes directly in this file instead of creating separate files.
+
+In strict, add risk, rollback, approval, and verification mapping sections.
+
+### 4c. PROGRESS.md
+
+Read `~/.claude/templates/plan/PROGRESS.template.md` for the exact file structure.
+
+### 4d. CONVERSATION_PROMPTS.md
+
+This is the key file: verbatim prompts for each builder conversation. Max 4 conversations per folder.
+Read `~/.claude/templates/plan/CONVERSATION_PROMPTS.template.md` for the exact file structure.
+
+Each prompt must be self-contained and runnable without reading every plan file.
+
+### 4e. HAPPY_FLOW.md
+
+Skip in `lite`; merge the happy path into `USER_STORIES.md` or `IMPLEMENTATION_PLAN.md`.
+
+For standard and strict, read `~/.claude/templates/plan/HAPPY_FLOW.template.md` for the exact file structure.
+
+### 4f. EDGE_CASES.md
+
+Skip in `lite`; merge only relevant edge cases into `USER_STORIES.md` and `CONVERSATION_PROMPTS.md`.
+
+For standard and strict, read `~/.claude/templates/plan/EDGE_CASES.template.md` for the exact file structure.
+
+### 4g. ARCHITECTURE_PROPOSAL.md
+
+Skip in `lite`; put short architecture notes directly in `IMPLEMENTATION_PLAN.md`.
+
+For standard and strict, read `~/.claude/templates/plan/ARCHITECTURE_PROPOSAL.template.md` for the exact file structure.
+
+### 4h. FLOW_DIAGRAM.md
+
+Skip in `lite` unless the flow is unclear without a diagram.
+
+For standard and strict, read `~/.claude/templates/plan/FLOW_DIAGRAM.template.md` for the exact file structure.
+Use ASCII only. Show only layers touched. Include happy path and fallback. Label arrows with action name or config key. Max about 70 chars wide.
 
 ## Conversation Splitting Rules
 
-1. Each conversation must leave the codebase runnable — end every prompt with a verify command.
-2. Hard cap: 4 conversations per folder. If more needed, create part-2 folder.
-3. Natural seams: POM layer first → Glue layer → Flow + integration test → Engine changes (own conversation).
-4. Every prompt must say "Do NOT touch [X] yet."
-5. Later prompts reference: "Conversations 1-N are DONE (description)."
-6. Target 3-6 phases per conversation.
-7. Each prompt is self-contained — references IMPLEMENTATION_PLAN.md but runnable without it.
+1. Each conversation must leave the codebase runnable and end with a verify command.
+2. Hard cap: 4 conversations per folder.
+3. Natural order: foundation first, then workflow/integration, then additional stories.
+4. Every prompt must say `Do NOT touch [X] yet`.
+5. Later prompts reference completed earlier conversations.
+6. Target 3-6 phases per conversation in standard/strict; target 1-3 phases in lite.
+7. Each prompt is self-contained.
 
 ## Team-Safe Prompt Rules
 
-1. NEVER reference specific line numbers — use class/method names.
-2. NEVER reference exact test counts — use relative language ("all existing exam tests").
-3. Always include the three-layer checklist in prompts that touch glue or POM.
-4. Include a recovery instruction: "If verification fails and the fix requires out-of-scope changes, stop and report. If fundamentally broken, rollback with git checkout on affected files and retry."
+1. Never reference specific line numbers.
+2. Never reference exact test counts.
+3. Include relevant layer-contract reminders when prompts touch glue, POM, workflow, or engine code.
+4. Include a recovery instruction: `If verification fails and the fix requires out-of-scope changes, stop and report. If fundamentally broken, rollback with git checkout on affected files and retry.`
 
-## Step 4: Verify structure
+## Step 5: Verify Structure
 
-- All 8 files exist in `plans/$ARGUMENTS/`
-- CONVERSATION_PROMPTS.md has ≤4 conversations
-- Conversation prompts reference correct phase numbers
-- PROGRESS.md conversation table matches CONVERSATION_PROMPTS.md
-- Phase numbers consistent across all files
-- Verify commands use correct workflow path or pytest command
+- If `rigor = lite`, all 4 required files exist in `plans/$FEATURE/`.
+- If `rigor = standard` or `strict`, all 8 files exist in `plans/$FEATURE/`.
+- `CONVERSATION_PROMPTS.md` has no more than 4 conversations.
+- Conversation prompts reference correct phase numbers.
+- `PROGRESS.md` conversation table matches `CONVERSATION_PROMPTS.md`.
+- Phase numbers are consistent across all created files.
+- Verify commands use correct project commands.
+- If `rigor = strict`, every acceptance criterion has an explicit verification mapping and rollback note.
 
-## Step 5: Report
+## Step 6: Report
 
-```
-## Plans folder created: plans/$ARGUMENTS/
+```text
+## Plans folder created: plans/$FEATURE/
+
+Rigor: [lite / standard / strict]
 
 Files:
-- USER_STORIES.md — N stories with acceptance criteria
-- IMPLEMENTATION_PLAN.md — N phases across N conversations
-- PROGRESS.md — Tracking table (all TODO)
-- CONVERSATION_PROMPTS.md — N conversation prompts ready to paste (max 4)
-- HAPPY_FLOW.md — Ideal automation journey
-- EDGE_CASES.md — N edge cases documented
-- ARCHITECTURE_PROPOSAL.md — Design decisions
-- FLOW_DIAGRAM.md — ASCII flow diagram (happy path + fallback)
+- USER_STORIES.md - N stories with acceptance criteria
+- IMPLEMENTATION_PLAN.md - N phases across N conversations
+- PROGRESS.md - tracking table, all TODO
+- CONVERSATION_PROMPTS.md - N builder prompts ready to use
+- HAPPY_FLOW.md - ideal journey [standard/strict only]
+- EDGE_CASES.md - edge cases [standard/strict only]
+- ARCHITECTURE_PROPOSAL.md - design decisions [standard/strict only]
+- FLOW_DIAGRAM.md - ASCII flow diagram [standard/strict only]
 
-Seed consumed: [yes — plans/STORM_SEED.md was read and deleted / no — no seed file found]
-Next: /build $ARGUMENTS
+Seed consumed: [yes / no]
+Next: /build $FEATURE
 ```
