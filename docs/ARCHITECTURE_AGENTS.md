@@ -410,6 +410,101 @@ Story S1.1               Phase 1                    Conversation 1
 
 ---
 
+## Worked Examples
+
+### Example 1 — With BMAD (discovery first)
+
+**Scenario:** Build a hotel search feature on phpTravels. You already ran BMAD and have a PRD.
+
+```
+Step 1 — BMAD wrote this file (outside Claude Code):
+  docs/phptravels-hotel-search-prd.md
+    User Stories: S1 (search), S2 (select hotel)
+    ACs: city input, date pickers, results list, book button
+    Edge cases: no results, invalid dates
+    Out of scope: payment, user accounts
+
+Step 2 — Import it:
+  /bmad-import hotel-search docs/phptravels-hotel-search-prd.md
+
+  bmad-import reads the PRD and translates:
+    AC "city input exists"        → grep verify on HotelSearchPage POM
+    AC "results show price"       → python stepper/main.py --workflow hotel_search.json
+    Edge case "no results"        → Conversation 2: hotel_search_no_results.json
+    Out of scope "payment"        → Do NOT: in every conversation prompt
+
+  Output: plans/hotel-search/ (8 files, ready for building)
+
+Step 3 — Build:
+  /team-flow hotel-search
+
+  architect reads plans/ + CLAUDE.md + .claude/rules/
+    → designs POM structure for phpTravels hotel pages
+  builder Conversation 1:
+    → poms/phpTravels/pages/hotel_search_page.py (Locators + methods)
+    → stepper/sites/phptravels/pages/hotel_search_action.py (glue)
+  builder Conversation 2:
+    → stepper/sites/phptravels/workflows/hotel_search.json
+    → stepper/sites/phptravels/workflows/hotel_search_no_results.json
+  reviewer checks three-layer contract after each conversation
+  tester runs: python stepper/main.py --workflow hotel_search.json
+  quick writes RETRO.md
+```
+
+---
+
+### Example 2 — Without BMAD (plan directly)
+
+**Scenario:** Add drag-and-drop product sorting to SauceDemo. No PRD, you know what you want.
+
+```
+Step 1 — Brainstorm (optional):
+  /storm
+
+  architect (Opus) explores the idea:
+    "drag-and-drop needs mouse_down + drag_to + mouse_up sequence"
+    "SauceDemo inventory page — items are divs, no native drag API"
+    "resolver cascade: role resolver won't find drag targets, use css"
+  → writes plans/STORM_SEED.md with decisions + open questions
+
+Step 2 — Plan:
+  /plan saucedemo-drag-drop
+
+  planner reads STORM_SEED.md (pre-filled answers)
+  interviews you on anything missing
+  reads CLAUDE.md + .claude/rules/ to learn layer structure
+  generates plans/saucedemo-drag-drop/ (8 files):
+    CONVERSATION_PROMPTS.md has 2 conversations:
+      Conv 1: add drag locators to InventoryPage POM + glue action
+      Conv 2: write drag_sort.json workflow
+
+Step 3 — Build one conversation at a time:
+  /build saucedemo-drag-drop     ← implements Conv 1, pauses
+  /build saucedemo-drag-drop     ← implements Conv 2, pauses
+
+  Or run everything:
+  /team-flow saucedemo-drag-drop
+
+Step 4 — Verify:
+  python stepper/main.py --workflow stepper/sites/saucedemo/workflows/drag_sort.json
+```
+
+**Key difference from Example 1:** No PRD file. `/plan` does the interview itself.
+The rest of the pipeline is identical.
+
+---
+
+### Decision guide: BMAD or /plan?
+
+| Situation | Use |
+|---|---|
+| You have a BMAD PRD already | `/bmad-import <feature> <prd.md>` |
+| Complex feature, need discovery first | Run BMAD → then `/bmad-import` |
+| You know what you want, no PRD | `/plan <feature>` (interview mode) |
+| Quick feature, just start building | `/storm` then `/plan` then `/build` |
+
+---
+
 ## Quick Reference
 
 ```bash
