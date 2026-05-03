@@ -163,6 +163,11 @@ builder  ──► IMPL_QUESTIONS.md   ──► planner   ──► clarifies r
 
 **Rule:** Use IMPL_QUESTIONS for "what should this do?" Use DESIGN_QUESTIONS for "how is this technically possible?" They go to different agents for a reason. Sending a technical question to the planner wastes time — they can't answer it.
 
-**Tag rule:** Every question in a feedback file must carry its tag (`[REQ]` or `[ARCH]`). If you have both types of questions in one sitting, write both files. Mixed files without tags will be routed incorrectly.
+**Tag rule:** Every question in a feedback file must carry its tag:
+- `[REQ]` → IMPL_QUESTIONS.md → planner
+- `[ARCH]` → DESIGN_QUESTIONS.md → architect
+- `[UNSURE]` → both files → let the correct owner discard it
+
+If you have both types, write both files. If classification is genuinely unclear, use `[UNSURE]` and write to both — forced misclassification wastes more time than writing twice. Mixed files without tags will be routed incorrectly.
 
 No other escalation paths exist. Agents do not communicate outside these defined channels.

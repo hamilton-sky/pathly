@@ -29,9 +29,11 @@ Before writing any feedback file, classify each blocker:
 |---|---|---|---|
 | "What should this do?" — requirement unclear | `[REQ]` | IMPL_QUESTIONS.md | planner |
 | "How is this technically possible?" — architecture unclear | `[ARCH]` | DESIGN_QUESTIONS.md | architect |
+| Genuinely unclear which type | `[UNSURE]` | both files | planner + architect |
 
 **If you have both types in one sitting — write both files.**
-Never mix `[REQ]` and `[ARCH]` questions in the same file. Wrong routing wastes a full agent round-trip.
+**If genuinely unclear — tag `[UNSURE]` and write to both files.** Let the correct owner discard it. Forced misclassification wastes more time than writing twice.
+Never mix `[REQ]` and `[ARCH]` questions in the same file without a tag. Wrong routing wastes a full agent round-trip.
 
 ## Reporting
 - Report what files were changed and what the verify result was.
