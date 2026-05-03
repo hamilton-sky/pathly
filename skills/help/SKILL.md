@@ -185,6 +185,13 @@ On '4': print full command reference
 
 ```
 ───────────────────────────────────────────
+  ENTRY POINTS
+───────────────────────────────────────────
+
+  /go <what you want>                describe intent → routes automatically
+  /help [feature]                    detect state → show this menu
+
+───────────────────────────────────────────
   MAIN COMMAND
 ───────────────────────────────────────────
 

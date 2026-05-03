@@ -7,7 +7,8 @@
 ```
   USER
    │
-   │  /team-flow <feature>
+   │  /go <plain English>   ← routes automatically (recommended entry point)
+   │  /team-flow <feature>  ← direct pipeline entry (power users)
    ▼
 ╔══════════════════════════════════════╗
 ║  STAGE 0 — Discovery Path           ║

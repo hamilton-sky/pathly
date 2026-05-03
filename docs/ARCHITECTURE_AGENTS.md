@@ -94,12 +94,12 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 │   Adversarial. Reports violations with file + rule reference. Never edits.
 │   Writes: ARCH_FEEDBACK.md (structural violations)
 │           REVIEW_FAILURES.md (implementation violations)
-│   skills: [review, verify-layers, security-review]
+│   skills: [review, security-review]
 │
 ├─ discoverer.md     role: discoverer     model: sonnet
 │   "Trace before generating. Follow what's visible."
 │   Navigates live sites, captures a11y trace data, pauses at auth.
-│   skills: [discover-site, generate-poms]
+│   skills: project-local (defined per project in .claude/skills/)
 │
 └─ orchestrator.md   role: orchestrator   model: haiku
     "Sequence the pipeline. Spawn the right agent. Route feedback files."
@@ -180,9 +180,9 @@ agent pipeline runs from there. No shared infrastructure, no coupling.
   templates/plan/             8 plan file templates
 
 your-project/                 Local — teaches agents YOUR rules
-  CLAUDE.md                   Layer structure, run commands, site list
-  .claude/rules/              Contracts per layer (pom-layer, glue-layer, etc.)
-  .claude/skills/             Project-specific tools (discover-site, verify-layers)
+  CLAUDE.md                   Architecture overview, run commands, conventions
+  .claude/rules/              Project conventions (naming, layer rules, patterns)
+  .claude/skills/             Project-specific tools (custom validators, generators)
 ```
 
 Agents read `CLAUDE.md` + `.claude/rules/` during the plan step to learn the
@@ -437,9 +437,9 @@ Step 2 — Import it:
   /bmad-import hotel-search docs/phptravels-hotel-search-prd.md
 
   bmad-import reads the PRD and translates:
-    AC "city input exists"        → grep verify on HotelSearchPage POM
-    AC "results show price"       → python stepper/main.py --workflow hotel_search.json
-    Edge case "no results"        → Conversation 2: hotel_search_no_results.json
+    AC "city input exists"        → pytest verify: assert search_page.city_input_visible()
+    AC "results show price"       → pytest verify: pytest tests/test_hotel_results.py -k price
+    Edge case "no results"        → Conversation 2: handle empty results state
     Out of scope "payment"        → Do NOT: in every conversation prompt
 
   Output: plans/hotel-search/ (8 files, ready for building)
@@ -448,15 +448,15 @@ Step 3 — Build:
   /team-flow hotel-search
 
   architect reads plans/ + CLAUDE.md + .claude/rules/
-    → designs POM structure for phpTravels hotel pages
+    → designs the implementation structure for hotel search
   builder Conversation 1:
-    → poms/phpTravels/pages/hotel_search_page.py (Locators + methods)
-    → stepper/sites/phptravels/pages/hotel_search_action.py (glue)
+    → src/hotel/search.py (search logic + page interactions)
+    → tests/test_hotel_search.py
   builder Conversation 2:
-    → stepper/sites/phptravels/workflows/hotel_search.json
-    → stepper/sites/phptravels/workflows/hotel_search_no_results.json
-  reviewer checks three-layer contract after each conversation
-  tester runs: python stepper/main.py --workflow hotel_search.json
+    → src/hotel/results.py
+    → tests/test_hotel_results.py (no-results edge case)
+  reviewer checks architecture + project conventions after each conversation
+  tester runs: pytest tests/test_hotel_search.py
   quick writes RETRO.md
 ```
 
@@ -473,7 +473,7 @@ Step 1 — Brainstorm (optional):
   architect (Opus) explores the idea:
     "drag-and-drop needs mouse_down + drag_to + mouse_up sequence"
     "SauceDemo inventory page — items are divs, no native drag API"
-    "resolver cascade: role resolver won't find drag targets, use css"
+    "need to identify drag targets by their data attributes"
   → writes plans/STORM_SEED.md with decisions + open questions
 
 Step 2 — Plan:
@@ -481,11 +481,11 @@ Step 2 — Plan:
 
   planner reads STORM_SEED.md (pre-filled answers)
   interviews you on anything missing
-  reads CLAUDE.md + .claude/rules/ to learn layer structure
+  reads CLAUDE.md + .claude/rules/ to learn project conventions
   generates plans/saucedemo-drag-drop/ (8 files):
     CONVERSATION_PROMPTS.md has 2 conversations:
-      Conv 1: add drag locators to InventoryPage POM + glue action
-      Conv 2: write drag_sort.json workflow
+      Conv 1: implement drag interaction logic + unit tests
+      Conv 2: write integration test for full drag-sort flow
 
 Step 3 — Build one conversation at a time:
   /build saucedemo-drag-drop     ← implements Conv 1, pauses
@@ -495,7 +495,7 @@ Step 3 — Build one conversation at a time:
   /team-flow saucedemo-drag-drop
 
 Step 4 — Verify:
-  python stepper/main.py --workflow stepper/sites/saucedemo/workflows/drag_sort.json
+  pytest tests/test_drag_sort.py
 ```
 
 **Key difference from Example 1:** No PRD file. `/plan` does the interview itself.
@@ -517,6 +517,11 @@ The rest of the pipeline is identical.
 ## Quick Reference
 
 ```bash
+# Entry points
+/go <what you want>              ← describe in plain English — routes automatically
+/help                            ← detect state → show numbered action menu
+/help <feature>                  ← same, scoped to one feature
+
 # Start a feature end-to-end (path selector opens)
 /team-flow <feature>
 
@@ -529,10 +534,6 @@ The rest of the pipeline is identical.
 /team-flow <feature> plan        ← skip discovery, start planning
 /team-flow <feature> build fast  ← resume build, no pauses
 
-# Get context-aware help + numbered action menu
-/help
-/help <feature>
-
 # Individual stages (manual control)
 /storm                           ← architect explores the idea
 /plan <feature>                  ← planner creates plans/<feature>/
@@ -542,11 +543,10 @@ The rest of the pipeline is identical.
 
 # Code quality
 /review                         ← reviewer checks staged changes
-/verify-layers                  ← reviewer audits layer contracts
 
-# Site discovery
+# Site/UI discovery (project-local skills — if installed in .claude/skills/)
 /discover-site <url>            ← discoverer traces a live site
-/generate-poms                  ← discoverer generates three-layer impl
+/generate-poms                  ← discoverer generates project-specific page objects
 ```
 
 ---

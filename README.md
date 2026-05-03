@@ -30,13 +30,20 @@ cd claude-agents-framework
 .\install.ps1
 ```
 
-Then open any project in Claude Code and run:
+Then open any project in Claude Code and describe what you want:
+```
+/go I want to add user authentication
+```
+
+Claude reads the project state, figures out the right pipeline, and confirms before running.
+No need to know any other commands to get started.
+
+**If you already know the pipeline**, use skills directly:
 ```
 /team-flow <feature-name>
 ```
 
-**Always start with `/team-flow`.** It opens with a path selector:
-
+`/team-flow` opens with a path selector:
 ```
 [1] Quick storm    — architect explores the idea first
 [2] Skip discovery — you know what to build, go straight to planning
