@@ -140,6 +140,7 @@ retro          ← ask 3 questions → write RETRO.md + append to LESSONS_CANDID
 lessons        ← promote repeated patterns from LESSONS_CANDIDATE.md → LESSONS.md
 archive        ← move completed plan to plans/.archive/ (requires RETRO.md + all DONE)
 prd-import     ← read any PRD file → translate ACs + edge cases → generate all 8 plan files
+verify-state   ← check stale feedback files, PROGRESS drift from git, dead code references
 ```
 
 ### Project-local skills (`.claude/skills/`)
@@ -178,7 +179,7 @@ agent pipeline runs from there. No shared infrastructure, no coupling.
 ```
 ~/.claude/                    Global — available in every project
   agents/                     8 behavioral contracts
-  skills/                     8 lifecycle skills (including archive + prd-import)
+  skills/                     10 lifecycle skills (including archive + prd-import + verify-state)
   templates/plan/             8 plan file templates
 
 your-project/                 Local — teaches agents YOUR rules

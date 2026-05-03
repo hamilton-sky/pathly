@@ -90,7 +90,7 @@ when you need to jump into the middle of a pipeline.
 
 ---
 
-## The 9 Skills
+## The 10 Skills
 
 | Skill | Command | What it does |
 |---|---|---|
@@ -186,7 +186,7 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 ```
 ~/.claude/
 ├── agents/          ← 8 behavioral contracts (.md files)
-├── skills/          ← 9 lifecycle skills (storm, plan, build, lessons, archive, ...)
+├── skills/          ← 10 lifecycle skills (storm, plan, build, lessons, archive, ...)
 │   └── */SKILL.md
 ├── hooks/           ← auto-classification hooks
 │   └── classify_feedback.py  ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
