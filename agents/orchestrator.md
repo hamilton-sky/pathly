@@ -68,7 +68,7 @@ If multiple feedback files exist, route exactly one target at a time:
 
 - **Delegate, never implement.** Every action is a subagent spawn.
 - **Recover before acting.** State must be derivable from disk.
-- **Append events.** Record transitions in `EVENTS.jsonl` when the runtime supports it.
+- **Append events.** Record every transition in `plans/<feature>/EVENTS.jsonl` via `orchestrator/eventlog.py`. Write `STATE.json` alongside it.
 - **Check feedback files after every event.** Never advance without checking.
 - **Reviewer gates follow rigor.** Standard and strict review every conversation; lite may review final-only unless feedback or risk requires earlier review.
 - **Max 2 retry cycles per conversation and feedback file.** If exceeded: stop and report to user.

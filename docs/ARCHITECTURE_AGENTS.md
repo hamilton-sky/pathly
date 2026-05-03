@@ -37,12 +37,13 @@ Four principles drive this architecture:
 ```
 ~/.claude/
 ══════════════════════════════
-agents/   ← roles (any project)
-skills/   ← lifecycle abilities
-templates/← plan file templates
-ARCHITECTURE.md   ← this file
-FEEDBACK_PROTOCOL.md ← feedback file formats
-ORCHESTRATOR_FSM.md ← deterministic workflow state machine
+agents/        ← roles (any project)
+skills/        ← lifecycle abilities
+orchestrator/  ← FSM runtime (state, events, reducer, eventlog)
+templates/     ← plan file templates
+ARCHITECTURE.md        ← this file
+FEEDBACK_PROTOCOL.md   ← feedback file formats
+ORCHESTRATOR_FSM.md    ← deterministic workflow state machine
 ```
 
 **Global** (`~/.claude/`) — available in every project on this machine.
@@ -597,6 +598,12 @@ The rest of the pipeline is identical.
 │   ├── reviewer.md
 │   ├── discoverer.md
 │   └── orchestrator.md
+├── orchestrator/           ← FSM runtime (Python)
+│   ├── state.py            ← 14-state immutable State dataclass + Context fields
+│   ├── events.py           ← 9 event classes + event_factory() deserializer
+│   ├── reducer.py          ← pure reduce(state, event) → new_state
+│   ├── eventlog.py         ← per-feature EVENTS.jsonl + STATE.json writer
+│   └── test_fsm.py         ← 9 FSM unit tests
 ├── skills/
 │   ├── team-flow/SKILL.md
 │   ├── storm/SKILL.md

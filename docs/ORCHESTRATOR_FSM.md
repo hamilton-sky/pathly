@@ -63,6 +63,8 @@ type Event =
   | { type: "HUMAN_RESPONSE"; value: string }
   | { type: "NO_DIFF_DETECTED" }
   | { type: "IMPLEMENT_COMPLETE" }
+  | { type: "STATE_TRANSITION"; from_state: State; to_state: State }
+  | { type: "SYSTEM_EVENT"; action: "RETRY" | "ERROR" | "TIMEOUT"; metadata: { retry_key?: string } }
 ```
 
 Only known feedback files under `plans/<feature>/feedback/` count as feedback events.

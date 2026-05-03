@@ -76,6 +76,23 @@ Report as: `[DEAD REFERENCE] plans/$FEATURE — '<path>' mentioned in plan but n
 
 ---
 
+### Check D — FSM state file consistency (if STATE.json or EVENTS.jsonl exist)
+
+If `plans/$FEATURE/STATE.json` exists:
+- Parse it as JSON. If unparseable: flag `[CORRUPT STATE] plans/$FEATURE/STATE.json — invalid JSON`
+- Check `state.current` is one of the 14 valid states:
+  `IDLE, STORMING, STORM_PAUSED, PLANNING, PLAN_PAUSED, BUILDING, REVIEWING, IMPLEMENT_PAUSED, TESTING, TEST_PAUSED, RETRO, BLOCKED_ON_FEEDBACK, BLOCKED_ON_HUMAN, DONE`
+- If not: flag `[INVALID STATE] plans/$FEATURE/STATE.json — unknown state: <value>`
+- Cross-check: if `state.current` is not `BLOCKED_ON_FEEDBACK` or `BLOCKED_ON_HUMAN`, but feedback files exist in `plans/$FEATURE/feedback/` → flag `[STATE DRIFT] STATE.json says <state> but feedback files are open: <files>`
+
+If `plans/$FEATURE/EVENTS.jsonl` exists:
+- Verify every line is valid JSON. If any line fails: flag `[CORRUPT EVENTS] plans/$FEATURE/EVENTS.jsonl — invalid JSONL at line N`
+- Check the last event's `toState` matches `STATE.json`'s `current` field (if both exist). If not: flag `[EVENTS DRIFT] EVENTS.jsonl last toState=<X> but STATE.json current=<Y>`
+
+If neither file exists and `rigor = strict`: flag `[MISSING FSM FILES] plans/$FEATURE — strict rigor requires STATE.json and EVENTS.jsonl`
+
+---
+
 ## Step 3 — Report
 
 Print a structured summary:
@@ -90,6 +107,9 @@ Print a structured summary:
 [STALE FEEDBACK]    plans/.../feedback/REVIEW_FAILURES.md — open since 2026-04-28, no commits since
 [PROGRESS DRIFT]    hotel-search — 3 conversations DONE but only 1 implementation commit found
 [DEAD REFERENCE]    nl-workflow-compiler — 'stepper/engine/planner/nl_compiler.py' mentioned but not found
+[INVALID STATE]     hotel-search — STATE.json has unknown state: BLOCKED
+[STATE DRIFT]       hotel-search — STATE.json says BUILDING but REVIEW_FAILURES.md is open
+[CORRUPT EVENTS]    hotel-search — EVENTS.jsonl invalid JSONL at line 7
 ```
 
 If all clear: `All checks passed. Pipeline state looks consistent.`

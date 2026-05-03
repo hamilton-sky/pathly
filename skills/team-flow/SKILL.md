@@ -40,7 +40,8 @@ Examples:
 - Treat `/team-flow` as a deterministic filesystem FSM. Before each action:
   read disk, recover state, process one event, and emit one next action.
 - Store workflow checkpoints in `plans/$FEATURE/STATE.json` and append events
-  to `plans/$FEATURE/EVENTS.jsonl` when runtime support exists.
+  to `plans/$FEATURE/EVENTS.jsonl` using `orchestrator/eventlog.py`.
+  In `strict` rigor, these files are required before any agent spawns.
 - Rigor controls process depth:
   - `lite`: 4 plan files, fewer gates, review/test can be final-only when risk is low.
   - `standard`: current 8-file pipeline with review after every conversation.
@@ -53,6 +54,94 @@ Examples:
 - Max 2 feedback cycles per conversation and feedback file. If exceeded, stop and report.
 - If a stage fails, report the failure and manual recovery command. Do not retry.
 - Canonical FSM reference: `docs/ORCHESTRATOR_FSM.md`.
+
+## FSM checkpoint protocol
+
+The orchestrator (LLM) must consult `orchestrator/` at three specific points.
+
+### 1. Startup recovery
+
+When `/team-flow` starts or resumes, recover state in this order:
+
+1. **Read STATE.json** — load `plans/<feature>/STATE.json` using `State` (`orchestrator/state.py`). If the file exists and parses cleanly, use that state.
+2. **Fall back to EVENTS.jsonl replay** — if STATE.json is absent or unreadable, instantiate `EventLog(feature=FEATURE)` (`orchestrator/eventlog.py`) and call `log.reconstruct_state()` (which calls `reconstruct()` from `orchestrator/reducer.py` internally). Use the resulting state.
+3. **Fall back to IDLE** — if neither file exists, start from `State()` (default IDLE). In `lite` and `standard` rigor this is not an error. In `strict` rigor: stop and report "STATE.json and EVENTS.jsonl not found — cannot recover state in strict mode."
+
+**Disk feedback wins:** After loading state, scan `plans/<feature>/feedback/` for open feedback files. If any exist and STATE.json says the pipeline is not blocked, correct the in-memory state by calling `reduce(state, FileCreatedEvent(file=highest_priority_file))` and updating logs. Disk always wins over cached STATE.json.
+
+**Log the outcome:** Print one of:
+- `[FSM] State recovered from STATE.json: <state_name>`
+- `[FSM] State reconstructed from EVENTS.jsonl: <state_name> (N events)`
+- `[FSM] No prior state found — starting from IDLE`
+- `[FSM] State corrected by disk feedback: <old_state> → <new_state>`
+
+### 2. Before each agent spawn
+
+Before spawning any subagent, execute this sequence:
+
+1. **Choose the correct event** for the transition (e.g. `CommandEvent`, `AgentDoneEvent`, `FileCreatedEvent` — all from `orchestrator/events.py`).
+2. **Compute new state** — call `reduce(state, event)` from `orchestrator/reducer.py`. This is a pure function; it never has side effects.
+3. **Persist the transition** — call `log.append(event)` and `log.write_state_json(new_state)` on the `EventLog` instance (`orchestrator/eventlog.py`). Both must succeed before spawning.
+4. **Spawn** the subagent.
+
+Always update `new_state` after the call so subsequent decisions use the current state.
+
+### 3. Backward compatibility
+
+- If `plans/<feature>/` does not exist yet, create the directory before writing STATE.json or EVENTS.jsonl.
+- If any IO operation fails (disk full, permission error, etc.), log a warning — `[FSM WARNING] Could not persist state: <error>` — and proceed with the spawn. Do not block the pipeline on logging failures.
+- Missing STATE.json or EVENTS.jsonl is **not an error** in `lite` or `standard` rigor. Only `strict` rigor requires these files before any agent spawn.
+
+## FSM guards
+
+Run these three guards in order before any forward advance in the pipeline. All three must pass before spawning the next agent or moving to the next stage.
+
+### Guard 1 — Feedback-open check
+
+1. Scan `plans/<feature>/feedback/` for open files.
+2. If any feedback files exist:
+   - Identify the highest-priority file using the priority order: `HUMAN_QUESTIONS.md`, `ARCH_FEEDBACK.md`, `DESIGN_QUESTIONS.md`, `IMPL_QUESTIONS.md`, `REVIEW_FAILURES.md`, `TEST_FAILURES.md`.
+   - Call `reduce(state, FileCreatedEvent(file=highest_priority_file))` (from `orchestrator/events.py` and `orchestrator/reducer.py`), then update logs with `log.append(event)` and `log.write_state_json(new_state)`.
+   - Route to the responsible agent per the priority order already defined in the "Feedback file locations" section.
+3. When that agent resolves and deletes the file:
+   - Call `reduce(state, FileDeletedEvent(file))` (from `orchestrator/events.py`), update logs.
+   - Re-scan `plans/<feature>/feedback/` for remaining open files.
+4. Only advance (proceed to Guard 2) when no feedback files remain.
+
+### Guard 2 — Retry-count check
+
+Run this check before routing any feedback file to its responsible agent (after Guard 1 identifies the file):
+
+1. Check `state.retry_count_by_key["conv-N:FILE.md"]` (from `orchestrator/state.py`), where `N` is the current conversation number and `FILE.md` is the feedback filename.
+2. If the value is `> 2`:
+   - Do not spawn the fix agent.
+   - Write `plans/<feature>/feedback/HUMAN_QUESTIONS.md` with an escalation message identifying the conversation, the file, and the retry count.
+   - Call `reduce(state, FileCreatedEvent("HUMAN_QUESTIONS.md"))`, update logs.
+   - Stop and report: `"Retry limit exceeded for conv-N:FILE.md. Escalated to HUMAN_QUESTIONS.md."`
+3. If the value is ≤ 2:
+   - After routing the fix agent (spawning it), call `reduce(state, SystemEvent(action="RETRY", retry_key="conv-N:FILE.md"))` (from `orchestrator/events.py`), update logs so the retry counter increments.
+
+**Exception:** `IMPL_QUESTIONS.md` and `DESIGN_QUESTIONS.md` are exempt — they are clarification requests, not fix loops. Do not check or increment `retry_count_by_key` for these two files.
+
+### Guard 3 — Zero-diff stall check
+
+Applies only after the builder finishes a `REVIEW_FAILURES.md` fix, before re-spawning the reviewer:
+
+1. Run:
+   ```bash
+   git diff HEAD -- . ":(exclude)plans/"
+   ```
+2. If the command fails (not a git repo or git is unavailable): skip this check, log `[FSM WARNING] git diff failed — skipping zero-diff check`, and proceed to re-spawn reviewer.
+3. If the output is empty (builder made no implementation changes):
+   - Call `reduce(state, NoDiffDetectedEvent())` (from `orchestrator/events.py`), update logs.
+   - Write `plans/<feature>/feedback/HUMAN_QUESTIONS.md` with a `[STALL]` tag:
+     ```
+     [STALL] Conversation N — builder and reviewer in zero-diff loop.
+     Builder claimed to fix REVIEW_FAILURES.md but no code changed.
+     Human decision required: accept as-is, override the rule, or rewrite the conversation scope.
+     ```
+   - Stop and report: `"Zero-diff loop detected for Conv N. Escalated to HUMAN_QUESTIONS.md."`
+4. If the output is non-empty: proceed to re-spawn reviewer.
 
 ## Health checks before skipping stages
 
@@ -175,6 +264,13 @@ If not autoFlow — **PAUSE:**
 STORM_SEED.md written (or skipped).
 Ready to plan? Reply 'yes' to continue, or 'no' to stop here.
 ```
+After user replies:
+- If reply is a proceed signal ('yes', 'go', 'continue', 'done', or a numeric choice): call `reduce(state, HumanResponseEvent(value=reply))` (from `orchestrator/events.py` and `orchestrator/reducer.py`), update logs with `log.append(event)` and `log.write_state_json(new_state)`, then advance.
+- If reply is a stop signal ('no', 'stop'): call `reduce(state, HumanResponseEvent(value="stop"))`, update logs, write `STATE.json` via `log.write_state_json(new_state)`, then halt.
+- If reply is unrecognised: re-prompt without recording a `HUMAN_RESPONSE` event.
+
+If autoFlow: record `HumanResponseEvent(value="auto-advance")` at this skipped pause, update logs.
+
 On 'no': stop.
 
 ---
@@ -198,6 +294,13 @@ plans/[feature]/ created with the selected rigor's required files.
 Review USER_STORIES.md and CONVERSATION_PROMPTS.md.
 Reply 'go' to start implementation, or 'stop' to pause here.
 ```
+After user replies:
+- If reply is a proceed signal ('yes', 'go', 'continue', 'done', or a numeric choice): call `reduce(state, HumanResponseEvent(value=reply))`, update logs, then advance.
+- If reply is a stop signal ('no', 'stop'): call `reduce(state, HumanResponseEvent(value="stop"))`, update logs, write `STATE.json` via `log.write_state_json(new_state)`, then halt.
+- If reply is unrecognised: re-prompt without recording a `HUMAN_RESPONSE` event.
+
+If autoFlow: record `HumanResponseEvent(value="auto-advance")` at this skipped pause, update logs.
+
 On 'stop': exit.
 
 ---
@@ -312,6 +415,13 @@ While any conversation row has status TODO:
   Reviewer: PASS. Commit your changes now.
   Reply 'continue' for the next conversation, or 'stop' to pause here.
   ```
+  After user replies:
+  - If reply is a proceed signal ('yes', 'go', 'continue', 'done', or a numeric choice): call `reduce(state, HumanResponseEvent(value=reply))`, update logs, then advance.
+  - If reply is a stop signal ('no', 'stop'): call `reduce(state, HumanResponseEvent(value="stop"))`, update logs, write `STATE.json` via `log.write_state_json(new_state)`, then halt.
+  - If reply is unrecognised: re-prompt without recording a `HUMAN_RESPONSE` event.
+
+  If autoFlow: record `HumanResponseEvent(value="auto-advance")` at this skipped pause, update logs.
+
   On 'stop': exit.
 
   Reset retryCount = 0. Proceed to next TODO conversation.
@@ -319,6 +429,19 @@ While any conversation row has status TODO:
 ---
 
 ## Stage 4 — Test + Fix Loop
+
+**Pre-gate — all conversations must be DONE:**
+
+1. Read `plans/<feature>/PROGRESS.md` and check every conversation row in the "Conversation Breakdown" table.
+2. If any row has status other than `DONE`: stop and report:
+   ```
+   Not all conversations are complete. Run /team-flow <feature> build first. Incomplete: Conv N
+   ```
+   (Replace `N` with the number(s) of the incomplete conversation(s).)
+3. When all conversation rows are `DONE`:
+   - Call `reduce(state, ImplementCompleteEvent())` (from `orchestrator/events.py` and `orchestrator/reducer.py`). The resulting state must be `TESTING`.
+   - Update logs: call `log.append(event)` and `log.write_state_json(new_state)` on the `EventLog` instance (`orchestrator/eventlog.py`).
+   - Then proceed to spawn tester below.
 
 Track `testRetryCount = 0`.
 
@@ -358,6 +481,12 @@ If not autoFlow — **PAUSE:**
 All acceptance criteria: PASS.
 Reply 'done' to proceed to retro.
 ```
+After user replies:
+- If reply is a proceed signal ('yes', 'go', 'continue', 'done', or a numeric choice): call `reduce(state, HumanResponseEvent(value=reply))`, update logs, then advance.
+- If reply is a stop signal ('no', 'stop'): call `reduce(state, HumanResponseEvent(value="stop"))`, update logs, write `STATE.json` via `log.write_state_json(new_state)`, then halt.
+- If reply is unrecognised: re-prompt without recording a `HUMAN_RESPONSE` event.
+
+If autoFlow: record `HumanResponseEvent(value="auto-advance")` at this skipped pause, update logs.
 
 ---
 

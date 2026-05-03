@@ -1,5 +1,18 @@
 # FSM Implementation Plan: Making the Orchestrator Mechanical
 
+## Current Status
+
+| Phase | Status | Notes |
+|---|---|---|
+| Phase 1 — Core FSM Logic | **DONE** | `orchestrator/` module ships: state.py, events.py, reducer.py, eventlog.py. 9/9 tests passing. |
+| Phase 2 — Enforce via Orchestrator Skill | TODO | Wire FSM into `team-flow` skill |
+| Phase 3 — State Recovery | TODO | `--recover` flag + disk-first reconstruction |
+| Phase 4 — Audit Logs & Observability | TODO | `/verify-state` FSM reporting |
+
+See `ORCHESTRATOR_CHANGES.md` for a full description of what Phase 1 delivered.
+
+---
+
 ## Executive Summary
 
 Your instinct is right. A thin FSM layer is the next keystone change. This adds mechanical enforcement of the rules ("don't advance with open feedback", "max 2 retries per conversation") without overbuilding into a full daemon/scheduler. The system remains file-driven, but with explicit state tracking and event logs.
@@ -288,13 +301,11 @@ Guard: if state = TESTING and any conversation status != DONE in PROGRESS.md
 
 ## Adoption Timeline
 
-**Week 1:** Phase 1 (FSM core logic). Ship `reducer.py` + updated `ORCHESTRATOR_FSM.md`.
+**~~Week 1: Phase 1 (FSM core logic).~~** DONE — `orchestrator/` module ships with 9/9 tests passing. Vocabulary aligned to spec.
 
-**Week 2:** Phase 2 (enforce in team-flow). Ship updated `team-flow` skill that consults FSM before each decision.
+**Next:** Phase 2 (enforce in team-flow). Update `team-flow` skill to call `reduce()` + `EventLog.append()` before each decision.
 
-**Week 3:** Phase 3 (recovery) + Phase 4 (audit logs). Ship recovery and observability.
-
-**Ongoing:** Update docs with state machine diagrams and state recovery commands.
+**Then:** Phase 3 (recovery) + Phase 4 (audit logs). Ship recovery and observability.
 
 No agents need updating until **after** Phase 2 ships. The framework is safe to use during implementation.
 
