@@ -49,6 +49,17 @@ when you need to jump into the middle of a pipeline.
 
 ---
 
+## Docs
+
+| Doc | What's in it |
+|---|---|
+| [docs/ARCHITECTURE_AGENTS.md](docs/ARCHITECTURE_AGENTS.md) | Full pipeline, agent map, file handoff protocol, quick reference |
+| [docs/FEEDBACK_PROTOCOL.md](docs/FEEDBACK_PROTOCOL.md) | Each feedback file format with templates + escalation rules |
+| [docs/CONCEPTS.md](docs/CONCEPTS.md) | Philosophy — why files as protocol, why feedback loops |
+| [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md) | Roadmap for Cursor / Windsurf / BMAD adapter layer |
+
+---
+
 ## The 8 Agents
 
 | Agent | Model | Role | Thinks about |
