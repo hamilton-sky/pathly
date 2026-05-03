@@ -135,7 +135,8 @@ storm          ← brainstorm a feature idea; write STORM_SEED.md on /stop plan
 plan           ← interview + research → create plans/<feature>/ with 8 files
 build          ← read PROGRESS.md → implement next TODO conversation → verify
 review         ← check code against architectural rules; report violations
-retro          ← ask 3 questions → write RETRO.md with seed for next storm
+retro          ← ask 3 questions → write RETRO.md + append to LESSONS_CANDIDATE.md
+lessons        ← promote repeated patterns from LESSONS_CANDIDATE.md → LESSONS.md
 archive        ← move completed plan to plans/.archive/ (requires RETRO.md + all DONE)
 prd-import     ← read any PRD file → translate ACs + edge cases → generate all 8 plan files
 ```
@@ -383,6 +384,12 @@ tester            feedback/TEST_FAILURES.md       USER_STORIES.md
                             ▼
 quick             RETRO.md                        PROGRESS.md
 (retro)             "Seed for Next Storm"         CONVERSATION_PROMPTS.md
+                  LESSONS_CANDIDATE.md (append)
+                            │
+                            ▼
+(optional)        LESSONS.md                      LESSONS_CANDIDATE.md
+/lessons            promoted active lessons       plans/.archive/*/RETRO.md
+                    max 12, planner reads this
                             │
                             ▼
 user              plans/.archive/<feature>/        plans/<feature>/
@@ -392,6 +399,8 @@ user              plans/.archive/<feature>/        plans/<feature>/
                             ▼
 architect         [next session — new feature]    RETRO.md (from archive)
 (storm)
+planner           applies LESSONS.md injections   LESSONS.md
+(plan)
 ```
 
 ---
@@ -538,7 +547,8 @@ The rest of the pipeline is identical.
 /storm                           ← architect explores the idea
 /plan <feature>                  ← planner creates plans/<feature>/
 /build <feature>                 ← builder implements next conversation
-/retro <feature>                 ← quick runs the retrospective
+/retro <feature>                 ← quick runs the retrospective + extracts lessons
+/lessons                         ← promote candidate lessons → LESSONS.md (active)
 /archive <feature>               ← move completed plan to plans/.archive/
 
 # Code quality
@@ -574,6 +584,7 @@ The rest of the pipeline is identical.
 │   ├── build/SKILL.md
 │   ├── review/SKILL.md
 │   ├── retro/SKILL.md
+│   ├── lessons/SKILL.md
 │   ├── archive/SKILL.md
 │   └── prd-import/SKILL.md
 └── templates/plan/

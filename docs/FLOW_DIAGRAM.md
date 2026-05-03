@@ -110,6 +110,19 @@
 ║  → plans/<feature>/RETRO.md         ║
 ║    what worked / what didn't        ║
 ║    seed for next storm              ║
+║  → LESSONS_CANDIDATE.md (append)    ║
+║    extracted patterns from retro    ║
+╚══════════════════════════════════════╝
+   │
+   │  (optional, run after 2+ retros)
+   ▼
+╔══════════════════════════════════════╗
+║  /lessons                           ║
+║  reads: LESSONS_CANDIDATE.md        ║
+║         plans/.archive/*/RETRO.md   ║
+║  promotes patterns from 2+ features ║
+║  → LESSONS.md (max 12 active)       ║
+║  planner reads this before /plan    ║
 ╚══════════════════════════════════════╝
    │
    ▼
@@ -124,6 +137,7 @@
    ▼
   NEXT FEATURE
   /team-flow <new-feature>
+  (planner applies LESSONS.md injections)
   (storm can read RETRO.md as seed)
 ```
 

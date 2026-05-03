@@ -11,6 +11,13 @@ model: opus
 **Produces:** `plans/$ARGUMENTS/` — 8 plan files
 **Consumed by:** `build` skill reads `plans/$ARGUMENTS/CONVERSATION_PROMPTS.md` and `PROGRESS.md`
 
+## Step 0: Apply active lessons
+
+If `LESSONS.md` exists in the project root, read it now.
+Apply the `Injection` field of each lesson when generating the relevant plan file in Step 3.
+Do not restate lesson reasoning — just apply the injection silently.
+If two lessons conflict, prefer the one with more sources listed.
+
 ## Step 1: Understand the feature
 
 Check if `plans/STORM_SEED.md` exists.
