@@ -254,7 +254,22 @@ While any conversation row has status TODO:
     Fix each violation listed. Do not change anything outside the listed violations.
     Delete plans/[feature]/feedback/REVIEW_FAILURES.md when all fixed.
     ```
-    After builder resolves → go back to 3b (reviewer re-checks).
+
+    After builder completes — **zero-diff check** before re-spawning reviewer:
+    ```bash
+    git diff HEAD -- . ":(exclude)plans/" 2>/dev/null
+    ```
+    If the diff is empty (builder made no implementation changes):
+    - Write `plans/[feature]/feedback/HUMAN_QUESTIONS.md`:
+      ```
+      [STALL] Conversation N — builder and reviewer in zero-diff loop.
+      Builder claimed to fix REVIEW_FAILURES.md but no code changed.
+      Violations: [paste REVIEW_FAILURES.md content]
+      Human decision required: accept as-is, override the rule, or rewrite the conversation scope.
+      ```
+    - STOP. Report: "Zero-diff loop detected for Conv N. Escalated to HUMAN_QUESTIONS.md — manual intervention required."
+
+    If diff is non-empty → go back to 3b (reviewer re-checks).
 
   → If no feedback files: reviewer passed.
 
