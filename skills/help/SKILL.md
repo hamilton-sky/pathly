@@ -40,16 +40,18 @@ Print the banner, then the numbered options for the detected state. Wait for use
 
   What do you want to do?
 
-  [1] Start a new feature (full pipeline)
-  [2] Start a new feature with a PRD file
-  [3] See all commands
+  [1] Describe what you want (plain English)  → /go
+  [2] Start a new feature (full pipeline)     → /team-flow
+  [3] Start a new feature with a PRD file
+  [4] See all commands
 
-Reply with 1, 2, or 3:
+Reply with 1, 2, 3, or 4:
 ```
 
-On '1': ask "Feature name?" → run `/team-flow <name>`
-On '2': ask "Feature name?" then "PRD file path?" → run `/team-flow <name>` and user selects [3] at the path selector
-On '3': print full command reference (Step 3)
+On '1': ask "What do you want to build?" → run `/go <answer>`
+On '2': ask "Feature name?" → run `/team-flow <name>`
+On '3': ask "Feature name?" then "PRD file path?" → run `/team-flow <name>` and user selects [3] at the path selector
+On '4': print full command reference (Step 3)
 
 ---
 
