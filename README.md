@@ -64,16 +64,17 @@ when you need to jump into the middle of a pipeline.
 
 ---
 
-## The 7 Skills
+## The 8 Skills
 
 | Skill | Command | What it does |
 |---|---|---|
+| `team-flow` | `/team-flow <feature>` | Full pipeline: discovery→plan→build×N→test→retro |
 | `storm` | `/storm` | Architect explores the idea with ASCII diagrams |
 | `plan` | `/plan <feature>` | Creates `plans/<feature>/` with 8 files |
 | `build` | `/build <feature>` | Implements the next TODO conversation |
 | `review` | `/review` | Reviewer audits code against rules |
 | `retro` | `/retro <feature>` | Writes RETRO.md with seed for next storm |
-| `team-flow` | `/team-flow <feature>` | Full pipeline: storm→plan→build×N→retro |
+| `archive` | `/archive <feature>` | Moves completed plan to `plans/.archive/` |
 | `prd-import` | `/prd-import <feature> <prd.md>` | Translates any PRD file into plan files |
 
 ---
@@ -155,7 +156,7 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 ```
 ~/.claude/
 ├── agents/          ← 8 behavioral contracts (.md files)
-├── skills/          ← 7 lifecycle skills (storm, plan, build, ...)
+├── skills/          ← 8 lifecycle skills (storm, plan, build, archive, ...)
 │   └── */SKILL.md
 └── templates/plan/  ← 8 plan file templates
     └── *.template.md

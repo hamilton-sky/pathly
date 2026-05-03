@@ -130,12 +130,13 @@ Skills are `.md` files in a `<skill-name>/SKILL.md` structure with frontmatter:
 ### Global lifecycle skills (`~/.claude/skills/`)
 
 ```
+team-flow      ← full pipeline with feedback loops: discovery→plan→build→test→retro
 storm          ← brainstorm a feature idea; write STORM_SEED.md on /stop plan
 plan           ← interview + research → create plans/<feature>/ with 8 files
 build          ← read PROGRESS.md → implement next TODO conversation → verify
-retro          ← ask 3 questions → write RETRO.md with seed for next storm
 review         ← check code against architectural rules; report violations
-team-flow      ← full pipeline with feedback loops: storm→plan→implement→test→retro
+retro          ← ask 3 questions → write RETRO.md with seed for next storm
+archive        ← move completed plan to plans/.archive/ (requires RETRO.md + all DONE)
 prd-import     ← read any PRD file → translate ACs + edge cases → generate all 8 plan files
 ```
 
@@ -175,7 +176,7 @@ agent pipeline runs from there. No shared infrastructure, no coupling.
 ```
 ~/.claude/                    Global — available in every project
   agents/                     8 behavioral contracts
-  skills/                     7 lifecycle skills (including bmad-import)
+  skills/                     8 lifecycle skills (including archive + prd-import)
   templates/plan/             8 plan file templates
 
 your-project/                 Local — teaches agents YOUR rules
@@ -384,7 +385,12 @@ quick             RETRO.md                        PROGRESS.md
 (retro)             "Seed for Next Storm"         CONVERSATION_PROMPTS.md
                             │
                             ▼
-architect         [next session — new feature]    RETRO.md
+user              plans/.archive/<feature>/        plans/<feature>/
+(archive)           all 8 files + RETRO.md          moved, not deleted
+                    recoverable via git             plans/ stays clean
+                            │
+                            ▼
+architect         [next session — new feature]    RETRO.md (from archive)
 (storm)
 ```
 
@@ -532,6 +538,7 @@ The rest of the pipeline is identical.
 /plan <feature>                  ← planner creates plans/<feature>/
 /build <feature>                 ← builder implements next conversation
 /retro <feature>                 ← quick runs the retrospective
+/archive <feature>               ← move completed plan to plans/.archive/
 
 # Code quality
 /review                         ← reviewer checks staged changes
@@ -561,12 +568,13 @@ The rest of the pipeline is identical.
 │   ├── discoverer.md
 │   └── orchestrator.md
 ├── skills/
+│   ├── team-flow/SKILL.md
 │   ├── storm/SKILL.md
 │   ├── plan/SKILL.md
 │   ├── build/SKILL.md
-│   ├── retro/SKILL.md
 │   ├── review/SKILL.md
-│   ├── team-flow/SKILL.md
+│   ├── retro/SKILL.md
+│   ├── archive/SKILL.md
 │   └── prd-import/SKILL.md
 └── templates/plan/
     ├── USER_STORIES.template.md
