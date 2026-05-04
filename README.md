@@ -18,15 +18,28 @@ resolved.
 
 ## Quick install
 
-**Linux / macOS:**
+**Via pip (recommended):**
 ```bash
+pip install claude-agents-framework
+claude-agents install
+```
+
+For the auto-classification hook (optional but recommended):
+```bash
+pip install "claude-agents-framework[hook]"
+claude-agents install
+```
+
+**Via git clone:**
+```bash
+# Linux / macOS
 git clone https://github.com/hamilton-sky/claude-agents-framework
 cd claude-agents-framework
 chmod +x install.sh && ./install.sh
 ```
 
-**Windows (PowerShell):**
 ```powershell
+# Windows (PowerShell)
 git clone https://github.com/hamilton-sky/claude-agents-framework
 cd claude-agents-framework
 .\install.ps1
@@ -232,14 +245,13 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 │   └── */SKILL.md
 ├── hooks/           ← auto-classification hooks
 │   └── classify_feedback.py  ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
-├── orchestrator/    ← FSM core (Python): state, events, reducer, eventlog
+├── orchestrator/    ← FSM core deployed to ~/.claude/orchestrator/
 │   ├── constants.py ← named constants for FSMState, Agent, FeedbackFile, Mode, Rigor
 │   ├── utils.py     ← utc_now() shared timestamp helper
 │   ├── state.py     ← 14-state immutable State dataclass; state_stack for nested blocks
 │   ├── events.py    ← 9 event classes (COMMAND, AGENT_DONE, FILE_CREATED, …)
 │   ├── reducer.py   ← pure reduce(state, event) → new_state; _AGENT_TRANSITIONS dict
-│   ├── eventlog.py  ← per-feature EVENTS.jsonl + STATE.json writer
-│   └── test_fsm.py  ← 9 passing tests
+│   └── eventlog.py  ← per-feature EVENTS.jsonl + STATE.json writer
 └── templates/plan/  ← 8 plan file templates
     └── *.template.md
 ```

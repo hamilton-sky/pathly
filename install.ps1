@@ -2,7 +2,9 @@
 # Copies agents, skills, and templates into ~/.claude/
 # Safe: backs up any existing files before overwriting.
 
-$RepoDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
+$DataDir  = "$RepoDir\claude_agents\data"
+$OrchDir  = "$RepoDir\claude_agents\orchestrator"
 $ClaudeDir = "$env:USERPROFILE\.claude"
 $Timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $BackupDir = "$ClaudeDir\.backup-$Timestamp"
@@ -25,18 +27,19 @@ if ((Test-Path "$ClaudeDir\agents") -or (Test-Path "$ClaudeDir\skills")) {
 }
 
 # Create target directories
-New-Item -ItemType Directory -Path "$ClaudeDir\agents" -Force | Out-Null
+New-Item -ItemType Directory -Path "$ClaudeDir\agents"        -Force | Out-Null
 New-Item -ItemType Directory -Path "$ClaudeDir\templates\plan" -Force | Out-Null
-New-Item -ItemType Directory -Path "$ClaudeDir\hooks" -Force | Out-Null
+New-Item -ItemType Directory -Path "$ClaudeDir\hooks"          -Force | Out-Null
+New-Item -ItemType Directory -Path "$ClaudeDir\orchestrator"   -Force | Out-Null
 
 # Install agents
 Write-Host "Installing agents..."
-Copy-Item "$RepoDir\agents\*.md" "$ClaudeDir\agents\" -Force -Verbose
+Copy-Item "$DataDir\agents\*.md" "$ClaudeDir\agents\" -Force -Verbose
 
 # Install skills (merge)
 Write-Host ""
 Write-Host "Installing skills..."
-Get-ChildItem "$RepoDir\skills" -Directory | ForEach-Object {
+Get-ChildItem "$DataDir\skills" -Directory | ForEach-Object {
     $skillName = $_.Name
     New-Item -ItemType Directory -Path "$ClaudeDir\skills\$skillName" -Force | Out-Null
     Copy-Item "$($_.FullName)\SKILL.md" "$ClaudeDir\skills\$skillName\SKILL.md" -Force -Verbose
@@ -45,24 +48,30 @@ Get-ChildItem "$RepoDir\skills" -Directory | ForEach-Object {
 # Install templates
 Write-Host ""
 Write-Host "Installing plan templates..."
-Copy-Item "$RepoDir\templates\plan\*.md" "$ClaudeDir\templates\plan\" -Force -Verbose
+Copy-Item "$DataDir\templates\plan\*.md" "$ClaudeDir\templates\plan\" -Force -Verbose
 
 # Install docs
 Write-Host ""
 Write-Host "Installing docs..."
-Copy-Item "$RepoDir\docs\*.md" "$ClaudeDir\" -Force -Verbose
+Copy-Item "$DataDir\docs\*.md" "$ClaudeDir\" -Force -Verbose
 
 # Install hooks
 Write-Host ""
 Write-Host "Installing hooks..."
-Copy-Item "$RepoDir\hooks\classify_feedback.py" "$ClaudeDir\hooks\" -Force -Verbose
+Copy-Item "$DataDir\hooks\classify_feedback.py" "$ClaudeDir\hooks\" -Force -Verbose
+
+# Install orchestrator FSM runtime
+Write-Host ""
+Write-Host "Installing orchestrator FSM..."
+Get-ChildItem "$OrchDir\*.py" | Where-Object { $_.Name -ne "test_fsm.py" } | ForEach-Object {
+    Copy-Item $_.FullName "$ClaudeDir\orchestrator\" -Force -Verbose
+}
 
 # Merge hook config into settings.json
 Write-Host ""
 Write-Host "Configuring settings.json..."
-$SettingsFile = "$ClaudeDir\settings.json"
 $PythonScript = @'
-import json, os, sys
+import json, os
 
 settings_file = os.path.join(os.environ["USERPROFILE"], ".claude", "settings.json")
 hook_cmd = "python ~/.claude/hooks/classify_feedback.py"
@@ -98,14 +107,16 @@ Write-Host ""
 Write-Host "==================================="
 Write-Host "Install complete."
 Write-Host ""
-$agentCount = (Get-ChildItem "$ClaudeDir\agents\*.md" -ErrorAction SilentlyContinue).Count
-$skillCount  = (Get-ChildItem "$ClaudeDir\skills" -Directory -ErrorAction SilentlyContinue).Count
+$agentCount = (Get-ChildItem "$ClaudeDir\agents\*.md"          -ErrorAction SilentlyContinue).Count
+$skillCount  = (Get-ChildItem "$ClaudeDir\skills"    -Directory -ErrorAction SilentlyContinue).Count
 $tmplCount   = (Get-ChildItem "$ClaudeDir\templates\plan\*.md" -ErrorAction SilentlyContinue).Count
-$hookCount  = (Get-ChildItem "$ClaudeDir\hooks\*.py" -ErrorAction SilentlyContinue).Count
-Write-Host "Agents installed   : $agentCount"
-Write-Host "Skills installed   : $skillCount"
-Write-Host "Templates installed: $tmplCount"
-Write-Host "Hooks installed    : $hookCount"
+$hookCount   = (Get-ChildItem "$ClaudeDir\hooks\*.py"          -ErrorAction SilentlyContinue).Count
+$orchCount   = (Get-ChildItem "$ClaudeDir\orchestrator\*.py"   -ErrorAction SilentlyContinue).Count
+Write-Host "Agents installed    : $agentCount"
+Write-Host "Skills installed    : $skillCount"
+Write-Host "Templates installed : $tmplCount"
+Write-Host "Hooks installed     : $hookCount"
+Write-Host "Orchestrator files  : $orchCount"
 Write-Host ""
 Write-Host "Start a new Claude Code session in any project and run:"
 Write-Host "  /go <what you want to build>  -- natural language entry point (recommended)"

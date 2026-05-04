@@ -1,13 +1,8 @@
 """Tests for the event-driven FSM orchestrator."""
 
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-from orchestrator.state import State, initial_state
-from orchestrator.constants import FSMState, Agent, FeedbackFile, Mode
-from orchestrator.events import (
+from claude_agents.orchestrator.state import State, initial_state
+from claude_agents.orchestrator.constants import FSMState, Agent, FeedbackFile, Mode
+from claude_agents.orchestrator.events import (
     CommandEvent,
     AgentDoneEvent,
     FileCreatedEvent,
@@ -15,8 +10,8 @@ from orchestrator.events import (
     StateTransitionEvent,
     SystemEvent,
 )
-from orchestrator.reducer import reduce, reconstruct
-from orchestrator.eventlog import EventLog
+from claude_agents.orchestrator.reducer import reduce, reconstruct
+from claude_agents.orchestrator.eventlog import EventLog
 
 
 def test_command_event():

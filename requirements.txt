@@ -1,0 +1,3 @@
+# Required for the auto-classification hook (claude_agents/data/hooks/classify_feedback.py).
+# The hook exits silently if this is not installed — the pipeline still works without it.
+anthropic>=0.40

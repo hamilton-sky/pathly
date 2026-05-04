@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "claude-agents-framework"
+version = "0.1.0"
+description = "Role-based agent system for Claude Code — files are the protocol, feedback loops route issues automatically"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+hook = ["anthropic>=0.40"]
+all  = ["anthropic>=0.40"]
+
+[project.scripts]
+claude-agents = "claude_agents.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["claude_agents*"]
+
+[tool.setuptools.package-data]
+claude_agents = [
+    "data/**/*.md",
+    "data/**/*.py",
+    "data/**/*.json",
+    "orchestrator/*.py",
+]

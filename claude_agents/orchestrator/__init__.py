@@ -1,7 +1,7 @@
 """Orchestrator module initialization."""
 
-from orchestrator.state import State, initial_state
-from orchestrator.events import (
+from .state import State, initial_state
+from .events import (
     Event,
     CommandEvent,
     AgentDoneEvent,
@@ -13,8 +13,8 @@ from orchestrator.events import (
     StateTransitionEvent,
     SystemEvent,
 )
-from orchestrator.reducer import reduce, reconstruct
-from orchestrator.eventlog import EventLog
+from .reducer import reduce, reconstruct
+from .eventlog import EventLog
 
 __all__ = [
     "State",
