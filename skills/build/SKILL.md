@@ -42,6 +42,29 @@ Run `git status` (without -uall flag).
   ```
   Wait for user decision before continuing. In auto-flow mode, stop immediately.
 
+## Scout delegation
+
+During implementation (Step 5), builder may spawn sub-agents to gather codebase context before editing.
+
+**When to use scout:** when you need to read 3+ files across multiple directories before making an implementation decision. For ≤ 2 tool calls, use `quick` instead.
+
+**When to use quick:** single-file lookups, one-line answers, existence checks.
+
+| Dimension | Quick | Scout |
+|-----------|-------|-------|
+| Typical tool calls | ≤ 2 | 5–15 |
+| Output shape | 1-line answer | Structured Findings + Recommendation |
+| Example questions | "Does this file exist?" | "How are all modals structured?" |
+
+**Rules:**
+- **Max 4 sub-agents per conversation** (quick + scout combined — shared cap).
+- Sub-agents are terminal — they cannot spawn further agents.
+- Scout is read-only: cannot write files, create feedback files, or spawn agents.
+- **Summarize before editing (load-bearing):** after all sub-agents return, compress findings into a short summary before touching any file. Raw sub-agent output must not persist into the edit phase.
+- If a scout returns conflicting findings: factual conflict → spawn a third targeted scout; architectural conflict → write `DESIGN_QUESTIONS.md [ARCH]` and stop.
+
+Invocation: `Agent(subagent_type="scout", model="haiku", prompt="[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]")`
+
 ## Step 2: Locate the plan folder
 
 Find the plan folder at `plans/$PLAN/`. If it doesn't exist, list all `plans/*/` folders and ask which one the user meant.

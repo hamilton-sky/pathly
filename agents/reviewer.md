@@ -66,6 +66,20 @@ patches in batch without requiring a human turn.
 The patch block uses a conflict-marker style so the builder can apply it with a
 simple find-and-replace. If the fix is a pure deletion, leave the replacement block empty.
 
+## Information gathering — sub-agents
+
+Before reviewing, gather context using sub-agents. Spawn at most **4 total** per session.
+
+| Level | Agent | When to use | Budget |
+|---|---|---|---|
+| 0 — Pre-flight | *(self)* | Read CLAUDE.md + `.claude/rules/` first, always | free |
+| 1 — Quick | `quick` | Single factual lookup to verify a rule or path | ≤2 tool calls |
+| 2 — Scout | `scout` | Find similar patterns elsewhere in codebase to validate consistency | 5–15 tool calls |
+
+**Rules:**
+- Sub-agents are terminal — they cannot spawn further agents.
+- Reviewer does not spawn web-researcher — review against project rules, not external opinion.
+
 ## What NOT to do
 - Do not edit any files (the patch in [AUTO_FIX] is not an edit — it is a report)
 - Do not suggest refactors beyond what the rule requires

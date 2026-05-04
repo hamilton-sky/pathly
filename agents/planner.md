@@ -40,6 +40,27 @@ Always cross-reference:
 - Phases reference which stories they fulfill.
 - Conversations reference which stories they complete.
 
+## Information gathering — sub-agents
+
+Before writing stories or plans, gather context using sub-agents. Spawn at most **4 total** per session.
+
+| Level | Agent | When to use | Budget |
+|---|---|---|---|
+| 0 — Pre-flight | *(self)* | Read CLAUDE.md + LESSONS.md first, always | free |
+| 1 — Quick | `quick` | Single factual lookup (≤2 tool calls) | ephemeral |
+| 3 — Web | `web-researcher` | Domain research, similar product patterns, industry standards | cited summary |
+
+**Invocation pattern:**
+```
+Agent(subagent_type="quick", model="haiku", prompt="...")
+Agent(subagent_type="web-researcher", model="haiku", prompt="[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]")
+```
+
+**Rules:**
+- Sub-agents are terminal — they cannot spawn further agents.
+- Web researcher findings are external and unverified — cross-reference before acting on them.
+- Planner does not spawn scouts — codebase investigation is builder's domain.
+
 ## What NOT to do
 - Do not make technical architecture decisions — consult the architect for that.
 - Do not write code or implementation instructions at the file level.
