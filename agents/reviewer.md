@@ -76,6 +76,22 @@ Before reviewing, gather context using sub-agents. Spawn at most **4 total** per
 | 1 — Quick | `quick` | Single factual lookup to verify a rule or path | ≤2 tool calls |
 | 2 — Scout | `scout` | Find similar patterns elsewhere in codebase to validate consistency | 5–15 tool calls |
 
+**Invocation pattern:**
+```python
+Agent(
+  subagent_type="scout",
+  model="haiku",
+  description="<task-name>",   # e.g. "check-error-handling-consistency"
+  prompt="""
+  [ROLE: Junior reviewer gathering consistency evidence across the codebase]
+  [WAY OF THINKING: Look for the dominant pattern. Flag anything that diverges from it or violates a layer contract. Report facts — do not suggest fixes.]
+  [CONSTRAINTS: Read only. Do not write feedback files. Stay within the stated scope.]
+  [SCOPE: ...]
+  [QUESTION: ...]
+  """
+)
+```
+
 **Rules:**
 - Sub-agents are terminal — they cannot spawn further agents.
 - Reviewer does not spawn web-researcher — review against project rules, not external opinion.

@@ -46,9 +46,32 @@ Before deep design work, gather context using sub-agents. Spawn at most **4 tota
 | 3 — Web | `web-researcher` | External design patterns, library docs, domain knowledge | cited summary |
 
 **Invocation pattern:**
-```
-Agent(subagent_type="scout", model="haiku", prompt="[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]")
-Agent(subagent_type="web-researcher", model="haiku", prompt="[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]")
+```python
+Agent(
+  subagent_type="scout",
+  model="haiku",
+  description="<task-name>",   # e.g. "map-layer-boundaries"
+  prompt="""
+  [ROLE: Junior architect gathering structural facts for a design decision]
+  [WAY OF THINKING: Look for patterns that constrain or inform architecture choices. Flag anything that would make a design option impossible or costly.]
+  [CONSTRAINTS: Read only. Do not suggest fixes. Stay within the stated scope.]
+  [SCOPE: ...]
+  [QUESTION: ...]
+  """
+)
+
+Agent(
+  subagent_type="web-researcher",
+  model="haiku",
+  description="<task-name>",   # e.g. "research-event-sourcing-patterns"
+  prompt="""
+  [ROLE: Junior architect gathering external design evidence]
+  [WAY OF THINKING: Look for established patterns, trade-offs, and failure modes. Prefer authoritative sources. Flag thin or contradictory evidence.]
+  [CONSTRAINTS: Cite every fact. Cross-reference at least two sources. Do not present opinion as consensus.]
+  [SCOPE: ...]
+  [QUESTION: ...]
+  """
+)
 ```
 
 **Rules:**

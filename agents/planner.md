@@ -51,9 +51,19 @@ Before writing stories or plans, gather context using sub-agents. Spawn at most 
 | 3 — Web | `web-researcher` | Domain research, similar product patterns, industry standards | cited summary |
 
 **Invocation pattern:**
-```
-Agent(subagent_type="quick", model="haiku", prompt="...")
-Agent(subagent_type="web-researcher", model="haiku", prompt="[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]")
+```python
+Agent(
+  subagent_type="web-researcher",
+  model="haiku",
+  description="<task-name>",   # e.g. "research-onboarding-flow-patterns"
+  prompt="""
+  [ROLE: Junior planner gathering external domain evidence to inform requirements]
+  [WAY OF THINKING: Look for how similar products solve this problem. Surface scope implications, user expectations, and edge cases that belong in stories.]
+  [CONSTRAINTS: Cite every fact. Do not make technical implementation recommendations — that is the architect's domain.]
+  [SCOPE: ...]
+  [QUESTION: ...]
+  """
+)
 ```
 
 **Rules:**

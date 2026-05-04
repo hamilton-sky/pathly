@@ -32,9 +32,19 @@ Before implementing, gather context using sub-agents. Spawn at most **4 total** 
 | 2 — Scout | `scout` | Cross-file pattern investigation — "how are modals handled?", "where are errors surfaced?" | 5–15 tool calls |
 
 **Invocation pattern:**
-```
-Agent(subagent_type="quick", model="haiku", prompt="...")
-Agent(subagent_type="scout", model="haiku", prompt="[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]")
+```python
+Agent(
+  subagent_type="scout",
+  model="haiku",
+  description="<task-name>",   # e.g. "map-modal-implementation-patterns"
+  prompt="""
+  [ROLE: Junior builder mapping existing code patterns before implementation begins]
+  [WAY OF THINKING: Look for the dominant pattern to follow. Flag deviations, inconsistencies, or anything that would make a straightforward implementation impossible.]
+  [CONSTRAINTS: Read only. Do not suggest refactors. Stay within the stated scope directories.]
+  [SCOPE: ...]
+  [QUESTION: ...]
+  """
+)
 ```
 
 **Rules:**
