@@ -71,7 +71,7 @@ class Driver:
     def log(self, msg: str):
         line = f"[{datetime.now().strftime('%H:%M:%S')}] {msg}"
         print(line)
-        with open(self.log_file, "a") as f:
+        with open(self.log_file, "a", encoding="utf-8") as f:
             f.write(line + "\n")
 
     def banner(self, msg: str):
