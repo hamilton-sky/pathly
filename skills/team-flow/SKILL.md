@@ -59,12 +59,12 @@ Examples:
 
 The orchestrator (LLM) must consult `orchestrator/` at three specific points.
 
-### 1. Startup recovery
+### 1. Startup recovery + integrity check
 
 When `/team-flow` starts or resumes, recover state in this order:
 
 1. **Read STATE.json** — load `plans/<feature>/STATE.json` using `State` (`orchestrator/state.py`). If the file exists and parses cleanly, use that state.
-2. **Fall back to EVENTS.jsonl replay** — if STATE.json is absent or unreadable, instantiate `EventLog(feature=FEATURE)` (`orchestrator/eventlog.py`) and call `log.reconstruct_state()` (which calls `reconstruct()` from `orchestrator/reducer.py` internally). Use the resulting state.
+2. **Fall back to EVENTS.jsonl replay** — if STATE.json is absent or unreadable, instantiate `EventLog(feature=FEATURE)` (`orchestrator/eventlog.py`) and call `log.reconstruct_state()`. Use the resulting state.
 3. **Fall back to IDLE** — if neither file exists, start from `State()` (default IDLE). In `lite` and `standard` rigor this is not an error. In `strict` rigor: stop and report "STATE.json and EVENTS.jsonl not found — cannot recover state in strict mode."
 
 **Disk feedback wins:** After loading state, scan `plans/<feature>/feedback/` for open feedback files. If any exist and STATE.json says the pipeline is not blocked, correct the in-memory state by calling `reduce(state, FileCreatedEvent(file=highest_priority_file))` and updating logs. Disk always wins over cached STATE.json.
@@ -74,6 +74,27 @@ When `/team-flow` starts or resumes, recover state in this order:
 - `[FSM] State reconstructed from EVENTS.jsonl: <state_name> (N events)`
 - `[FSM] No prior state found — starting from IDLE`
 - `[FSM] State corrected by disk feedback: <old_state> → <new_state>`
+
+**Startup integrity check (runs immediately after state recovery, before any agent spawns):**
+
+Check for two categories of problems:
+
+*Safe issues* (orphan/expired feedback files — can be auto-resolved):
+- Read frontmatter from each `plans/<feature>/feedback/*.md` file.
+- If `created_by_event` is set and not found in `EVENTS.jsonl` → orphan.
+- If `created_at + ttl_hours` has elapsed → expired.
+
+*Real issues* (require human judgment):
+- STATE.json says `BUILDING` but no conversation is marked `in_progress` in PROGRESS.md → FSM drift.
+
+**Behavior by mode:**
+
+| Situation | Normal (interactive) | Fast |
+|---|---|---|
+| Safe issues only | Show each file + reason, ask "delete and continue? [yes/no]" | Delete silently, log `[FSM AUTO] Removed orphan: <file>` |
+| Real issues only | Show issue + suggestion, ask "continue anyway? [yes/no]" | Print issues, suggest `/help --doctor`, stop |
+| Both | Handle safe first, then ask about real issues | Delete safe, stop on real |
+| No issues | Proceed silently | Proceed silently |
 
 ### 2. Before each agent spawn
 

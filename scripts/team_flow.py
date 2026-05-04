@@ -307,6 +307,8 @@ class Driver:
         if not self._pre_flight():
             return
 
+        self._startup_verify()
+
         if self.state.current == FSMState.IDLE and self.entry == "discovery":
             self.emit(CommandEvent(
                 value=f"/team-flow {self.feature}",
@@ -386,6 +388,153 @@ class Driver:
         self.log(f"Full log: {self.log_file}")
 
     # ── Helpers ───────────────────────────────────────────────────────────────
+
+    def _startup_verify(self):
+        """
+        Run lightweight integrity checks before any agent spawns.
+
+        Fast mode:  auto-resolves safe issues (orphan/expired feedback files).
+                    Stops on real issues (corrupt state, PROGRESS drift).
+        Normal mode: shows issues in plain language, asks user to continue or abort.
+        """
+        issues = []
+        safe_deletes = []  # (path, reason) — safe to remove automatically in fast mode
+
+        # --- Check 1: orphan / expired feedback files (TTL frontmatter) ----------
+        if self.feedback_dir.exists():
+            events_path = self.plan_dir / "EVENTS.jsonl"
+            known_event_ids = self._load_event_ids(events_path)
+
+            for fb_file in self.feedback_dir.glob("*.md"):
+                reason = self._check_feedback_ttl(fb_file, known_event_ids)
+                if reason:
+                    safe_deletes.append((fb_file, reason))
+
+        # --- Check 2: FSM state vs PROGRESS.md drift ----------------------------
+        if self.state.current == FSMState.BUILDING and self.progress_file.exists():
+            content = self.progress_file.read_text(encoding="utf-8")
+            if "in_progress" not in content.lower():
+                issues.append(
+                    "STATE.json says BUILDING but no conversation is marked in_progress "
+                    f"in PROGRESS.md. Suggestion: run /team-flow {self.feature} build to resync."
+                )
+
+        # --- Nothing found: proceed silently ------------------------------------
+        if not issues and not safe_deletes:
+            return
+
+        # --- Fast mode: auto-resolve safe, stop on real -------------------------
+        if self.mode == Mode.FAST:
+            for path, reason in safe_deletes:
+                path.unlink()
+                self.log(f"[FSM AUTO] Removed orphan: {path.name} ({reason})")
+            if issues:
+                print(f"\n{'═'*46}")
+                print("  [STARTUP] Real issues found — fast mode cannot auto-resolve:")
+                for i, issue in enumerate(issues, 1):
+                    print(f"  {i}. {issue}")
+                print("  Run /help --doctor for details and fix options.")
+                print(f"{'═'*46}\n")
+                sys.exit(1)
+            return
+
+        # --- Normal mode: show all issues, ask to continue ----------------------
+        print(f"\n{'═'*46}")
+        print(f"  [STARTUP CHECK] — {self.feature}")
+        total = len(safe_deletes) + len(issues)
+        print(f"  {total} issue(s) found before pipeline starts")
+        print(f"{'═'*46}")
+
+        for path, reason in safe_deletes:
+            print(f"\n  Orphan/expired: {path.name}")
+            print(f"  Why: {reason}")
+            print(f"  Action: will delete before continuing")
+
+        for issue in issues:
+            print(f"\n  Issue: {issue}")
+
+        print()
+        if safe_deletes:
+            answer = input("  Delete orphan file(s) and continue? [yes / no]: ").strip().lower()
+            if answer != "yes":
+                print("  Aborted. Run /help --doctor for full diagnostics.")
+                sys.exit(0)
+            for path, reason in safe_deletes:
+                path.unlink()
+                self.log(f"[STARTUP] Removed orphan: {path.name}")
+
+        if issues:
+            answer = input("  Real issues remain. Continue anyway? [yes / no]: ").strip().lower()
+            if answer != "yes":
+                print("  Aborted. Run /help --doctor for full diagnostics.")
+                sys.exit(0)
+
+    def _load_event_ids(self, events_path: "Path") -> set:
+        """Return set of all timestamp/id values found in EVENTS.jsonl."""
+        ids = set()
+        if not events_path.exists():
+            return ids
+        try:
+            with open(events_path, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        evt = json.loads(line)
+                        if "id" in evt:
+                            ids.add(evt["id"])
+                        if "timestamp" in evt:
+                            ids.add(evt["timestamp"])
+                    except json.JSONDecodeError:
+                        continue
+        except Exception:
+            pass
+        return ids
+
+    def _check_feedback_ttl(self, fb_file: "Path", known_event_ids: set) -> str:
+        """
+        Return a reason string if the file is an orphan or expired, else empty string.
+        """
+        try:
+            content = fb_file.read_text(encoding="utf-8")
+        except Exception:
+            return ""
+
+        if not content.startswith("---"):
+            return ""  # No frontmatter — skip (git-based check in verify-state handles it)
+
+        # Parse frontmatter
+        end = content.find("---", 3)
+        if end == -1:
+            return ""
+        fm_text = content[3:end]
+        fm = {}
+        for line in fm_text.splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                fm[k.strip()] = v.strip()
+
+        event_id = fm.get("created_by_event", "")
+        created_at = fm.get("created_at", "")
+        ttl_hours_str = fm.get("ttl_hours", "24")
+
+        # Orphan check
+        if event_id and event_id != "unknown" and known_event_ids and event_id not in known_event_ids:
+            return f"event {event_id} not in current EVENTS.jsonl (orphan from a previous run)"
+
+        # TTL check
+        if created_at:
+            try:
+                from datetime import datetime, timezone, timedelta
+                created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+                ttl = timedelta(hours=float(ttl_hours_str))
+                if datetime.now(timezone.utc) > created + ttl:
+                    return f"TTL expired (created {created_at}, ttl={ttl_hours_str}h)"
+            except Exception:
+                pass
+
+        return ""
 
     def _pre_flight(self) -> bool:
         try:
