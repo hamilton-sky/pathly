@@ -15,6 +15,9 @@ import json
 import sys
 import os
 import re
+import tempfile
+
+CLASSIFY_MODEL = os.environ.get("CLASSIFY_MODEL", "claude-haiku-4-5-20251001")
 
 
 def main():
@@ -102,7 +105,7 @@ def classify(questions, api_key):
         )
 
         response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=CLASSIFY_MODEL,
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}]
         )
@@ -148,6 +151,21 @@ def extract_tag(line):
     return "[UNSURE]"
 
 
+def _atomic_write(file_path, text, encoding="utf-8"):
+    dir_ = os.path.dirname(os.path.abspath(file_path))
+    fd, tmp = tempfile.mkstemp(dir=dir_)
+    try:
+        with os.fdopen(fd, "w", encoding=encoding) as f:
+            f.write(text)
+        os.replace(tmp, file_path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def rewrite_impl(file_path, content, classified):
     lines = content.splitlines()
     new_lines = []
@@ -161,8 +179,7 @@ def rewrite_impl(file_path, content, classified):
                 new_lines.append(f"- {q['tag']} {text}")
         else:
             new_lines.append(line)
-    with open(file_path, "w") as f:
-        f.write("\n".join(new_lines))
+    _atomic_write(file_path, "\n".join(new_lines))
 
 
 def write_design(impl_path, arch_items):
@@ -183,8 +200,7 @@ def write_design(impl_path, arch_items):
     if "## Raised by" not in "\n".join(lines):
         lines += ["", "## Raised by", "builder (auto-classified by hook)"]
 
-    with open(design_path, "w") as f:
-        f.write("\n".join(lines))
+    _atomic_write(design_path, "\n".join(lines))
 
 
 if __name__ == "__main__":

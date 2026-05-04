@@ -3,6 +3,7 @@
 
 class FSMState:
     IDLE               = "IDLE"
+    DISCOVERING        = "DISCOVERING"
     STORMING           = "STORMING"
     STORM_PAUSED       = "STORM_PAUSED"
     PLANNING           = "PLANNING"
@@ -19,12 +20,14 @@ class FSMState:
 
 
 class Agent:
-    ARCHITECT = "architect"
-    PLANNER   = "planner"
-    BUILDER   = "builder"
-    REVIEWER  = "reviewer"
-    TESTER    = "tester"
-    QUICK     = "quick"
+    ARCHITECT  = "architect"
+    PLANNER    = "planner"
+    BUILDER    = "builder"
+    REVIEWER   = "reviewer"
+    TESTER     = "tester"
+    QUICK      = "quick"
+    DISCOVERER = "discoverer"
+    DIRECTOR   = "director"
 
 
 class FeedbackFile:
@@ -54,6 +57,7 @@ class Mode:
 
 
 class Rigor:
+    NANO     = "nano"
     LITE     = "lite"
     STANDARD = "standard"
     STRICT   = "strict"

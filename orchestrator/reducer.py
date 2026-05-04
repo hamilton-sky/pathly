@@ -7,12 +7,13 @@ from .utils import utc_now
 
 # Maps (agent, from_state) → (fast_next_state, paused_next_state)
 _AGENT_TRANSITIONS = {
-    (Agent.ARCHITECT, FSMState.STORMING):  (FSMState.PLANNING,        FSMState.STORM_PAUSED),
-    (Agent.PLANNER,   FSMState.PLANNING):  (FSMState.BUILDING,        FSMState.PLAN_PAUSED),
-    (Agent.BUILDER,   FSMState.BUILDING):  (FSMState.REVIEWING,       FSMState.REVIEWING),  # reviewer always runs, no pause option
-    (Agent.REVIEWER,  FSMState.REVIEWING): (FSMState.BUILDING,        FSMState.IMPLEMENT_PAUSED),
-    (Agent.TESTER,    FSMState.TESTING):   (FSMState.RETRO,           FSMState.TEST_PAUSED),
-    (Agent.QUICK,     FSMState.RETRO):     (FSMState.DONE,            FSMState.DONE),
+    (Agent.DISCOVERER, FSMState.DISCOVERING): (FSMState.STORMING,       FSMState.STORM_PAUSED),
+    (Agent.ARCHITECT,  FSMState.STORMING):    (FSMState.PLANNING,        FSMState.STORM_PAUSED),
+    (Agent.PLANNER,    FSMState.PLANNING):    (FSMState.BUILDING,        FSMState.PLAN_PAUSED),
+    (Agent.BUILDER,    FSMState.BUILDING):    (FSMState.REVIEWING,       FSMState.REVIEWING),  # reviewer always runs, no pause option
+    (Agent.REVIEWER,   FSMState.REVIEWING):   (FSMState.BUILDING,        FSMState.IMPLEMENT_PAUSED),
+    (Agent.TESTER,     FSMState.TESTING):     (FSMState.RETRO,           FSMState.TEST_PAUSED),
+    (Agent.QUICK,      FSMState.RETRO):       (FSMState.DONE,            FSMState.DONE),
 }
 
 # Maps paused state → next state when human says "go"
@@ -44,7 +45,7 @@ def reduce(state: State, event: Event) -> State:
         active_feedback_file=state.active_feedback_file,
         rigor=state.rigor,
         mode=state.mode,
-        retry_count_by_key=state.retry_count_by_key,  # shared ref — replaced in RETRY branch only
+        retry_count_by_key=dict(state.retry_count_by_key),
         last_actor=state.last_actor,
         state_stack=list(state.state_stack),
         created_at=state.created_at,

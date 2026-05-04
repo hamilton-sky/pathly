@@ -22,7 +22,23 @@ import json
 import sys
 import os
 import re
+import tempfile
 from datetime import datetime, timezone
+
+
+def _atomic_write(file_path, text, encoding="utf-8"):
+    dir_ = os.path.dirname(os.path.abspath(file_path))
+    fd, tmp = tempfile.mkstemp(dir=dir_)
+    try:
+        with os.fdopen(fd, "w", encoding=encoding) as f:
+            f.write(text)
+        os.replace(tmp, file_path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 FEEDBACK_FILES = {
     "ARCH_FEEDBACK.md",
@@ -76,8 +92,7 @@ def main():
         "---\n\n"
     )
 
-    with open(file_path, "w", encoding="utf-8") as f:
-        f.write(frontmatter + content)
+    _atomic_write(file_path, frontmatter + content)
 
     print(f"[inject_feedback_ttl] {basename} — frontmatter injected (ttl={TTL_HOURS}h, event={event_id})")
 

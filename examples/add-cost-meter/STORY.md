@@ -15,4 +15,4 @@ The feature was small enough to fit in a single builder conversation. The rigor 
 - A complete pipeline run from plan → build → review → test → retro
 - How `PROGRESS.md` tracks state so a run can be paused and resumed
 
-To see what a standard-rigor plan looks like (with ARCHITECTURE_PROPOSAL.md, EDGE_CASES.md, etc.), check `docs/SYSTEM_REVIEW.md` — the FSM orchestrator was planned at standard rigor and has all 8 files.
+To see what a standard-rigor plan looks like (with ARCHITECTURE_PROPOSAL.md, EDGE_CASES.md, etc.), check `docs/SECURITY_RELIABILITY_REVIEW.md` — the FSM orchestrator was planned at standard rigor and has all 8 files.

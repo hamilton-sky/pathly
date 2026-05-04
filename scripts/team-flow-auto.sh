@@ -135,7 +135,7 @@ if [[ "$ENTRY_STAGE" != "test" ]]; then
     # 3b — Review (direct prompt — /review skill is playwright-specific)
     run_claude "You are an adversarial reviewer for the $FEATURE feature.
 
-Run: git diff HEAD~1 HEAD
+Run: git diff HEAD -- . ':(exclude)plans/'
 Review the changes from the last commit against:
   - plans/$FEATURE/ARCHITECTURE_PROPOSAL.md (architectural contracts)
   - plans/$FEATURE/IMPLEMENTATION_PLAN.md (implementation scope)
@@ -205,7 +205,7 @@ Delete plans/$FEATURE/feedback/REVIEW_FAILURES.md when all items are fixed." || 
 
         # Re-review after fix
         run_claude "Re-review the latest implementation changes for the $FEATURE feature.
-Run: git diff HEAD~1 HEAD
+Run: git diff HEAD -- . ':(exclude)plans/'
 Check for any remaining violations from plans/$FEATURE/feedback/ (if any files still exist).
 If violations remain, rewrite the appropriate feedback file.
 If all clear: report PASS and ensure no feedback files exist in $FEEDBACK_DIR." || {

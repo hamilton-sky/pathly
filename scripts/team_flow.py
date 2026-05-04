@@ -102,13 +102,21 @@ class Driver:
 
     def run_claude(self, prompt: str) -> tuple[int, dict]:
         """Run claude agent. Returns (returncode, usage) where usage may be empty."""
+        timeout = int(os.environ.get("CLAUDE_AGENT_TIMEOUT", "1800"))
         self.log(">>> Spawning claude agent...")
-        result = subprocess.run(
-            ["claude", "-p", prompt, "--allowedTools", ALLOWED_TOOLS,
-             "--output-format", "json"],
-            cwd=str(REPO_ROOT),
-            capture_output=True, text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["claude", "-p", prompt, "--allowedTools", ALLOWED_TOOLS,
+                 "--output-format", "json"],
+                cwd=str(REPO_ROOT),
+                capture_output=True, text=True,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            self.log(f"[ERROR] Agent timed out after {timeout}s.")
+            from orchestrator.events import SystemEvent
+            self.emit(SystemEvent(action="TIMEOUT", metadata={"timeout_seconds": timeout}))
+            return 1, {}
         usage = self._parse_usage(result.stdout)
         # Echo stdout so agent output is still visible in the log
         if result.stdout:
@@ -412,7 +420,7 @@ class Driver:
         # --- Check 2: FSM state vs PROGRESS.md drift ----------------------------
         if self.state.current == FSMState.BUILDING and self.progress_file.exists():
             content = self.progress_file.read_text(encoding="utf-8")
-            if "in_progress" not in content.lower():
+            if "in progress" not in content.lower():
                 issues.append(
                     "STATE.json says BUILDING but no conversation is marked in_progress "
                     f"in PROGRESS.md. Suggestion: run /team-flow {self.feature} build to resync."
@@ -641,12 +649,12 @@ class Driver:
             print(f"{'═'*46}")
             print(hq.read_text())
             print(f"{'═'*46}")
+        before = self.get_feedback_files()
         print("\nResolve HUMAN_QUESTIONS.md, then press Enter to continue (or type 'quit'): ", end="")
         resp = input().strip().lower()
         if resp == "quit":
             self.log("Stopped at user request.")
             sys.exit(0)
-        before = self.get_feedback_files()
         after = self.get_feedback_files()
         self.check_feedback_changes(before, after)
         self.emit(HumanResponseEvent(value="continue"))
