@@ -1,7 +1,7 @@
 ---
 name: team-flow
 description: Full feature pipeline with feedback loops — discovery → plan → (implement → review → fix?) × N → test → (fix?) → retro. Standard/strict review every conversation; lite can review final-only. Feedback files route issues to the right agent automatically. Add 'lite', 'standard', or 'strict' to choose rigor. Add 'fast' to skip pause points outside strict mode. Add 'build', 'plan', or 'test' to enter mid-pipeline.
-argument-hint: "<feature-name> [lite|standard|strict] [fast] [plan|build|test]"
+argument-hint: "<feature-name> [lite|standard|strict|nano] [fast] [plan|build|test]"
 ---
 
 Run the full feature pipeline for `$ARGUMENTS`.
@@ -13,6 +13,7 @@ Parse `$ARGUMENTS` for these tokens (order doesn't matter):
 - `lite` → set `rigor = lite` (4 required plan files, fewer gates)
 - `standard` → set `rigor = standard` (default current pipeline)
 - `strict` → set `rigor = strict` (mandatory gates, audit logs)
+- `nano` → set `mode = nano` (no plan files, builder + reviewer only, ≤ 2 files)
 - `fast` → set `autoFlow = true` (no pause points)
 - `plan` → set `entryStage = plan`
 - `build` → set `entryStage = build`
@@ -23,6 +24,9 @@ Parse `$ARGUMENTS` for these tokens (order doesn't matter):
 If both `strict` and `fast` are present, stop and report:
 `strict mode requires human approval gates; remove fast or choose standard fast.`
 
+If `nano` is present with `strict`, `standard`, or `plan`/`build`/`test` entry stages, stop and report:
+`nano mode has no plan stages; remove the conflicting flag or choose lite instead.`
+
 Examples:
 ```
 /team-flow hotel-search              ← full pipeline, path selector
@@ -32,7 +36,71 @@ Examples:
 /team-flow hotel-search build fast   ← resume build, no pauses
 /team-flow hotel-search lite         ← small change, 4-file plan, lighter gates
 /team-flow hotel-search strict       ← high-risk change, mandatory gates + audit
+/team-flow my-fix nano               ← ≤ 2 file change, no plan, builder + reviewer only
 ```
+
+## Nano mode (≤ 2 file changes)
+
+If `mode = nano`, run this short-circuit flow instead of the full pipeline. All stages below are skipped.
+
+**Step 1 — Ask for the task:**
+```
+Nano mode active. Describe the change in one sentence:
+(Builder will implement directly with no plan. Scope: ≤ 2 files.)
+```
+Wait for user description. Store as `NANO_TASK`.
+
+**Step 2 — Spawn builder:**
+```
+Nano task: [NANO_TASK]
+
+Make only the changes needed. Touch at most 2 files.
+If the fix requires touching more than 2 files, STOP immediately and report:
+  "Scope too large for nano — recommend upgrading to /team-flow [feature] lite"
+Do not create any plan files.
+Verify with the project's standard verify command when done.
+Report: files changed, verify result.
+```
+
+**Step 3 — Scope check:**
+
+After builder completes, run:
+```powershell
+git diff --name-only HEAD
+```
+Count the files changed (excluding `plans/`). If the count is > 2 and builder did not already escalate:
+- Ask the user:
+  ```
+  [NANO ESCALATION] Builder touched N files (nano limit is 2).
+  [1] Accept — proceed with review as-is
+  [2] Upgrade — restart as /team-flow [feature] lite
+  [3] Cancel
+  ```
+- Wait for reply. On [2]: stop and instruct user to rerun. On [3]: stop.
+
+**Step 4 — Spawn reviewer:**
+```
+Review the nano change for [feature].
+Run: git diff HEAD (or git diff --staged if not yet committed).
+Check for correctness, obvious bugs, and rule violations.
+Report: PASS or list each violation with file + line.
+Do not write feedback files — report violations inline.
+```
+
+**Step 5 — Fix cycle (max 1):**
+
+If reviewer reports violations:
+- Spawn builder with the violation list. One fix pass only.
+- If violations remain after 1 pass: stop and report. Recommend upgrading to lite for a full review loop.
+
+If reviewer reports PASS — print:
+```
+[Nano complete] [feature] done.
+Files changed: [list from git diff]
+```
+Exit. Do not run test or retro stages.
+
+---
 
 ## Core rules
 
@@ -190,11 +258,24 @@ Each additional file has exactly one trigger signal. Check these after planning:
 | Extra file | Trigger signal | How to detect |
 |---|---|---|
 | `ARCHITECTURE_PROPOSAL.md` | Cross-layer dependency found | Architect or planner mentions > 1 layer, or STORM_SEED.md references multiple layers |
-| `EDGE_CASES.md` | High-risk keywords | USER_STORIES.md or STORM_SEED.md contains: "auth", "payment", "migration", "security", "schema", "breaking change" |
+| `EDGE_CASES.md` | High-risk keyword in a risk context | See rule below |
 | `HAPPY_FLOW.md` | > 3 conversations planned | CONVERSATION_PROMPTS.md has more than 3 conversation blocks |
 | `FLOW_DIAGRAM.md` | Long discovery path | STORM_SEED.md or discoverer output references > 3 files, or architect drew a multi-component diagram |
 
 A file is only recommended if its signal fires. Files with no signal are not offered.
+
+**EDGE_CASES.md keyword rule — context-aware detection:**
+
+Scan USER_STORIES.md and STORM_SEED.md for these high-risk keywords:
+`auth`, `payment`, `migration`, `security`, `schema`, `breaking change`
+
+A keyword fires the signal **only** if it appears in a risk context. A risk context is:
+- The keyword appears in the same sentence or bullet as a risk indicator:
+  `fail`, `invalid`, `expire`, `breach`, `error`, `corrupt`, `race`, `concurrent`, `collision`, `rollback`, `sensitive`, `lost`, `overwrite`, `unauthorized`
+- OR the keyword appears in a section or bullet heading that describes failure modes, edge cases, or error handling (e.g., "Error handling:", "Edge cases:", "What if...", "Failure scenario:")
+- OR the keyword appears more than once across the document (repeated mention signals the author treats it as a load-bearing concern)
+
+A keyword does **not** fire the signal if it appears only in a UI/label context — for example: "auth button label", "payment icon color", "update schema name in the sidebar". Pure naming and labeling mentions are ignored.
 
 ---
 
@@ -333,7 +414,12 @@ If running: print exactly this and wait for user input:
       Best for: BMAD output, hand-written PRD,
                 any structured requirements doc
 
-Reply with 1, 2, or 3:
+  [4] Probe first
+      Discoverer reads the codebase, then you decide
+      Best for: unfamiliar code, "where does this go?",
+                checking if something already exists
+
+Reply with 1, 2, 3, or 4:
 ```
 
 **On '1'** → proceed to Stage 1 (Storm), then Stage 2 (Plan)
@@ -350,6 +436,32 @@ Reply with 1, 2, or 3:
   - Print: `PRD imported. Plan files ready in plans/[feature]/`
   - Skip Stage 1 and Stage 2 entirely (prd-import already generated the selected rigor's plan files)
   - Jump directly to Stage 3 (Implement)
+
+**On '4'** → run a codebase probe, then let the user choose their next step:
+
+  **Spawn** `discoverer`:
+  ```
+  Run /explore for the feature: [feature name]
+  Map where this functionality would live — layers, existing files, dependencies, anything already present.
+  Output a short summary: relevant files found, likely touch points, open questions.
+  Do not plan or implement — explore only.
+  ```
+
+  After discoverer completes, print:
+  ```
+  [Probe complete] Discoverer mapped the codebase.
+
+  What next?
+    [A] Plan — go to Stage 2 (planner uses probe findings as context)
+    [B] Implement directly — nano mode, no plan (best if probe showed ≤ 2 files to touch)
+    [C] Stop here — I'll review the probe output first
+
+  Reply with A, B, or C:
+  ```
+  Wait for user reply.
+  - **A** → set `probeContext = discoverer output`. Proceed to Stage 2 (Plan). Planner will use probe findings.
+  - **B** → switch to `mode = nano`. Skip Stage 2. Jump to nano mode flow (builder + reviewer only).
+  - **C** → stop. Print: `Pipeline paused after probe. Resume with /team-flow [feature] build when ready.`
 
 ---
 
