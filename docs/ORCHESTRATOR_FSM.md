@@ -37,6 +37,10 @@ plans/<feature>/
 ```ts
 type State =
   | "IDLE"
+  | "PO_DISCUSSING"      // option [5] phase 1 — orchestrator asks PO questions, no agent spawn
+  | "PO_PAUSED"          // PO Q&A done, waiting for human to proceed to architect storm
+  | "EXPLORING"          // option [4] — Explorer (subagent_type: Explore) maps codebase
+  | "EXPLORE_PAUSED"     // Explorer done, waiting for A (plan) / B (nano) / C (stop)
   | "STORMING"
   | "STORM_PAUSED"
   | "PLANNING"
@@ -144,8 +148,37 @@ Only one agent may be active at a time.
 
 ```text
 IDLE + COMMAND("/team-flow <feature>")
+-> STORMING                          // default; orchestrator overrides via STATE_TRANSITION
+-> spawn(architect)
+
+// Option [4] — Explore first
+IDLE + COMMAND + STATE_TRANSITION(to=EXPLORING)
+-> EXPLORING
+-> spawn(explorer)
+
+EXPLORING + AGENT_DONE(explorer)
+-> EXPLORE_PAUSED                    // interactive; PLANNING in fast mode
+
+EXPLORE_PAUSED + HUMAN_RESPONSE("A")
+-> PLANNING
+-> spawn(planner)
+
+EXPLORE_PAUSED + HUMAN_RESPONSE("B"|"C")
+-> use STATE_TRANSITION (orchestrator handles nano or stop)
+
+// Option [5] — Full discovery (PO → Architect → Planner)
+IDLE + COMMAND + STATE_TRANSITION(to=PO_DISCUSSING)
+-> PO_DISCUSSING                     // orchestrator asks PO questions inline, no agent spawn
+
+PO_DISCUSSING + STATE_TRANSITION(to=PO_PAUSED)
+-> PO_PAUSED                         // PO_NOTES.md written
+
+PO_PAUSED + HUMAN_RESPONSE("yes")
 -> STORMING
 -> spawn(architect)
+
+PO_PAUSED + HUMAN_RESPONSE("no")
+-> DONE
 
 STORMING + AGENT_DONE(architect)
 -> STORM_PAUSED
@@ -255,8 +288,9 @@ Recovery order:
 3. If all conversations are done and tests have not passed, state is `TESTING` or `TEST_PAUSED` based on the latest event.
 4. If any conversation is TODO, state is `BUILDING` or `IMPLEMENT_PAUSED` based on the latest event.
 5. If plan files exist but no build started, state is `PLAN_PAUSED`.
-6. If only storm output exists, state is `STORM_PAUSED`.
-7. Otherwise state is `IDLE`.
+6. If `STORM_SEED.md` exists but no plan files, state is `STORM_PAUSED`.
+7. If `PO_NOTES.md` exists but no `STORM_SEED.md`, state is `PO_PAUSED`.
+8. Otherwise state is `IDLE`.
 
 ## Observability
 

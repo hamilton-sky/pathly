@@ -375,6 +375,7 @@ If multiple feedback files exist, route one at a time in this priority order:
 | Action | Spawn | Why |
 |---|---|---|
 | Storm | `architect` | technical exploration, opus |
+| Explore codebase | `Explore` | map existing code before planning |
 | Plan | `planner` | user stories + decomposition |
 | Implement | `builder` | code execution, scoped to one conversation |
 | Review | `reviewer` | adversarial check after each conversation |
@@ -414,12 +415,17 @@ If running: print exactly this and wait for user input:
       Best for: BMAD output, hand-written PRD,
                 any structured requirements doc
 
-  [4] Probe first
-      Discoverer reads the codebase, then you decide
+  [4] Explore first
+      Explorer maps the codebase, then you decide
       Best for: unfamiliar code, "where does this go?",
                 checking if something already exists
 
-Reply with 1, 2, 3, or 4:
+  [5] Full discovery
+      PO discussion → Architect storm → Planner
+      Best for: new features, unclear requirements,
+                high stakeholder alignment needed
+
+Reply with 1, 2, 3, 4, or 5:
 ```
 
 **On '1'** → proceed to Stage 1 (Storm), then Stage 2 (Plan)
@@ -431,37 +437,125 @@ Reply with 1, 2, 3, or 4:
   ```
   Path to your PRD file? (e.g. docs/feature-prd.md)
   ```
-  Wait for path input. Then:
-  - Run `/prd-import [feature] [path] [rigor]`
-  - Print: `PRD imported. Plan files ready in plans/[feature]/`
-  - Skip Stage 1 and Stage 2 entirely (prd-import already generated the selected rigor's plan files)
-  - Jump directly to Stage 3 (Implement)
+  Wait for path input. Then run `/prd-import [feature] [path] [rigor]`.
 
-**On '4'** → run a codebase probe, then let the user choose their next step:
-
-  **Spawn** `discoverer`:
+  After import, print:
   ```
-  Run /explore for the feature: [feature name]
+  PRD imported. Plan files ready in plans/[feature]/
+
+  The PRD covers your requirements. How do you want to proceed?
+    [A] Skip to build — PRD is sufficient, go straight to implementation
+    [B] PO gap-review — PO advisor reads the PRD and asks only about gaps
+    [C] Architect storm — go to technical design before building
+
+  Reply with A, B, or C:
+  ```
+  Wait for reply.
+
+  - **A** → Skip Stage 1 and Stage 2. Jump directly to Stage 3 (Implement).
+    Print: `Skipping discovery. Starting implementation from PRD plan.`
+
+  - **B** → Emit `STATE_TRANSITION(to=PO_DISCUSSING)`, update logs. **Spawn** `po`:
+    ```
+    Run PO mode for the feature: [feature name]
+    A PRD has already been imported. Read plans/[feature]/USER_STORIES.md as the baseline.
+    Focus only on gaps: missing edge cases, unclear acceptance criteria, unstated constraints.
+    The user will type "stop notes" when satisfied to write plans/[feature]/PO_NOTES.md.
+    Remind them of this at the start.
+    ```
+    After PO agent completes, emit `STATE_TRANSITION(to=PO_PAUSED)`, update logs.
+    Then proceed to Stage 3 (Implement). Skip Stage 1 (Storm) and Stage 2 (Plan) — plan files already exist.
+
+  - **C** → Skip Stage 2 (prd-import already generated plan files). Proceed to Stage 1 (Storm).
+    Print: `Plan files ready. Starting architect storm for technical design.`
+    Spawn `architect` as per Stage 1.
+
+**On '4'** → run a codebase exploration, then let the user choose their next step:
+
+  **Spawn** `Explore` (subagent_type: Explore):
+  ```
+  Explore the codebase for the feature: [feature name]
   Map where this functionality would live — layers, existing files, dependencies, anything already present.
   Output a short summary: relevant files found, likely touch points, open questions.
   Do not plan or implement — explore only.
   ```
 
-  After discoverer completes, print:
+  After explorer completes, print:
   ```
-  [Probe complete] Discoverer mapped the codebase.
+  [Explore complete] Explorer mapped the codebase.
 
   What next?
-    [A] Plan — go to Stage 2 (planner uses probe findings as context)
-    [B] Implement directly — nano mode, no plan (best if probe showed ≤ 2 files to touch)
-    [C] Stop here — I'll review the probe output first
+    [A] Plan — go to Stage 2 (planner uses explore findings as context)
+    [B] Implement directly — nano mode, no plan (best if explore showed ≤ 2 files to touch)
+    [C] Stop here — I'll review the explore output first
 
   Reply with A, B, or C:
   ```
   Wait for user reply.
-  - **A** → set `probeContext = discoverer output`. Proceed to Stage 2 (Plan). Planner will use probe findings.
+  - **A** → set `exploreContext = explorer output`. Proceed to Stage 2 (Plan). Planner will use explore findings.
   - **B** → switch to `mode = nano`. Skip Stage 2. Jump to nano mode flow (builder + reviewer only).
-  - **C** → stop. Print: `Pipeline paused after probe. Resume with /team-flow [feature] build when ready.`
+  - **C** → stop. Print: `Pipeline paused after explore. Resume with /team-flow [feature] build when ready.`
+
+---
+
+**On '5'** → run three-phase full discovery (PO → Architect → Planner):
+
+  Emit `STATE_TRANSITION(to=PO_DISCUSSING)`, update logs.
+
+  **Phase 1 — PO Discussion:**
+
+  **Spawn** `po`:
+  ```
+  Run PO mode for the feature: [feature name]
+  Probe requirements interactively — problem, users, MVP scope, out-of-scope, constraints, edge cases.
+  The user will type "stop notes" when satisfied to write plans/[feature]/PO_NOTES.md.
+  Remind them of this at the start.
+  ```
+
+  After PO agent completes — emit `STATE_TRANSITION(to=PO_PAUSED)`, update logs.
+
+  If not autoFlow — **PAUSE:**
+  ```
+  [Phase 1 — PO Discussion complete]
+  Requirements captured in plans/[feature]/PO_NOTES.md.
+  Ready for architect storm? Reply 'yes' to continue, or 'no' to stop here.
+  ```
+  - Proceed signal: call `reduce(state, HumanResponseEvent(value=reply))`, update logs, advance.
+  - Stop signal: call `reduce(state, HumanResponseEvent(value="stop"))`, update logs, halt.
+
+  If autoFlow: record `HumanResponseEvent(value="auto-advance")`, update logs.
+
+  **Phase 2 — Architect Storm:**
+
+  **Spawn** `architect`:
+  ```
+  Run /storm for the feature: [feature name]
+  Context from PO discussion is in plans/[feature]/PO_NOTES.md — read it first.
+  Explore the idea technically — layers, dependencies, design decisions.
+  When the user is satisfied, they will type /stop plan to write STORM_SEED.md.
+  Remind them of this at the start.
+  ```
+
+  If not autoFlow — **PAUSE:**
+  ```
+  [Phase 2 — Architect Storm complete]
+  STORM_SEED.md written. Ready to plan? Reply 'yes' to continue, or 'no' to stop here.
+  ```
+  Wait for reply. On 'no': stop.
+
+  **Phase 3 — Plan:**
+
+  **Spawn** `planner`:
+  ```
+  Run /plan [feature name] [rigor].
+  Context from PO discussion is in plans/[feature]/PO_NOTES.md — read it first.
+  If plans/STORM_SEED.md exists, consume it as pre-filled answers.
+  Ensure every story references which phase/conversation delivers it.
+  Ensure every phase references which stories it fulfills.
+  After creating the selected rigor's plan files, list them as a summary.
+  ```
+
+  Skip Stage 1 and Stage 2 (already completed above). Proceed directly to Stage 3 (Implement).
 
 ---
 

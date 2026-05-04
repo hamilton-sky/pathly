@@ -3,7 +3,10 @@
 
 class FSMState:
     IDLE               = "IDLE"
-    DISCOVERING        = "DISCOVERING"
+    PO_DISCUSSING      = "PO_DISCUSSING"    # PO Q&A phase (orchestrator-driven, option [5])
+    PO_PAUSED          = "PO_PAUSED"        # PO done, waiting to proceed to architect storm
+    EXPLORING          = "EXPLORING"        # Explorer maps codebase (option [4])
+    EXPLORE_PAUSED     = "EXPLORE_PAUSED"   # Explorer done, waiting for A/B/C choice
     STORMING           = "STORMING"
     STORM_PAUSED       = "STORM_PAUSED"
     PLANNING           = "PLANNING"
@@ -26,7 +29,8 @@ class Agent:
     REVIEWER   = "reviewer"
     TESTER     = "tester"
     QUICK      = "quick"
-    DISCOVERER = "discoverer"
+    EXPLORER   = "explorer"   # codebase exploration (subagent_type: Explore)
+    PO         = "po"         # product owner discussion (option [5] phase 1)
     DIRECTOR   = "director"
 
 

@@ -7,8 +7,9 @@ from .utils import utc_now
 
 # Maps (agent, from_state) → (fast_next_state, paused_next_state)
 _AGENT_TRANSITIONS = {
-    (Agent.DISCOVERER, FSMState.DISCOVERING): (FSMState.STORMING,       FSMState.STORM_PAUSED),
-    (Agent.ARCHITECT,  FSMState.STORMING):    (FSMState.PLANNING,        FSMState.STORM_PAUSED),
+    (Agent.PO,         FSMState.PO_DISCUSSING): (FSMState.STORMING,      FSMState.PO_PAUSED),
+    (Agent.EXPLORER,   FSMState.EXPLORING):     (FSMState.PLANNING,      FSMState.EXPLORE_PAUSED),
+    (Agent.ARCHITECT,  FSMState.STORMING):      (FSMState.PLANNING,      FSMState.STORM_PAUSED),
     (Agent.PLANNER,    FSMState.PLANNING):    (FSMState.BUILDING,        FSMState.PLAN_PAUSED),
     (Agent.BUILDER,    FSMState.BUILDING):    (FSMState.REVIEWING,       FSMState.REVIEWING),  # reviewer always runs, no pause option
     (Agent.REVIEWER,   FSMState.REVIEWING):   (FSMState.BUILDING,        FSMState.IMPLEMENT_PAUSED),
@@ -17,7 +18,10 @@ _AGENT_TRANSITIONS = {
 }
 
 # Maps paused state → next state when human says "go"
+# EXPLORE_PAUSED path A (plan) is default; paths B (nano/build) and C (stop) use STATE_TRANSITION
 _HUMAN_TRANSITIONS = {
+    FSMState.PO_PAUSED:        FSMState.STORMING,
+    FSMState.EXPLORE_PAUSED:   FSMState.PLANNING,
     FSMState.STORM_PAUSED:     FSMState.PLANNING,
     FSMState.PLAN_PAUSED:      FSMState.BUILDING,
     FSMState.IMPLEMENT_PAUSED: FSMState.BUILDING,
