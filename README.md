@@ -18,31 +18,25 @@ resolved.
 
 ## Quick install
 
-**Via pip (recommended):**
-```bash
-pip install claude-agents-framework
-claude-agents install
+**Claude Code plugin (recommended):**
+```
+/plugin install claude-agents-framework
 ```
 
-For the auto-classification hook (optional but recommended):
-```bash
-pip install "claude-agents-framework[hook]"
-claude-agents install
-```
-
-**Via git clone:**
+Then register the auto-classification hook (optional but recommended):
 ```bash
 # Linux / macOS
-git clone https://github.com/hamilton-sky/claude-agents-framework
-cd claude-agents-framework
-chmod +x install.sh && ./install.sh
+bash ~/.claude/plugins/claude-agents-framework/scripts/setup-hook.sh
+
+# Windows (PowerShell)
+& "$env:USERPROFILE\.claude\plugins\claude-agents-framework\scripts\setup-hook.ps1"
 ```
 
-```powershell
-# Windows (PowerShell)
-git clone https://github.com/hamilton-sky/claude-agents-framework
-cd claude-agents-framework
-.\install.ps1
+That's it. No pip install. No files copied to `~/.claude/`. The plugin lives in its own folder and doesn't interfere with any existing setup.
+
+**To unregister the hook later:**
+```bash
+bash ~/.claude/plugins/claude-agents-framework/scripts/setup-hook.sh --remove
 ```
 
 Then open any project in Claude Code and run:
