@@ -16,6 +16,7 @@ Usage:
 import sys
 import os
 import subprocess
+import json
 import argparse
 from pathlib import Path
 from datetime import datetime
@@ -99,13 +100,38 @@ class Driver:
 
     # ── Subprocess ────────────────────────────────────────────────────────────
 
-    def run_claude(self, prompt: str) -> int:
+    def run_claude(self, prompt: str) -> tuple[int, dict]:
+        """Run claude agent. Returns (returncode, usage) where usage may be empty."""
         self.log(">>> Spawning claude agent...")
         result = subprocess.run(
-            ["claude", "-p", prompt, "--allowedTools", ALLOWED_TOOLS],
+            ["claude", "-p", prompt, "--allowedTools", ALLOWED_TOOLS,
+             "--output-format", "json"],
             cwd=str(REPO_ROOT),
+            capture_output=True, text=True,
         )
-        return result.returncode
+        usage = self._parse_usage(result.stdout)
+        # Echo stdout so agent output is still visible in the log
+        if result.stdout:
+            print(result.stdout, end="")
+        if result.stderr:
+            print(result.stderr, end="", file=sys.stderr)
+        return result.returncode, usage
+
+    def _parse_usage(self, stdout: str) -> dict:
+        """Extract token/cost fields from claude --output-format json stdout."""
+        if not stdout:
+            return {}
+        try:
+            data = json.loads(stdout)
+            usage = data.get("usage", {})
+            return {
+                "model":      data.get("model", ""),
+                "tokens_in":  usage.get("input_tokens", 0),
+                "tokens_out": usage.get("output_tokens", 0),
+                "cost_usd":   data.get("cost_usd", 0.0),
+            }
+        except (json.JSONDecodeError, AttributeError):
+            return {}
 
     # ── Filesystem helpers ────────────────────────────────────────────────────
 
@@ -190,9 +216,12 @@ class Driver:
     def p_fix_review(self) -> str:
         return (
             f"Read plans/{self.feature}/feedback/REVIEW_FAILURES.md.\n"
-            f"Fix each [IMPL] violation exactly as described.\n"
+            f"Step 1 — Apply [AUTO_FIX] patches first (if any):\n"
+            f"  For each item tagged [AUTO_FIX], apply the patch exactly as written.\n"
+            f"  If a patch fails to apply (line not found), treat it as a regular violation.\n"
+            f"Step 2 — Fix remaining regular violations exactly as described.\n"
             f"Do not change anything outside the listed violations.\n"
-            f"Delete plans/{self.feature}/feedback/REVIEW_FAILURES.md when all fixed."
+            f"Delete plans/{self.feature}/feedback/REVIEW_FAILURES.md when all items resolved."
         )
 
     def p_fix_design(self) -> str:
@@ -369,7 +398,7 @@ class Driver:
     def _run_agent(self, prompt: str, agent_name: str, required: bool):
         """Run an agent. Emit AGENT_DONE only if no feedback files were created."""
         before = self.get_feedback_files()
-        rc = self.run_claude(prompt)
+        rc, usage = self.run_claude(prompt)
         after = self.get_feedback_files()
         self.check_feedback_changes(before, after)
         if rc != 0 and required:
@@ -377,7 +406,13 @@ class Driver:
             sys.exit(1)
         # Don't emit AGENT_DONE if we're now blocked — feedback creation already drove the transition
         if self.state.current not in (FSMState.BLOCKED_ON_FEEDBACK, FSMState.BLOCKED_ON_HUMAN):
-            self.emit(AgentDoneEvent(agent=agent_name))
+            self.emit(AgentDoneEvent(
+                agent=agent_name,
+                model=usage.get("model", ""),
+                tokens_in=usage.get("tokens_in", 0),
+                tokens_out=usage.get("tokens_out", 0),
+                cost_usd=usage.get("cost_usd", 0.0),
+            ))
 
     def _pause(self, msg: str, fast_response: str, options: list, stop_on: str | None):
         """Pause point: auto-respond in fast mode, else ask human."""
@@ -410,7 +445,7 @@ class Driver:
         before = self.get_feedback_files()
 
         if active == FeedbackFile.ARCH_FEEDBACK:
-            rc = self.run_claude(self.p_fix_arch())
+            rc, _ = self.run_claude(self.p_fix_arch())
             self.check_feedback_changes(before, self.get_feedback_files())
             if active not in self.get_feedback_files():
                 # Arch redesigned — need a full rebuild, not just re-review
@@ -436,7 +471,6 @@ class Driver:
                 self.log("Written HUMAN_QUESTIONS.md — manual intervention required.")
                 sys.exit(1)
             # Re-review after fix
-            b2 = self.get_feedback_files()
             self._run_agent(self.p_review(), Agent.REVIEWER, required=False)
 
         elif active == FeedbackFile.DESIGN_QUESTIONS:

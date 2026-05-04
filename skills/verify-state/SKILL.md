@@ -22,14 +22,33 @@ If no argument:
 
 ## Step 2 — For each feature, run 3 checks
 
-### Check A — Stale feedback files
+### Check A — Stale feedback files (with TTL / orphan detection)
 
 ```bash
 ls plans/$FEATURE/feedback/ 2>/dev/null
 ```
 
 For each `.md` file found in `plans/$FEATURE/feedback/`:
-- It represents an **open, unresolved issue**
+
+**A1 — Frontmatter-based checks (preferred, when frontmatter is present):**
+
+Read the YAML frontmatter block at the top of the file (between `---` markers).
+
+If frontmatter is present:
+- **Orphan check:** Read `plans/$FEATURE/EVENTS.jsonl`. If `created_by_event` is not
+  `"unknown"` and does not appear as any event's `timestamp` or `id` field in the log →
+  flag as orphan from a previous run.
+  Report as: `[ORPHAN FEEDBACK] plans/$FEATURE/feedback/<file> — event <id> not in current EVENTS.jsonl`
+- **TTL check:** Compute `created_at + ttl_hours`. If that time has elapsed (compare to
+  current UTC time) →
+  flag as stale.
+  Report as: `[EXPIRED FEEDBACK] plans/$FEATURE/feedback/<file> — TTL expired at <expiry_time>`
+
+Both orphan and expired files are **safe to delete**. Offer the action to the user:
+`Suggestion: delete plans/$FEATURE/feedback/<file> — it is a leftover from a previous run.`
+
+**A2 — Git-based check (fallback, when no frontmatter):**
+
 - Check git log for commits made *after* this file's modification time:
   ```bash
   git log --oneline --since="$(git log -1 --format='%ci' -- plans/$FEATURE/feedback/<file>)" -- . 2>/dev/null | head -5
@@ -104,6 +123,8 @@ Print a structured summary:
 ✓  No issues        ← if everything clean
 ⚠  N issue(s) found ← if problems detected
 
+[ORPHAN FEEDBACK]   plans/.../feedback/REVIEW_FAILURES.md — event 2026-04-28T10:00:00Z not in current EVENTS.jsonl → safe to delete
+[EXPIRED FEEDBACK]  plans/.../feedback/ARCH_FEEDBACK.md — TTL expired at 2026-04-29T10:00:00Z → safe to delete
 [STALE FEEDBACK]    plans/.../feedback/REVIEW_FAILURES.md — open since 2026-04-28, no commits since
 [PROGRESS DRIFT]    hotel-search — 3 conversations DONE but only 1 implementation commit found
 [DEAD REFERENCE]    nl-workflow-compiler — 'src/engine/planner/nl_compiler.py' mentioned but not found

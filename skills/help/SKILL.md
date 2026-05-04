@@ -5,6 +5,78 @@ argument-hint: "[feature-name]"
 model: haiku
 ---
 
+## Doctor mode (`/help --doctor`)
+
+If `$ARGUMENTS` contains `--doctor` (e.g. `/help --doctor` or `/help my-feature --doctor`),
+run the diagnostic flow below instead of the normal menu. Extract the feature name from
+`$ARGUMENTS` if one is provided alongside `--doctor`; otherwise scan `plans/` for the most
+recently modified feature folder.
+
+### Doctor Step 1 — Run verify-state internally
+
+Perform every check from the `verify-state` skill (Checks A through D) for the target feature.
+Collect all flagged issues.
+
+### Doctor Step 2 — Check additional stuck-state indicators
+
+Beyond what verify-state checks, also look for:
+
+- **STATE.json says BUILDING but no conversations are in_progress in PROGRESS.md** →
+  FSM stuck: builder may have exited mid-run.
+- **Feedback file has expired TTL** (from frontmatter `created_at + ttl_hours`) →
+  stale orphan from a previous run.
+- **Feedback file event ID not in EVENTS.jsonl** → orphan from a different session.
+- **REVIEW_FAILURES.md exists but git diff shows no changes since it was written** →
+  builder loop (zero-diff stall).
+
+### Doctor Step 3 — Report in plain language
+
+Print a diagnostic summary in this format:
+
+```
+╔══════════════════════════════════════════╗
+  /help --doctor — <feature>
+╚══════════════════════════════════════════╝
+
+✓  Everything looks healthy.
+```
+
+Or, if issues found:
+
+```
+╔══════════════════════════════════════════╗
+  /help --doctor — <feature>
+  N issue(s) found
+╚══════════════════════════════════════════╝
+
+Issue 1: REVIEW_FAILURES.md is a leftover from a previous run
+  Why: its event ID (2026-04-28T10:00:00Z) does not appear in the current EVENTS.jsonl.
+  Suggestion: delete plans/<feature>/feedback/REVIEW_FAILURES.md
+
+Issue 2: STATE.json says BUILDING but no conversation is active
+  Why: PROGRESS.md shows all conversations as either DONE or TODO — none are in_progress.
+  Suggestion: run /team-flow <feature> build to return the pipeline to a stable state.
+
+────────────────────────────────────────────
+Run suggestion 1? [yes / no / show all suggestions]
+```
+
+### Doctor Step 4 — Offer action
+
+If there are suggestions, ask: `Run suggestion 1? [yes / no / show all suggestions]`
+
+- **yes** → execute the first suggestion (delete orphan file, or run the recommended command)
+- **no** → print the full list of suggestions and stop
+- **show all suggestions** → print the full list and ask "Which suggestion to run? [1/2/…/none]"
+
+**Rules for doctor mode:**
+- Never auto-fix without explicit user confirmation.
+- If a suggestion is "delete a file", show the file path clearly before confirming.
+- If a suggestion is "run a command", show the exact command before running.
+- One action at a time — do not batch multiple fixes without explicit approval.
+
+---
+
 ## Step 1: Detect state
 
 Check in this order:
@@ -211,6 +283,7 @@ On '5': print full command reference
   /go                                prompts "What do you want?" → routes
   /go <what you want>                skip prompt, routes immediately
   /help [feature]                    detect state → show this menu
+  /help --doctor [feature]           diagnose stuck FSM, orphan files, stale feedback
 
 ───────────────────────────────────────────
   MAIN COMMAND

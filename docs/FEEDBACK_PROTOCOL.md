@@ -9,6 +9,36 @@ agent, waits for deletion, then returns to the previous logical state.
 
 ---
 
+## Frontmatter (TTL / orphan detection)
+
+Every feedback file carries a YAML frontmatter block injected automatically
+by the `inject_feedback_ttl.py` PostToolUse hook:
+
+```yaml
+---
+created_at: 2026-05-04T08:12:00Z
+created_by_event: <last-event-timestamp-or-id>
+ttl_hours: 24
+---
+```
+
+**What these fields mean:**
+
+| Field | Purpose |
+|---|---|
+| `created_at` | ISO-8601 UTC. Used to detect files that outlived their TTL. |
+| `created_by_event` | Timestamp/ID of the last event in `EVENTS.jsonl` when the file was written. If this event no longer exists in the current log, the file is an orphan from a previous run. |
+| `ttl_hours` | Hours after `created_at` at which the file is considered stale (default 24). |
+
+**Invariant enforced by `/verify-state`:**
+- `created_by_event` not found in `EVENTS.jsonl` → orphan → safe to delete
+- `created_at + ttl_hours` has elapsed → stale → safe to delete
+
+Agents do not need to write frontmatter manually — the hook handles it.
+If the hook is not installed, feedback files work exactly as before (no TTL).
+
+---
+
 ## Feedback Files
 
 ### ARCH_FEEDBACK.md — reviewer or tester → architect
@@ -52,6 +82,27 @@ changing the architecture.
 ## Raised by
 reviewer
 ```
+
+**`[AUTO_FIX]` findings (trivial, no human turn required):**
+
+The reviewer may tag mechanically-unambiguous findings as `[AUTO_FIX]` with an inline patch.
+The builder applies all `[AUTO_FIX]` patches in a single batch pass before handling regular violations.
+
+```markdown
+- [AUTO_FIX] [file:line] — [rule] — [description]
+  patch: |
+    <<<<<<< original
+    [exact original line(s)]
+    =======
+    [exact replacement — empty for deletion]
+    >>>>>>> fixed
+```
+
+**Builder auto-fix rules:**
+1. Apply every `[AUTO_FIX]` patch exactly as written — no interpretation.
+2. If a patch fails to apply (line not found / already changed), treat it as a regular violation.
+3. After all `[AUTO_FIX]` patches are applied, handle any remaining regular violations normally.
+4. Delete `REVIEW_FAILURES.md` only when all items (auto-fix and regular) are resolved.
 
 ---
 

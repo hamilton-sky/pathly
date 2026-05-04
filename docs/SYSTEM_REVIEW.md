@@ -137,7 +137,7 @@ typo ב-import → `REVIEW_FAILURES.md` → builder turn חדש → אישור h
 
 הצעות ממוינות לפי ערך-לעלות. הראשונות בעלות יחס הכי טוב.
 
-### 3.1 TTL/heartbeat ל-feedback files [ערך גבוה, עלות נמוכה]
+### 3.1 TTL/heartbeat ל-feedback files [ערך גבוה, עלות נמוכה] ✅ DONE
 
 **בעיה:** "קובץ קיים = פתוח" שביר ל-orphans.
 
@@ -157,7 +157,12 @@ ttl_hours: 24
 
 **תוצאה:** "deleted = resolved" הופך מאמינות-במשמעת ל-invariant נאכף.
 
-### 3.2 תיוג `[AUTO_FIX]` ב-reviewer [ערך גבוה, עלות נמוכה]
+**יישום (2026-05-04):**
+- `hooks/inject_feedback_ttl.py` — PostToolUse hook שמזריק frontmatter לכל feedback file שנכתב ל-`plans/*/feedback/`
+- `docs/FEEDBACK_PROTOCOL.md` — תיעוד מלא של הפורמט ומשמעות כל שדה
+- `skills/verify-state/SKILL.md` — הוסיפו Check A1 (orphan + TTL) לפני Check A2 (git-based fallback)
+
+### 3.2 תיוג `[AUTO_FIX]` ב-reviewer [ערך גבוה, עלות נמוכה] ✅ DONE
 
 **בעיה:** churn סביב תיקונים טריוויאליים.
 
@@ -168,7 +173,12 @@ missing newline) כ-`[AUTO_FIX]` ולכלול patch קצר ב-`REVIEW_FAILURES.m
 
 **תוצאה:** שומר על "reviewer לא מתקן" כעקרון, מבטל את ה-churn.
 
-### 3.3 Cost meter ב-RETRO.md [ערך בינוני-גבוה, עלות בינונית]
+**יישום (2026-05-04):**
+- `agents/reviewer.md` — נוסף קטע "[AUTO_FIX]" עם קריטריונים ברורים לאילו ממצאים עומדים בסף (unused import, trailing newline, typo בstring) ואילו לא (כל שינוי שמשפיע על runtime)
+- `docs/FEEDBACK_PROTOCOL.md` — תיעוד פורמט ה-patch ב-REVIEW_FAILURES.md + כללי הbuilder לטיפול בו
+- `scripts/team_flow.py` — `p_fix_review` עודכן עם Step 1 (AUTO_FIX batch) לפני Step 2 (regular violations)
+
+### 3.3 Cost meter ב-RETRO.md [ערך בינוני-גבוה, עלות בינונית] ✅ DONE
 
 **בעיה:** אין ויזיביליות לעלות.
 
@@ -186,7 +196,12 @@ Cost: $4.20
 **תוצאה:** משתמשים יוכלו לקבל החלטה מושכלת בין `lite` ל-`standard`
 על בסיס עלות בפועל מפיצ'רים קודמים.
 
-### 3.4 Rigor escalator במקום בחירה מראש [ערך בינוני, עלות בינונית]
+**יישום (2026-05-04):**
+- `orchestrator/events.py` — `AgentDoneEvent` קיבל שדות `model`, `tokens_in`, `tokens_out`, `cost_usd` (ברירת מחדל 0)
+- `scripts/team_flow.py` — `run_claude` מוסיף `--output-format json` ומחזיר `(returncode, usage)`. `_run_agent` מעביר usage ל-`AgentDoneEvent`. נוסף `import json`.
+- `skills/retro/SKILL.md` — Step 3 קורא `EVENTS.jsonl`, מחשב cost per agent, כותב Cost Summary table ב-`RETRO.md` (רק אם יש נתונים אמיתיים)
+
+### 3.4 Rigor escalator במקום בחירה מראש [ערך בינוני, עלות בינונית] ✅ DONE
 
 **בעיה:** משתמש לא יודע מראש איזה rigor הפיצ'ר דורש.
 
@@ -204,7 +219,10 @@ Scope גדל מעבר ל-lite (3 layers, 5 conversations).
 
 **תוצאה:** משתמש לא חוזה rigor מראש; המערכת מציעה כשהיא מזהה סיבה.
 
-### 3.5 Inline `/quick` שאילתא בין agents [ערך בינוני, עלות נמוכה]
+**יישום (2026-05-04, עודכן):**
+- `skills/team-flow/SKILL.md` — ברירת מחדל שונתה מ-`standard` ל-`lite`. 4 קבצי ליבה תמיד נוצרים; escalator מציע קבצים נוספים לפי signals ספציפיים (signal→file mapping). ההצעה מציגה כל קובץ עם הסיגנל שהפעיל אותו + אפשרות בחירה גרנולרית [1-4]. במצב fast/auto — כל הקבצים המומלצים מתווספים אוטומטית. No downgrade.
+
+### 3.5 Inline `/quick` שאילתא בין agents [ערך בינוני, עלות נמוכה] ✅ DONE
 
 **בעיה:** שאלות אטומיות יוצרות feedback files מיותרים.
 
@@ -219,7 +237,11 @@ Scope גדל מעבר ל-lite (3 layers, 5 conversations).
 
 **תוצאה:** מקצר feedback loops טריוויאליים בלי לפגוע ב-determinism.
 
-### 3.6 `/help --doctor` לאבחון מצב [ערך גבוה, עלות נמוכה]
+**יישום (2026-05-04):**
+- `agents/builder.md` — נוסף קטע "Inline quick query" לפני "Feedback files". מגדיר בדיוק מתי להשתמש (atomic, ≤2 tool calls, no write, no state) ומתי לדלג לפידבק.
+- `agents/quick.md` — נוסף קטע "Inline mode" עם כללים: no file write, no feedback files, answer is ephemeral. אם שאלה דורשת >2 tool calls — ממליץ על feedback file.
+
+### 3.6 `/help --doctor` לאבחון מצב [ערך גבוה, עלות נמוכה] ✅ DONE
 
 **בעיה:** כשהמערכת תקועה (orphan, drift, FSM stuck), המשתמש לא יודע מה לעשות.
 
@@ -238,6 +260,10 @@ Scope גדל מעבר ל-lite (3 layers, 5 conversations).
 
 **תוצאה:** שכבת recovery יורדת מ"גבוהה" ל"בינונית" עם אותו ממשק שהמשתמש מכיר.
 
+**יישום (2026-05-04):**
+- `skills/help/SKILL.md` — נוסף "Doctor mode" section לפני Step 1. מכסה: verify-state checks, stuck-state indicators (zero-diff stall, orphan TTL, FSM drift), plain-language output, one-action-at-a-time confirmation flow.
+- Command reference עודכן עם `/help --doctor [feature]`
+
 ---
 
 ## חלק 4 — שני סקילים חדשים: `/explore` ו-`/debug`
@@ -246,7 +272,7 @@ Scope גדל מעבר ל-lite (3 layers, 5 conversations).
 ב-workflow-ים שאינם waterfall כ-data structures גנריים. צריך רק סקילים חדשים
 שמשתמשים בתת-קבוצה אחרת של States ו-Files. **הליבה לא צריכה להשתנות.**
 
-### 4.1 `/explore <question>` — מצב חקרני
+### 4.1 `/explore <question>` — מצב חקרני ✅ DONE
 
 **מתי להשתמש:** "בוא נבין איך X משפיע", "האם נכון לשנות מ-Y ל-Z?",
 "מה ה-data flow של פיצ'ר A?". אין AC, אין יעד יישומי, יש שאלה.
@@ -275,7 +301,10 @@ explorations/<topic>/
   [no]  ה-exploration נשאר תיעוד; שום דבר לא נבנה
 ```
 
-### 4.2 `/debug <symptom>` — pipeline ייעודי לבאגים
+**יישום (2026-05-04):**
+- `skills/explore/SKILL.md` — skill חדש עם 4 שלבים: frame question → discoverer trace → quick draws conclusions → graduation offer. Read-only על production code. אין FSM tracking. HUMAN_QUESTIONS.md בלבד כ-feedback. Graduation מוזרק כ-context ל-storm.
+
+### 4.2 `/debug <symptom>` — pipeline ייעודי לבאגים ✅ DONE
 
 **מתי להשתמש:** באג ידוע (תסמין נצפה), שורש לא ידוע.
 
@@ -305,6 +334,9 @@ INVESTIGATING → REPRODUCING → ROOT_CAUSE_FOUND → FIXING → VERIFYING → 
 - `builder` — כותב את ה-FIX.
 - `tester` — מאמת.
 - `reviewer` — מצומצם: רק בודק שה-FIX לא שובר חוזים אחרים.
+
+**יישום (2026-05-04):**
+- `skills/debug/SKILL.md` — skill חדש עם 7 שלבים: symptom capture → discoverer repro → tester pre-fix → discoverer root cause → builder fix → tester post-fix → reviewer (narrow scope). Feedback protocol זהה ל-team-flow. Max 2 retries. Regression → human escalation.
 
 ---
 

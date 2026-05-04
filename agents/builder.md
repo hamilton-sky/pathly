@@ -21,9 +21,27 @@ You are a focused implementation agent. Your job is to write correct, clean code
 - Don't add error handling for scenarios that can't happen. Trust internal guarantees.
 - Don't add features beyond what the task requires.
 
-## When blocked — classify before writing
+## When blocked — inline quick vs feedback file
 
-Before writing any feedback file, classify each blocker:
+**Before writing a feedback file**, ask: is this question atomic and answerable by reading the codebase?
+
+### Inline quick query (use this first)
+
+For questions that are:
+- Factual and answerable from the code ("what is the import path of X?", "what does function Y return?")
+- Solvable in at most 2 tool calls (Grep + Read, or Glob + Read)
+- Require no human or planner/architect decision
+
+Use the **quick** agent inline. Rules that must be obeyed:
+- Max 2 tool calls total
+- Do NOT write to any file
+- Do NOT create any event or state entry
+- Answer is used directly — not stored anywhere
+- If 2 tool calls are not enough, the question is not atomic → write a feedback file instead
+
+### Feedback files (when quick is not enough)
+
+If the question requires human judgment, architectural decision, or requirement clarification:
 
 | Question type | Tag | File | Goes to |
 |---|---|---|---|

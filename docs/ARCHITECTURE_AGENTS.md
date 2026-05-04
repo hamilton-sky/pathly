@@ -133,17 +133,24 @@ Skills are `.md` files in a `<skill-name>/SKILL.md` structure with frontmatter:
 ### Global lifecycle skills (`~/.claude/skills/`)
 
 ```
-team-flow      ← full pipeline with feedback loops: discovery→plan→build→test→retro
-                 supports rigor: lite, standard, strict
-storm          ← brainstorm a feature idea; write STORM_SEED.md on /stop plan
-plan           ← interview + research → create plans/<feature>/ with 4 or 8 files by rigor
+team-flow      ← full pipeline: discovery→plan→[build+review]×N→test→retro
+                 rigor: lite (default+escalator), standard, strict
+                 rigor escalator: checks signals after planning, offers per-file additions
+debug          ← bug pipeline: discoverer traces → tester verifies repro → builder fixes
+                 → tester verifies fix → reviewer (narrow scope). Max 2 retries.
+explore        ← investigation mode: discoverer answers a codebase question, no building.
+                 Can graduate to /team-flow with CONCLUSIONS.md as storm context.
+storm          ← architect explores idea with ASCII diagrams → STORM_SEED.md
+plan           ← 4 core files always; planner adds escalator-selected extras
 build          ← read PROGRESS.md → implement next TODO conversation → verify
-review         ← check code against architectural rules; report violations
-retro          ← ask 3 questions → write RETRO.md + append to LESSONS_CANDIDATE.md
+review         ← adversarial check; trivial findings tagged [AUTO_FIX] with inline patch
+retro          ← ask 3 questions → write RETRO.md (with cost summary from EVENTS.jsonl)
+                 → append to LESSONS_CANDIDATE.md
 lessons        ← promote repeated patterns from LESSONS_CANDIDATE.md → LESSONS.md
 archive        ← move completed plan to plans/.archive/ (requires RETRO.md + all DONE)
-prd-import     ← read any PRD file → translate ACs + edge cases → generate rigor-specific plan files
-verify-state   ← check stale feedback files, PROGRESS drift from git, dead code references
+prd-import     ← read any PRD file → translate ACs + edge cases → plan files
+verify-state   ← orphan detection (TTL frontmatter), PROGRESS drift, dead code references
+help           ← state menu; --doctor mode diagnoses FSM issues and offers one action each
 ```
 
 ### Project-local skills (`.claude/skills/`)
@@ -201,14 +208,26 @@ project's conventions. The same agents work in any project — only the rules fi
 Start any feature with one command:
 
 ```
-/team-flow <feature-name>            ← standard rigor, pauses at every stage (default)
-/team-flow <feature-name> lite       ← 4-file plan, lighter gates
-/team-flow <feature-name> standard   ← current full 8-file pipeline
+/team-flow <feature-name>            ← lite rigor + escalator (default)
+/team-flow <feature-name> lite       ← 4 core files only, lighter gates
+/team-flow <feature-name> standard   ← full 8-file pipeline
 /team-flow <feature-name> strict     ← mandatory approvals + audit-grade gates
-/team-flow <feature-name> fast       ← runs to completion, no pauses
+/team-flow <feature-name> fast       ← runs to completion, no pauses; escalator applies automatically
 /team-flow <feature-name> build      ← skip discovery+plan, resume build
 /team-flow <feature-name> test       ← skip to test stage only
 /team-flow <feature-name> build fast ← resume build, no pauses
+```
+
+For non-waterfall work:
+```
+/debug <symptom>      ← dedicated bug pipeline; tester runs before + after fix
+/explore <question>   ← codebase investigation; can graduate to /team-flow
+```
+
+For recovery:
+```
+/help --doctor [feature]   ← diagnose FSM issues, orphan files, stale state
+/verify-state [feature]    ← full consistency report (read-only)
 ```
 
 ### Pipeline with feedback loops
@@ -227,9 +246,17 @@ You: /team-flow payment-flow
    ┌────────────────────┐
    │  Stage 2 — Plan    │  planner (sonnet) runs /plan
    │                    │  reads STORM_SEED.md if present
-   │                    │  → writes plans/<feature>/ (8 files)
+   │                    │  → writes 4 core plan files always
    └─────────┬──────────┘
          PAUSE ← "Review plan. go / stop"
+              │
+              ▼
+   ┌────────────────────┐
+   │  Rigor Escalator   │  checks signals (cross-layer deps, keywords, conv count)
+   │  (before build 1)  │  → offers targeted extra files per signal detected
+   │                    │  → fast mode: applies all recommended files automatically
+   └─────────┬──────────┘
+         (skipped if no signals, or if rigor was explicit)
               │
               ▼
    ┌──────────────────────────────────────────────┐
@@ -266,7 +293,8 @@ You: /team-flow payment-flow
                          ▼
    ┌────────────────────┐
    │  Stage 5 — Retro   │  quick (haiku) runs /retro
-   │                    │  → writes RETRO.md
+   │                    │  → writes RETRO.md with cost summary
+   │                    │    (reads EVENTS.jsonl for per-agent token/cost data)
    └────────────────────┘
 ```
 
@@ -277,36 +305,64 @@ You: /team-flow payment-flow
 Feedback files live in `plans/<feature>/feedback/`.
 **A file existing = issue open. No file = resolved.**
 The orchestrator FSM checks after every event. Never advances past open feedback.
-See `docs/ORCHESTRATOR_FSM.md` for states, events, priority, and recovery.
+See `docs/FEEDBACK_PROTOCOL.md` for formats and `docs/ORCHESTRATOR_FSM.md` for states.
 
-### The 5 feedback files
+### TTL frontmatter (orphan detection)
+
+Every feedback file gets a YAML frontmatter block injected by `hooks/inject_feedback_ttl.py`:
+
+```yaml
+---
+created_at: 2026-05-04T08:12:00Z
+created_by_event: <last-event-id-from-EVENTS.jsonl>
+ttl_hours: 24
+---
+```
+
+`/verify-state` and `/help --doctor` flag files where:
+- `created_by_event` is not in the current `EVENTS.jsonl` → orphan from a previous run
+- `created_at + ttl_hours` has elapsed → stale
+
+Both cases are safe to delete. The pipeline never auto-deletes feedback files — only agents
+resolve them by deleting after fixing the underlying issue.
+
+### The 6 feedback files
 
 | File | Written by | Resolved by | When |
 |---|---|---|---|
 | `ARCH_FEEDBACK.md` | reviewer | architect | structural/architectural violation found |
-| `REVIEW_FAILURES.md` | reviewer | builder | implementation-level bug found |
+| `REVIEW_FAILURES.md` | reviewer | builder | implementation-level bug; may include `[AUTO_FIX]` patches |
 | `IMPL_QUESTIONS.md` | builder `[REQ]` | planner | requirement is ambiguous ("what should this do?") |
 | `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect | technical blocker ("how is this possible?") |
 | `TEST_FAILURES.md` | tester | builder | acceptance criterion FAIL or NOT COVERED |
-| `HUMAN_QUESTIONS.md` | orchestrator `[STALL]` / any agent `[BLOCKED]` | user | zero-diff loop or unresolvable question — blocks pipeline |
+| `HUMAN_QUESTIONS.md` | orchestrator `[STALL]`/`[RIGOR]` / any agent `[BLOCKED]` | user | zero-diff loop, rigor escalation, or unresolvable question |
+
+### `[AUTO_FIX]` in REVIEW_FAILURES.md
+
+Reviewer may tag unambiguously mechanical findings as `[AUTO_FIX]` with an inline patch
+(conflict-marker style). Builder applies all `[AUTO_FIX]` patches in batch first, then
+handles remaining regular violations. Principle "reviewer never fixes" is preserved —
+the patch is a report, not an edit.
+
+### Inline quick queries (builder shortcut)
+
+Before writing `IMPL_QUESTIONS.md`, builder may use the **quick** agent inline for atomic
+factual questions (≤ 2 tool calls, no file writes, no state). If quick cannot answer in
+2 tool calls, the question goes to a feedback file as normal.
 
 ### Escalation paths
 
 ```
 reviewer ──► ARCH_FEEDBACK.md    ──► architect  (redesign → builder re-implements)
-         └─► REVIEW_FAILURES.md  ──► builder    (fix → reviewer re-checks)
+         └─► REVIEW_FAILURES.md  ──► builder    ([AUTO_FIX] batch + regular fixes)
 
-builder  ──► IMPL_QUESTIONS.md   ──► planner    ([REQ] — clarify → builder continues)
+builder  ──► quick (inline)       ──► atomic lookup (≤2 tool calls, no files)
+         ──► IMPL_QUESTIONS.md   ──► planner    ([REQ] — clarify → builder continues)
          └─► DESIGN_QUESTIONS.md ──► architect  ([ARCH] — resolve → builder continues)
          (both files if [UNSURE] — correct owner discards)
 
 tester   ──► TEST_FAILURES.md    ──► builder    (fix → tester re-checks)
 ```
-
-**Tag rule for builder:**
-- `[REQ]` = "what should this do?" → IMPL_QUESTIONS.md → planner
-- `[ARCH]` = "how is this technically possible?" → DESIGN_QUESTIONS.md → architect
-- `[UNSURE]` = genuinely unclear → write to both files, correct owner discards
 
 ### Resolution rules
 

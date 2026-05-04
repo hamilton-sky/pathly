@@ -34,10 +34,33 @@ Ask these three questions, one at a time. Wait for an answer before asking the n
 
 ## Step 3: Write RETRO.md
 
+**Before writing — compute cost summary (if EVENTS.jsonl exists):**
+
+Read `plans/$ARGUMENTS/EVENTS.jsonl`. For every line where `type == "AGENT_DONE"`,
+collect `agent`, `model`, `tokens_in`, `tokens_out`, `cost_usd`.
+
+Aggregate per agent:
+- Total `cost_usd` across all events (skip events where `cost_usd == 0.0`)
+- Total `tokens_in + tokens_out` per agent
+
+If any events have `cost_usd > 0`, build a cost table. Otherwise omit the Cost section.
+
 Write `plans/$ARGUMENTS/RETRO.md`:
 
 ```markdown
 # [Feature Name] — Retrospective
+
+## Cost Summary
+Total: $X.XX
+
+| Agent     | Model          | Tokens in | Tokens out | Cost     | % of total |
+|-----------|----------------|-----------|------------|----------|------------|
+| architect | claude-opus-4-7 | 12,400   | 2,100      | $2.50    | 60%        |
+| builder   | claude-sonnet-4-6 | 8,200  | 4,300      | $1.10    | 26%        |
+| reviewer  | claude-sonnet-4-6 | 5,100  | 1,200      | $0.40    | 10%        |
+| tester    | claude-sonnet-4-6 | 3,000  | 900        | $0.20    | 5%         |
+
+> Use this to decide: was standard rigor worth the cost? Would lite have been enough?
 
 ## Plan Quality
 **Conversation sizing:** [too big / too small / good — from Q1]
@@ -54,6 +77,8 @@ Write `plans/$ARGUMENTS/RETRO.md`:
 > Paste this block as context when starting the next related storm session:
 [2-3 sentence summary of the key learning from this retro]
 ```
+
+If `EVENTS.jsonl` doesn't exist or has no `cost_usd` data, omit the Cost Summary section entirely — do not show a table of zeros.
 
 ## Step 4: Extract lessons
 

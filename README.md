@@ -14,6 +14,16 @@ files, and the orchestrator behaves as a deterministic filesystem state
 machine. An open feedback file blocks the pipeline. A deleted file means
 resolved.
 
+**New in this version:**
+- **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
+- **`/debug <symptom>`** — dedicated bug pipeline: discoverer traces, tester verifies before and after fix
+- **`/explore <question>`** — investigation mode: answer questions about the codebase without building
+- **`/help --doctor`** — diagnoses stuck FSM, orphan feedback files, stale state; offers one action per issue
+- **`[AUTO_FIX]` in reviewer** — trivial findings (unused import, missing newline) applied in batch, no human turn
+- **Cost meter** — `RETRO.md` shows per-agent token + cost breakdown from `EVENTS.jsonl`
+- **Inline quick queries** — builder can ask atomic questions (≤ 2 tool calls) without creating feedback files
+- **TTL on feedback files** — frontmatter tracks creation event; `/verify-state` detects orphans and expired files
+
 ---
 
 ## Quick install
@@ -73,9 +83,14 @@ when you need to jump into the middle of a pipeline.
 Choose process rigor with `lite`, `standard`, or `strict`:
 ```
 /team-flow small-ui-copy lite       ← 4-file plan, lighter gates
-/team-flow payment-flow standard    ← default full pipeline
+/team-flow payment-flow standard    ← full 8-file pipeline
 /team-flow auth-migration strict    ← mandatory approvals, audit logs, full gates
 ```
+
+Default is `lite` — the **rigor escalator** detects signals during planning
+(cross-layer deps, high-risk keywords, many conversations) and offers specific
+additional plan files before the first build. In `fast` mode it applies all
+recommended files automatically.
 
 `fast` controls pauses. Rigor controls process depth. `strict` rejects `fast`
 because strict mode requires human approval gates.
@@ -115,35 +130,46 @@ because strict mode requires human approval gates.
 
 | Skill | Command | What it does |
 |---|---|---|
-| `team-flow` | `/team-flow <feature>` | Full pipeline: discovery→plan→build×N→test→retro |
+| `team-flow` | `/team-flow <feature>` | Full pipeline: discovery→plan→build×N→test→retro with rigor escalator |
 | `storm` | `/storm` | Architect explores the idea with ASCII diagrams |
-| `plan` | `/plan <feature> [lite|standard|strict]` | Creates `plans/<feature>/` with 4 or 8 files depending on rigor |
+| `plan` | `/plan <feature> [lite|standard|strict]` | Creates `plans/<feature>/` with 4 core files + escalator-selected extras |
 | `build` | `/build <feature>` | Implements the next TODO conversation |
-| `review` | `/review` | Reviewer audits code against rules |
-| `retro` | `/retro <feature>` | Writes RETRO.md + appends to LESSONS_CANDIDATE.md |
+| `review` | `/review` | Reviewer audits code; trivial findings tagged `[AUTO_FIX]` for batch apply |
+| `retro` | `/retro <feature>` | Writes RETRO.md with cost summary + appends to LESSONS_CANDIDATE.md |
 | `lessons` | `/lessons` | Promotes candidate lessons to LESSONS.md for planner |
 | `archive` | `/archive <feature>` | Moves completed plan to `plans/.archive/` |
 | `prd-import` | `/prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file into plan files |
 | `bmad-import` | `/bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
-| `verify-state` | `/verify-state [feature]` | Checks stale feedback files, PROGRESS drift, dead code references |
+| `verify-state` | `/verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
+| `debug` | `/debug <symptom>` | Bug pipeline: discoverer traces → builder fixes → tester verifies before + after |
+| `explore` | `/explore <question>` | Investigation mode: answer codebase questions without building anything |
+| `help` | `/help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
 
 ---
 
 ## Rigor Modes
 
-| Rigor | Best for | Plan files | Gates |
-|---|---|---|---|
-| `lite` | Small, low-risk changes | 4 files: stories, implementation plan, progress, conversation prompts | Build-focused, review/test can be final-only |
-| `standard` | Normal product features | Current 8-file plan | Review after every conversation, test, retro |
-| `strict` | Auth, payments, migrations, compliance, production-risk work | 8 files plus required FSM state/event logs | Mandatory approvals, review, test mapping, audit trail |
+The pipeline **always creates 4 core plan files** regardless of rigor:
+`USER_STORIES.md`, `IMPLEMENTATION_PLAN.md`, `PROGRESS.md`, `CONVERSATION_PROMPTS.md`
 
-Default is `standard`.
+Additional files are added by the **rigor escalator** (signal-based) or by explicit choice:
+
+| Rigor | Best for | Extra files | Gates |
+|---|---|---|---|
+| `lite` *(default)* | Small, low-risk changes | None beyond 4 core (escalator may add targeted extras) | Build-focused, review/test can be final-only |
+| `standard` | Normal product features | `HAPPY_FLOW.md`, `EDGE_CASES.md`, `ARCHITECTURE_PROPOSAL.md`, `FLOW_DIAGRAM.md` | Review after every conversation, test, retro |
+| `strict` | Auth, payments, migrations, compliance | All 8 files + required `STATE.json` + `EVENTS.jsonl` | Mandatory approvals, review, test mapping, audit trail |
+
+**Rigor escalator:** after planning, the orchestrator checks for signals (cross-layer
+dependencies, high-risk keywords, > 3 conversations, long discovery path) and offers to
+add the specific extra files that are warranted — with the signal shown per file. In `fast`
+mode, all recommended files are added automatically. Explicit rigor flags (`standard`,
+`strict`) bypass the escalator and add the full file set.
 
 To move a feature between rigor levels, do not delete files. Upgrade by running
 `/plan <feature> standard` or `/plan <feature> strict` to add missing plan
-sections/files. Downgrade by running `/team-flow <feature> standard` or
-`/team-flow <feature> lite`; extra files remain as references while future gates
-become lighter.
+files. Downgrade by running `/team-flow <feature> lite`; extra files remain as
+references while future gates become lighter.
 
 ---
 
@@ -189,16 +215,26 @@ conversations are caught before any agent spawns.
 
 ## Feedback File Protocol
 
-5 files in `plans/<feature>/feedback/`. **File exists = issue open. Deleted = resolved.**
+6 files in `plans/<feature>/feedback/`. **File exists = issue open. Deleted = resolved.**
+
+Every feedback file carries a YAML frontmatter block (injected by `inject_feedback_ttl.py`):
+```yaml
+---
+created_at: 2026-05-04T08:12:00Z
+created_by_event: <last-event-id>
+ttl_hours: 24
+---
+```
+`/verify-state` and `/help --doctor` use this to detect orphan files (event not in current log) and expired files (TTL elapsed) — both are safe to delete automatically.
 
 | File | Written by | Resolved by |
 |---|---|---|
 | `ARCH_FEEDBACK.md` | reviewer | architect |
-| `REVIEW_FAILURES.md` | reviewer | builder |
+| `REVIEW_FAILURES.md` | reviewer | builder (`[AUTO_FIX]` patches applied in batch; regular violations handled normally) |
 | `IMPL_QUESTIONS.md` | builder `[REQ]` | planner |
 | `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect |
 | `TEST_FAILURES.md` | tester | builder |
-| `HUMAN_QUESTIONS.md` | any agent / `[STALL]` | user *(blocks pipeline)* |
+| `HUMAN_QUESTIONS.md` | any agent / `[STALL]` / `[RIGOR]` | user *(blocks pipeline)* |
 
 `ARCH_FEEDBACK.md` is blocking — no building until architect resolves it.
 The full transition model is defined in [docs/ORCHESTRATOR_FSM.md](docs/ORCHESTRATOR_FSM.md).
@@ -234,23 +270,29 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 
 ```
 ~/.claude/
-├── agents/          ← 8 behavioral contracts (.md files)
-├── skills/          ← lifecycle skills (storm, plan, build, imports, archive, ...)
-│   └── */SKILL.md
-├── hooks/           ← auto-classification hooks
-│   └── classify_feedback.py  ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
-├── orchestrator/    ← FSM core deployed to ~/.claude/orchestrator/
-│   ├── constants.py ← named constants for FSMState, Agent, FeedbackFile, Mode, Rigor
-│   ├── utils.py     ← utc_now() shared timestamp helper
-│   ├── state.py     ← 14-state immutable State dataclass; state_stack for nested blocks
-│   ├── events.py    ← 9 event classes (COMMAND, AGENT_DONE, FILE_CREATED, …)
-│   ├── reducer.py   ← pure reduce(state, event) → new_state; _AGENT_TRANSITIONS dict
-│   └── eventlog.py  ← per-feature EVENTS.jsonl + STATE.json writer
-└── templates/plan/  ← 8 plan file templates
+├── agents/                    ← 8 behavioral contracts (.md files)
+├── skills/                    ← lifecycle skills
+│   ├── team-flow/SKILL.md     ← full pipeline + rigor escalator
+│   ├── debug/SKILL.md         ← bug pipeline (new)
+│   ├── explore/SKILL.md       ← investigation mode (new)
+│   ├── help/SKILL.md          ← state menu + --doctor mode
+│   ├── verify-state/SKILL.md  ← orphan/TTL/drift checks
+│   └── */SKILL.md             ← storm, plan, build, retro, lessons, archive, imports
+├── hooks/
+│   ├── classify_feedback.py   ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
+│   └── inject_feedback_ttl.py ← injects TTL frontmatter into every feedback file on write (new)
+├── orchestrator/              ← FSM core
+│   ├── constants.py           ← FSMState, Agent, FeedbackFile, Mode, Rigor
+│   ├── utils.py               ← utc_now() helper
+│   ├── state.py               ← 14-state immutable State dataclass
+│   ├── events.py              ← 9 event classes; AgentDoneEvent includes model/tokens/cost
+│   ├── reducer.py             ← pure reduce(state, event) → new_state
+│   └── eventlog.py            ← per-feature EVENTS.jsonl + STATE.json writer
+└── templates/plan/            ← plan file templates
     └── *.template.md
 ```
 
-`settings.json` is updated automatically by the installer to register the hook.
+`settings.json` is updated automatically by the installer to register both hooks.
 
 Your existing `~/.claude/` content is backed up before install.
 

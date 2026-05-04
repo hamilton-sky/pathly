@@ -18,7 +18,7 @@ Parse `$ARGUMENTS` for these tokens (order doesn't matter):
 - `build` → set `entryStage = build`
 - `test` → set `entryStage = test`
 - Default: `entryStage = discovery`
-- Default: `rigor = standard`
+- Default: `rigor = lite` (escalator may offer upgrade to standard after planning)
 
 If both `strict` and `fast` are present, stop and report:
 `strict mode requires human approval gates; remove fast or choose standard fast.`
@@ -142,6 +142,91 @@ Applies only after the builder finishes a `REVIEW_FAILURES.md` fix, before re-sp
      ```
    - Stop and report: `"Zero-diff loop detected for Conv N. Escalated to HUMAN_QUESTIONS.md."`
 4. If the output is non-empty: proceed to re-spawn reviewer.
+
+## Rigor escalator
+
+The pipeline **always starts with the 4 core lite files** — no exceptions:
+
+```
+USER_STORIES.md
+IMPLEMENTATION_PLAN.md
+PROGRESS.md
+CONVERSATION_PROMPTS.md
+```
+
+The escalator runs **after planning completes and before the first builder spawn**.
+It looks at what the planner and architect discovered, then offers to add specific
+extra files based on what the task actually needs. Nothing is added silently.
+
+Default rigor when the user doesn't specify: **`lite`** (4 files only).
+
+---
+
+### Signal → file mapping
+
+Each additional file has exactly one trigger signal. Check these after planning:
+
+| Extra file | Trigger signal | How to detect |
+|---|---|---|
+| `ARCHITECTURE_PROPOSAL.md` | Cross-layer dependency found | Architect or planner mentions > 1 layer, or STORM_SEED.md references multiple layers |
+| `EDGE_CASES.md` | High-risk keywords | USER_STORIES.md or STORM_SEED.md contains: "auth", "payment", "migration", "security", "schema", "breaking change" |
+| `HAPPY_FLOW.md` | > 3 conversations planned | CONVERSATION_PROMPTS.md has more than 3 conversation blocks |
+| `FLOW_DIAGRAM.md` | Long discovery path | STORM_SEED.md or discoverer output references > 3 files, or architect drew a multi-component diagram |
+
+A file is only recommended if its signal fires. Files with no signal are not offered.
+
+---
+
+### Escalation offer (interactive mode)
+
+If any signal fires, write `plans/<feature>/feedback/HUMAN_QUESTIONS.md`
+before spawning the first builder:
+
+```
+[RIGOR ESCALATOR] — recommended additions for <feature>
+
+The 4 core plan files are ready. Based on what was found during planning,
+these additional files are recommended:
+
+  ✦ ARCHITECTURE_PROPOSAL.md   → cross-layer dependencies detected
+  ✦ EDGE_CASES.md              → keyword "payment" found in USER_STORIES.md
+  ─ HAPPY_FLOW.md              → no signal (2 conversations planned)
+  ─ FLOW_DIAGRAM.md            → no signal (discovery path was short)
+
+Add to plan:
+  [1] All recommended (ARCHITECTURE_PROPOSAL + EDGE_CASES)
+  [2] ARCHITECTURE_PROPOSAL.md only
+  [3] EDGE_CASES.md only
+  [4] None — keep 4 core files only
+
+Reply with 1, 2, 3, or 4:
+```
+
+Wait for user reply. Then:
+- Spawn the **planner** to generate only the selected file(s), appending to the existing plan.
+- Delete `HUMAN_QUESTIONS.md`.
+- Continue to build.
+
+If **no signals fire**: skip the offer entirely. Keep 4 core files. Proceed to build.
+
+---
+
+### Fast / auto mode behavior
+
+In `fast` mode (or when `autoFlow = true`): skip the question.
+Automatically apply **all recommended files** (all signals that fired) and continue.
+Print: `[RIGOR AUTO] Adding: <file1>, <file2> — signals detected during planning.`
+
+---
+
+### Rules
+
+- The 4 core files are **never removed**, never conditional, never skipped.
+- Extra files are **additive only** — they extend the plan, never replace core files.
+- Do not suggest downgrading. Only upward additions are offered.
+- Do not add a file when its signal did not fire, even if the user asks for "standard".
+  (If the user wants all 8 files explicitly, they should run `/team-flow <feature> standard`.)
+- Each file offered must show its triggering signal clearly — no silent additions.
 
 ## Health checks before skipping stages
 

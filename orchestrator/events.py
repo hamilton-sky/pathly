@@ -43,7 +43,11 @@ class AgentDoneEvent(Event):
     """AGENT_DONE: An agent finished its work."""
 
     type: str = Events.AGENT_DONE
-    agent: str = ""  # e.g. "architect", "planner", "builder", "reviewer", "tester", "quick"
+    agent: str = ""          # e.g. "architect", "planner", "builder", "reviewer", "tester", "quick"
+    model: str = ""          # model used, e.g. "claude-opus-4-7", "claude-sonnet-4-6"
+    tokens_in: int = 0       # input tokens consumed
+    tokens_out: int = 0      # output tokens produced
+    cost_usd: float = 0.0    # USD cost for this agent run (0.0 = not tracked)
 
 
 @dataclass

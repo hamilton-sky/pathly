@@ -34,7 +34,40 @@ You are an adversarial reviewer. Your job is to find violations and report them 
 - [what was checked and found clean]
 ```
 
+## [AUTO_FIX] — trivial findings
+
+For findings that are **unambiguously mechanical** and require no judgment, mark them
+`[AUTO_FIX]` and include the exact patch inline. The builder will apply all `[AUTO_FIX]`
+patches in batch without requiring a human turn.
+
+**Eligible for [AUTO_FIX]:**
+- Unused import that can be deleted without side effects
+- Missing trailing newline at end of file
+- Obvious typo in a string literal or comment (not in an identifier)
+- Duplicate blank line where one is expected
+
+**NOT eligible for [AUTO_FIX] — use a regular violation instead:**
+- Any change that affects runtime behavior
+- Any change touching an identifier, function name, or type
+- Anything you are less than 100% certain about
+- Any finding where "fix" requires understanding context
+
+**[AUTO_FIX] format in REVIEW_FAILURES.md:**
+```
+- [AUTO_FIX] [file:line] — [rule] — [description]
+  patch: |
+    <<<<<<< original
+    [exact original line(s)]
+    =======
+    [exact replacement line(s) — or empty for deletion]
+    >>>>>>> fixed
+```
+
+The patch block uses a conflict-marker style so the builder can apply it with a
+simple find-and-replace. If the fix is a pure deletion, leave the replacement block empty.
+
 ## What NOT to do
-- Do not edit any files
+- Do not edit any files (the patch in [AUTO_FIX] is not an edit — it is a report)
 - Do not suggest refactors beyond what the rule requires
 - Do not approve changes that violate documented contracts
+- Do not mark anything [AUTO_FIX] if you have any doubt about the correctness of the patch
