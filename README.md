@@ -34,25 +34,30 @@ users normally install and use the Claude plugin, not a standalone Python app.
 
 ## Quick install
 
-**Claude Code plugin (recommended):**
-```
-/plugin install claude-agents-framework
-```
-
-Then register the auto-classification hook (optional but recommended):
 ```bash
-# Linux / macOS
-bash ~/.claude/plugins/claude-agents-framework/scripts/setup-hook.sh
+# macOS / Linux
+git clone https://github.com/hamilton/claude-agents-framework
+cd claude-agents-framework
+bash install.sh
 
+# Optional: register the auto-classification hook
+bash scripts/setup-hook.sh
+```
+
+```powershell
 # Windows (PowerShell)
-& "$env:USERPROFILE\.claude\plugins\claude-agents-framework\scripts\setup-hook.ps1"
+git clone https://github.com/hamilton/claude-agents-framework
+cd claude-agents-framework
+.\install.ps1
+
+# Optional: register the auto-classification hook
+.\scripts\setup-hook.ps1
 ```
 
-That's it. No pip install. No files copied to `~/.claude/`. The plugin lives in its own folder and doesn't interfere with any existing setup.
-
-**To unregister the hook later:**
+**To uninstall:**
 ```bash
-bash ~/.claude/plugins/claude-agents-framework/scripts/setup-hook.sh --remove
+bash install.sh --uninstall           # macOS / Linux
+.\install.ps1 -Uninstall              # Windows
 ```
 
 Then open any project in Claude Code and run:
@@ -343,30 +348,16 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 ```
 ~/.claude/
 ├── agents/                    ← 9 behavioral contracts (.md files)
-├── skills/                    ← lifecycle skills
-│   ├── team-flow/SKILL.md     ← full pipeline + rigor escalator
-│   ├── debug/SKILL.md         ← bug pipeline (new)
-│   ├── explore/SKILL.md       ← investigation mode (new)
-│   ├── help/SKILL.md          ← state menu + --doctor mode
-│   ├── verify-state/SKILL.md  ← orphan/TTL/drift checks
-│   └── */SKILL.md             ← storm, plan, build, retro, lessons, archive, imports
-├── hooks/
-│   ├── classify_feedback.py   ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
-│   └── inject_feedback_ttl.py ← injects TTL frontmatter into every feedback file on write (new)
-├── orchestrator/              ← FSM core
-│   ├── constants.py           ← FSMState, Agent, FeedbackFile, Mode, Rigor
-│   ├── utils.py               ← utc_now() helper
-│   ├── state.py               ← 14-state immutable State dataclass
-│   ├── events.py              ← 9 event classes; AgentDoneEvent includes model/tokens/cost
-│   ├── reducer.py             ← pure reduce(state, event) → new_state
-│   └── eventlog.py            ← per-feature EVENTS.jsonl + STATE.json writer
-└── templates/plan/            ← plan file templates
-    └── *.template.md
+├── skills/                    ← lifecycle skills (go, team-flow, build, plan, ...)
+└── plugins/claude-agents-framework/
+    ├── hooks/
+    │   ├── classify_feedback.py    ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
+    │   └── inject_feedback_ttl.py  ← injects TTL frontmatter into every feedback file on write
+    └── templates/plan/             ← plan file templates used by /plan, /prd-import, /bmad-import
+        └── *.template.md
 ```
 
-`settings.json` is updated automatically by the installer to register both hooks.
-
-Your existing `~/.claude/` content is backed up before install.
+Run `bash scripts/setup-hook.sh` (or `.\scripts\setup-hook.ps1`) after install to register the hooks in `settings.json`.
 
 ---
 
