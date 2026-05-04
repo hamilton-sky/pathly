@@ -52,7 +52,7 @@ CLAUDE.md to understand local conventions.
 
 ---
 
-## The 8 Agents
+## The 12 Agents
 
 Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 `name`, `role`, `model`, `skills`, `description` — then behavioral rules in the body.
@@ -60,21 +60,35 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 ```
 ~/.claude/agents/
 │
+├─ director.md       role: director       model: sonnet
+│   "What workflow should run for this request?"
+│   Reads project state, classifies intent, chooses rigor and entry point.
+│   skills: [go, team-flow, build, review, retro]
+│
 ├─ architect.md      role: architect      model: opus
 │   "How should this be built technically?"
 │   Thinks in layers, dependency directions, design trade-offs.
+│   Sub-agents: scout (codebase), web-researcher (external docs)
 │   Resolves: ARCH_FEEDBACK.md, DESIGN_QUESTIONS.md
 │   skills: [storm]
+│
+├─ po.md             role: po             model: opus
+│   "What exactly needs to be built, and why?"
+│   Product Owner advisor — probes scope, challenges assumptions, surfaces gaps.
+│   Validates PRDs before architecture begins.
+│   skills: []
 │
 ├─ planner.md        role: product-owner  model: sonnet
 │   "What needs to be built, for whom, verified how?"
 │   Writes user stories, acceptance criteria, conversation decomposition.
+│   Sub-agents: web-researcher (domain research, similar products, standards)
 │   Resolves: IMPL_QUESTIONS.md
 │   skills: [storm, plan]
 │
 ├─ builder.md        role: executor       model: sonnet
 │   "Build exactly what was planned. No more, no less."
 │   Reads before editing. Verifies before reporting done.
+│   Sub-agents: quick (inline atomic lookup), scout (cross-file pattern investigation)
 │   Writes: IMPL_QUESTIONS.md ([REQ] — requirement ambiguity → planner)
 │           DESIGN_QUESTIONS.md ([ARCH] — technical blocker → architect)
 │           both files if [UNSURE] — correct owner discards
@@ -84,6 +98,7 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 ├─ tester.md         role: tester         model: sonnet
 │   "Does the code match the acceptance criteria?"
 │   Maps each criterion to a test. Reports bugs, never fixes them.
+│   Sub-agents: scout (find test files and patterns)
 │   Writes: TEST_FAILURES.md
 │   skills: [test]
 │
@@ -95,6 +110,7 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 ├─ reviewer.md       role: reviewer       model: sonnet
 │   "Find what's wrong before it ships."
 │   Adversarial. Reports violations with file + rule reference. Never edits.
+│   Sub-agents: scout (find similar patterns to validate consistency)
 │   Writes: ARCH_FEEDBACK.md (structural violations)
 │           REVIEW_FAILURES.md (implementation violations)
 │   skills: [review, security-review]
@@ -104,16 +120,47 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 │   Navigates live sites, captures a11y trace data, pauses at auth.
 │   skills: project-local (defined per project in .claude/skills/)
 │
-└─ orchestrator.md   role: orchestrator   model: haiku
-    "Recover state. Process one event. Emit one next action."
-    Enforces the filesystem FSM in ORCHESTRATOR_FSM.md.
-    skills: [team-flow]
+├─ orchestrator.md   role: orchestrator   model: haiku
+│   "Recover state. Process one event. Emit one next action."
+│   Enforces the filesystem FSM in ORCHESTRATOR_FSM.md.
+│   skills: [team-flow]
+│
+├─ scout.md          role: analyst        model: haiku
+│   "Read across files to answer one structural question."
+│   Spawned by builder, reviewer, tester, architect — never spawns further agents.
+│   Read-only: no file writes, no feedback files, no state changes.
+│   Budget: 5–15 tool calls (Glob, Grep, Read).
+│   skills: []
+│
+└─ web-researcher.md role: analyst        model: haiku
+    "Find external design patterns, library docs, and domain knowledge."
+    Spawned by architect and planner — never spawns further agents.
+    Read-only: no file writes, no feedback files, no state changes.
+    Budget: 5–10 tool calls (WebSearch, WebFetch). Every fact must be cited.
+    skills: []
 ```
+
+### Sub-agent delegation
+
+Five agents can spawn read-only sub-agents before implementation begins.
+Sub-agents are terminal — they cannot spawn further agents.
+Maximum 4 sub-agents per conversation (across all tiers).
+
+```
+Tier 0 — self       ← agent reads its own context (CLAUDE.md, rules/) — always free
+Tier 1 — quick      ← atomic factual lookup, ≤2 tool calls, builder only
+Tier 2 — scout      ← cross-file pattern investigation (builder, architect, reviewer, tester)
+Tier 3 — web-researcher ← external docs, standards, design patterns (architect, planner only)
+```
+
+Scout and web-researcher are advisory — builder remains the sole implementation owner.
 
 ### Model tier reasoning
 
 ```
 opus    ← architect      deep reasoning, architecture judgment
+opus    ← po             requirements depth, assumption challenging
+sonnet  ← director       intent classification, risk/rigor judgment
 sonnet  ← planner        balanced, requirements thinking
 sonnet  ← builder        code execution, following instructions
 sonnet  ← tester         careful verification, gap analysis
@@ -121,6 +168,8 @@ sonnet  ← reviewer       adversarial analysis, rule checking
 sonnet  ← discoverer     site navigation, pattern recognition
 haiku   ← quick          fast lookups, no reasoning needed
 haiku   ← orchestrator   deterministic FSM transitions, no deep reasoning needed
+haiku   ← scout          read-only codebase lookup, pattern summary
+haiku   ← web-researcher read-only web lookup, cited summary
 ```
 
 ---
@@ -655,13 +704,16 @@ The rest of the pipeline is identical.
 ├── agents/
 │   ├── README.md
 │   ├── architect.md
+│   ├── po.md
 │   ├── planner.md
 │   ├── builder.md
 │   ├── tester.md
 │   ├── quick.md
 │   ├── reviewer.md
 │   ├── discoverer.md
-│   └── orchestrator.md
+│   ├── orchestrator.md
+│   ├── scout.md
+│   └── web-researcher.md
 ├── orchestrator/           ← FSM runtime (Python)
 │   ├── constants.py        ← named constants for FSMState, Agent, FeedbackFile, Mode, Rigor
 │   ├── utils.py            ← utc_now() timestamp helper (single source across all modules)

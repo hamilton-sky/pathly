@@ -6,7 +6,7 @@ route issues back to the right agent automatically.
 
 ## What this is
 
-9 specialized agents + lifecycle skills that give Claude Code a structured
+12 specialized agents + lifecycle skills that give Claude Code a structured
 development pipeline: brainstorm → plan → implement → review → test → retro → learn.
 
 Unlike conversation-based workflows, state lives on disk. Agents hand off via
@@ -178,7 +178,7 @@ or advanced control.
 | [docs/FLOW_DIAGRAM.md](docs/FLOW_DIAGRAM.md) | Full pipeline flow — Mermaid overview + ASCII lifecycle, feedback loops, agents, entry points |
 | [docs/FAST_MODE_FLOW.md](docs/FAST_MODE_FLOW.md) | Fast mode flow — ASCII + Mermaid diagrams showing auto-advance vs hard stops |
 | [docs/ARCHITECTURE_AGENTS.md](docs/ARCHITECTURE_AGENTS.md) | Full pipeline, agent map, file handoff protocol, quick reference |
-| [docs/BUILDER_DELEGATION_PLAN.md](docs/BUILDER_DELEGATION_PLAN.md) | Plan for read-only scout subagents that help builder gather context |
+| [docs/BUILDER_DELEGATION_PLAN.md](docs/BUILDER_DELEGATION_PLAN.md) | Two-tier sub-agent delegation design — scout (codebase) + web-researcher (external), constraints, ownership rules |
 | [docs/ORCHESTRATOR_FSM.md](docs/ORCHESTRATOR_FSM.md) | Deterministic state machine model, events, recovery, guards |
 | [docs/FEEDBACK_PROTOCOL.md](docs/FEEDBACK_PROTOCOL.md) | Each feedback file format with templates + escalation rules |
 | [docs/SECURITY_RELIABILITY_REVIEW.md](docs/SECURITY_RELIABILITY_REVIEW.md) | Security/reliability posture, risks, mitigations, and production checklist |
@@ -187,12 +187,13 @@ or advanced control.
 
 ---
 
-## The 9 Agents
+## The 12 Agents
 
 | Agent | Model | Role | Thinks about |
 |---|---|---|---|
 | `director` | Sonnet | Workflow direction | Intent, risk, rigor, entry point |
 | `architect` | Opus | Technical architecture | Layers, trade-offs, dependency direction |
+| `po` | Opus | Requirements advisor | Scope, assumptions, MVP, PRD validation |
 | `planner` | Sonnet | Requirements | User value, stories, acceptance criteria |
 | `builder` | Sonnet | Implementation | Exact scope, verify before done |
 | `reviewer` | Sonnet | Adversarial review | Contract violations, never fixes |
@@ -200,6 +201,8 @@ or advanced control.
 | `discoverer` | Sonnet | Site tracing | Follows visible paths, captures trace |
 | `quick` | Haiku | Fast lookups | 2 tool calls max |
 | `orchestrator` | Haiku | FSM sequencing | Recovers state, processes events, emits one agent action |
+| `scout` | Haiku | Codebase investigation | Read-only cross-file pattern lookup; advisory, no writes |
+| `web-researcher` | Haiku | External research | Web search for docs, patterns, standards; cited findings only |
 
 ---
 

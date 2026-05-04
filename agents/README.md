@@ -9,13 +9,16 @@ agent thinks. Skills are the abilities that role can execute.
 |---|---|---|---|---|
 | `director` | director | sonnet | go, team-flow, build, review, retro | Natural-language entry point; chooses workflow, rigor, and entry stage |
 | `architect` | architect | opus | storm | Technical design, layer decisions, trade-offs, system design |
+| `po` | po | opus | — | Interactive requirements discussion; probes scope, challenges assumptions, validates PRDs |
 | `planner` | product-owner | sonnet | storm, plan | Requirements, user stories, conversation decomposition, plans/ folder |
 | `builder` | executor | sonnet | build | Coding, verification, staying in scope |
 | `tester` | tester | sonnet | test | Verifying acceptance criteria, test plans, coverage gaps |
-| `quick` | analyst | haiku | retro | Fast lookups, short summaries, focused tasks |
+| `quick` | analyst | haiku | retro | Fast lookups, short summaries, focused tasks (≤2 tool calls) |
 | `reviewer` | reviewer | sonnet | review, verify-layers, security-review | Adversarial review, contract violations, security |
 | `discoverer` | discoverer | sonnet | discover-site, generate-poms | Navigating live sites, tracing user journeys, POM generation |
 | `orchestrator` | orchestrator | haiku | team-flow | Recovering FSM state and running the full pipeline |
+| `scout` | analyst | haiku | — | Read-only codebase investigation; spawned by builder/reviewer/tester/architect |
+| `web-researcher` | analyst | haiku | — | Read-only web research; spawned by architect/planner for external docs and patterns |
 
 ## Architecture
 
