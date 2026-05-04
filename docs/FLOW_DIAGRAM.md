@@ -188,6 +188,16 @@ graph TD
 ║                                                      ║
 ║  ┌─────────────────────────────────────────────┐    ║
 ║  │ builder (sonnet)                             │    ║
+║  │                                             │    ║
+║  │  BEFORE editing — gather context:           │    ║
+║  │   ├─ quick (haiku)  ← atomic lookup         │    ║
+║  │   │    ≤2 tool calls, no writes, ephemeral  │    ║
+║  │   └─ scout (haiku) ×1-3                     │    ║
+║  │        cross-file pattern lookup (5-15 calls)│    ║
+║  │   cap: 4 sub-agents total; all read-only    │    ║
+║  │   collect findings → form approach          │    ║
+║  │                                             │    ║
+║  │  THEN edit files as builder                 │    ║
 ║  │   implements conversation N                 │    ║
 ║  │   updates PROGRESS.md                       │    ║
 ║  │                                             │    ║
@@ -311,14 +321,64 @@ graph TD
 ## Agent + Model Map
 
 ```
-  architect   ── opus   ──  design, trade-offs, resolves ARCH + DESIGN files
-  planner     ── sonnet ──  stories, scope, resolves IMPL_QUESTIONS
-  builder     ── sonnet ──  implementation, fixes REVIEW + TEST failures
-  reviewer    ── sonnet ──  adversarial check, writes ARCH + REVIEW files
-  tester      ── sonnet ──  AC verification, writes TEST_FAILURES
-  discoverer  ── sonnet ──  live site tracing, POM generation
-  orchestrator── haiku  ──  filesystem FSM, one event → one action
-  quick       ── haiku  ──  retro, fast lookups
+  director     ── sonnet ──  intent classification, rigor choice, pipeline routing
+  architect    ── opus   ──  design, trade-offs, resolves ARCH + DESIGN files
+  po           ── opus   ──  requirements advisor, scope, MVP, PRD validation
+  planner      ── sonnet ──  stories, scope, resolves IMPL_QUESTIONS
+  builder      ── sonnet ──  implementation, fixes REVIEW + TEST failures
+  reviewer     ── sonnet ──  adversarial check, writes ARCH + REVIEW files
+  tester       ── sonnet ──  AC verification, writes TEST_FAILURES
+  discoverer   ── sonnet ──  live site tracing, POM generation
+  orchestrator ── haiku  ──  filesystem FSM, one event → one action
+  quick        ── haiku  ──  retro, inline atomic lookups (≤2 tool calls)
+  scout        ── haiku  ──  read-only cross-file pattern lookup; advisory, no writes
+  web-researcher─ haiku  ──  external docs, standards, design patterns; cited only
+```
+
+---
+
+## Sub-agent Delegation Flow
+
+```
+  builder (sonnet)
+  │
+  │  step 1 — gather context (before any file edit):
+  │
+  ├─► quick (haiku)           inline atomic lookup
+  │     ≤ 2 tool calls        "what is the import path for X?"
+  │     no writes             answer is ephemeral, no FSM event
+  │
+  ├─► scout (haiku) ×1-3      cross-file pattern investigation
+  │     5-15 tool calls       "find existing modal implementations"
+  │     read-only             "locate tests around checkout validation"
+  │     findings advisory     returns: facts + file:line refs
+  │
+  │  step 2 — collect all findings, decide approach
+  │
+  └─► edit files as builder   sole implementation owner
+        reviewer/tester gates run as normal
+
+  ─────────────────────────────────────────────────────
+  architect (opus)
+  ├─► scout (haiku)           cross-file pattern investigation
+  └─► web-researcher (haiku)  external docs, specs, standards
+
+  planner (sonnet)
+  └─► web-researcher (haiku)  domain research, similar products
+
+  reviewer (sonnet)
+  └─► scout (haiku)           verify pattern consistency
+
+  tester (sonnet)
+  └─► scout (haiku)           locate test files and patterns
+  ─────────────────────────────────────────────────────
+
+  Rules:
+  - Cap: 4 sub-agents per conversation (all tiers combined)
+  - Sub-agents are terminal — cannot spawn further agents
+  - Sub-agents never write files, never create feedback files
+  - Sub-agents are not FSM stages — invisible to orchestrator
+  - Scout output is advisory; builder owns all final decisions
 ```
 
 ---
