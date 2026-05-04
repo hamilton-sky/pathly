@@ -1,8 +1,8 @@
 """Tests for the event-driven FSM orchestrator."""
 
-from claude_agents.orchestrator.state import State, initial_state
-from claude_agents.orchestrator.constants import FSMState, Agent, FeedbackFile, Mode
-from claude_agents.orchestrator.events import (
+from orchestrator.state import State, initial_state
+from orchestrator.constants import FSMState, Agent, FeedbackFile, Mode
+from orchestrator.events import (
     CommandEvent,
     AgentDoneEvent,
     FileCreatedEvent,
@@ -10,8 +10,8 @@ from claude_agents.orchestrator.events import (
     StateTransitionEvent,
     SystemEvent,
 )
-from claude_agents.orchestrator.reducer import reduce, reconstruct
-from claude_agents.orchestrator.eventlog import EventLog
+from orchestrator.reducer import reduce, reconstruct
+from orchestrator.eventlog import EventLog
 
 
 def test_command_event():
