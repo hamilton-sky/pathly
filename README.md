@@ -6,13 +6,18 @@ route issues back to the right agent automatically.
 
 ## What this is
 
-8 specialized agents + lifecycle skills that give Claude Code a structured
+9 specialized agents + lifecycle skills that give Claude Code a structured
 development pipeline: brainstorm → plan → implement → review → test → retro → learn.
 
 Unlike conversation-based workflows, state lives on disk. Agents hand off via
 files, and the orchestrator behaves as a deterministic filesystem state
 machine. An open feedback file blocks the pipeline. A deleted file means
 resolved.
+
+Claude Agents Framework is primarily a **Claude Code plugin**. It also includes
+a small Python orchestrator module used by the `team-flow` driver and tests. The
+Python package metadata exists to make local development and CI repeatable; end
+users normally install and use the Claude plugin, not a standalone Python app.
 
 **New in this version:**
 - **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
@@ -52,22 +57,25 @@ bash ~/.claude/plugins/claude-agents-framework/scripts/setup-hook.sh --remove
 
 Then open any project in Claude Code and run:
 ```
-/help
+/go <what you want>
 ```
 
-Claude detects the current project state and shows a numbered menu. Pick `[1]` and describe what you want in plain English:
+Director reads the current project state, chooses the lightest safe workflow,
+and routes into the right skill:
 ```
-What do you want to build?
-> I want to add user authentication with Google OAuth
+/go add user authentication with Google OAuth
 ```
 
-Claude routes you to the right skill automatically and confirms before running. No need to know any other commands to get started.
+No need to know the pipeline commands to get started.
 
 **If you already know the pipeline**, use skills directly:
 ```
 /go                                       ← prompts "What do you want?" then routes
 /go I want to add user authentication     ← skip the prompt, routes immediately
 /team-flow <feature-name>                 ← direct pipeline entry
+/team-flow <feature-name> build           ← resume implementation
+/team-flow <feature-name> test            ← run test stage
+/review                                   ← review the current diff
 ```
 
 `/team-flow` opens with a path selector:
@@ -98,6 +106,66 @@ because strict mode requires human approval gates.
 
 ---
 
+## Supported versions
+
+- Claude Code plugin system is the primary runtime.
+- Python 3.11+ is required for local development and tests.
+- CI runs the test suite on Python 3.11, 3.12, and 3.13.
+- The plugin is designed for project-local use through Claude Code. The Python
+  metadata is for development and CI, not a separate production service.
+
+---
+
+## Development and tests
+
+Install development dependencies:
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+Run tests:
+
+```bash
+pytest -q
+```
+
+The test suite covers the core FSM, event log persistence, and driver-support
+edge cases. End-to-end agent behavior still depends on Claude Code and should be
+validated with smoke runs before release.
+
+---
+
+## Director, /go, and /team-flow
+
+**Director** is the decision-making agent role. It reads the user's free-form
+request, inspects project state, chooses `nano`, `lite`, `standard`, or
+`strict`, and decides whether to start discovery, planning, build, test, review,
+or retro.
+
+**`/go`** is the normal user command. It activates Director:
+
+```text
+/go fix the broken checkout button
+/go add password reset
+/go continue the login work
+/go review my current changes
+```
+
+**`/team-flow`** is the explicit pipeline command. Use it when you already know
+the feature name, rigor, and entry point:
+
+```text
+/team-flow password-reset strict
+/team-flow navbar-copy nano
+/team-flow checkout build
+```
+
+Direct skills such as `/build`, `/review`, and `/retro` are for manual recovery
+or advanced control.
+
+---
+
 ## Docs
 
 | Doc | What's in it |
@@ -112,10 +180,11 @@ because strict mode requires human approval gates.
 
 ---
 
-## The 8 Agents
+## The 9 Agents
 
 | Agent | Model | Role | Thinks about |
 |---|---|---|---|
+| `director` | Sonnet | Workflow direction | Intent, risk, rigor, entry point |
 | `architect` | Opus | Technical architecture | Layers, trade-offs, dependency direction |
 | `planner` | Sonnet | Requirements | User value, stories, acceptance criteria |
 | `builder` | Sonnet | Implementation | Exact scope, verify before done |
@@ -271,7 +340,7 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 
 ```
 ~/.claude/
-├── agents/                    ← 8 behavioral contracts (.md files)
+├── agents/                    ← 9 behavioral contracts (.md files)
 ├── skills/                    ← lifecycle skills
 │   ├── team-flow/SKILL.md     ← full pipeline + rigor escalator
 │   ├── debug/SKILL.md         ← bug pipeline (new)
