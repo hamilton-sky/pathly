@@ -158,6 +158,20 @@ def test_eventlog_persist_and_read(tmp_path):
     assert events[1].type == "STATE_TRANSITION"
 
 
+def test_eventlog_supports_filename_without_directory(tmp_path, monkeypatch):
+    """Test: EventLog can write to a filename in the current directory."""
+    monkeypatch.chdir(tmp_path)
+    log = EventLog(filepath="events.jsonl")
+
+    log.append(CommandEvent(
+        value="/test",
+        metadata={"value": "/test", "feature": "feature1"},
+    ))
+
+    assert (tmp_path / "events.jsonl").exists()
+    assert len(log.read_all()) == 1
+
+
 def test_eventlog_reconstruct_full_cycle(tmp_path):
     """Test: EventLog reconstruct is idempotent across persist cycle."""
     filepath = str(tmp_path / "events.jsonl")

@@ -28,7 +28,9 @@ class EventLog:
 
     def append(self, event: Event) -> None:
         """Append a single event to the log."""
-        os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
+        directory = os.path.dirname(self.filepath)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
         with open(self.filepath, "a") as f:
             f.write(event.to_jsonl() + "\n")
 

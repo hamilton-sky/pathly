@@ -1,7 +1,7 @@
 {
   "name": "claude-agents-framework",
   "version": "2.0.0",
-  "description": "Role-based agent pipeline for Claude Code — storm → plan → build → review → test → retro",
+  "description": "Natural-language directed agent pipeline for Claude Code. Director chooses the lightest safe workflow; orchestrator runs storm, plan, build, review, test, and retro.",
   "author": "hamilton",
   "skills": "skills/",
   "agents": "agents/"

@@ -1,0 +1,17 @@
+[project]
+name = "claude-agents-framework"
+version = "0.1.0"
+description = "Claude Code plugin framework for agentic feature delivery workflows."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = ["-p", "no:cacheprovider"]

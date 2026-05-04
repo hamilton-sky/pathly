@@ -170,8 +170,7 @@ class Driver:
     def plan_files_exist(self) -> list:
         required = [
             "USER_STORIES.md", "IMPLEMENTATION_PLAN.md", "PROGRESS.md",
-            "CONVERSATION_PROMPTS.md", "HAPPY_FLOW.md", "EDGE_CASES.md",
-            "ARCHITECTURE_PROPOSAL.md", "FLOW_DIAGRAM.md",
+            "CONVERSATION_PROMPTS.md",
         ]
         return [f for f in required if not (self.plan_dir / f).exists()]
 
@@ -191,9 +190,9 @@ class Driver:
     def p_review(self) -> str:
         return (
             f"You are an adversarial reviewer for the {self.feature} feature.\n\n"
-            f"Run: git diff HEAD~1 HEAD\n"
+            f"Run: git diff HEAD -- . ':(exclude)plans/'\n"
             f"Review changes against:\n"
-            f"  - plans/{self.feature}/ARCHITECTURE_PROPOSAL.md\n"
+            f"  - plans/{self.feature}/ARCHITECTURE_PROPOSAL.md if present\n"
             f"  - plans/{self.feature}/IMPLEMENTATION_PLAN.md\n"
             f"  - .claude/rules/ (if present)\n\n"
             f"Architectural violations → write plans/{self.feature}/feedback/ARCH_FEEDBACK.md:\n"
