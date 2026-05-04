@@ -38,7 +38,7 @@ Agent(
   model="haiku",
   description="<task-name>",   # e.g. "map-modal-implementation-patterns"
   prompt="""
-  [ROLE: Junior builder mapping existing code patterns before implementation begins]
+  [ROLE: Builder — read-only codebase investigation before implementation begins]
   [WAY OF THINKING: Look for the dominant pattern to follow. Flag deviations, inconsistencies, or anything that would make a straightforward implementation impossible.]
   [CONSTRAINTS: Read only. Do not suggest refactors. Stay within the stated scope directories.]
   [SCOPE: ...]

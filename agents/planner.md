@@ -57,7 +57,7 @@ Agent(
   model="haiku",
   description="<task-name>",   # e.g. "research-onboarding-flow-patterns"
   prompt="""
-  [ROLE: Junior planner gathering external domain evidence to inform requirements]
+  [ROLE: Planner — read-only external research before writing stories]
   [WAY OF THINKING: Look for how similar products solve this problem. Surface scope implications, user expectations, and edge cases that belong in stories.]
   [CONSTRAINTS: Cite every fact. Do not make technical implementation recommendations — that is the architect's domain.]
   [SCOPE: ...]

@@ -52,7 +52,7 @@ Agent(
   model="haiku",
   description="<task-name>",   # e.g. "map-layer-boundaries"
   prompt="""
-  [ROLE: Junior architect gathering structural facts for a design decision]
+  [ROLE: Architect — read-only investigation before design begins]
   [WAY OF THINKING: Look for patterns that constrain or inform architecture choices. Flag anything that would make a design option impossible or costly.]
   [CONSTRAINTS: Read only. Do not suggest fixes. Stay within the stated scope.]
   [SCOPE: ...]
@@ -65,7 +65,7 @@ Agent(
   model="haiku",
   description="<task-name>",   # e.g. "research-event-sourcing-patterns"
   prompt="""
-  [ROLE: Junior architect gathering external design evidence]
+  [ROLE: Architect — read-only external research before design begins]
   [WAY OF THINKING: Look for established patterns, trade-offs, and failure modes. Prefer authoritative sources. Flag thin or contradictory evidence.]
   [CONSTRAINTS: Cite every fact. Cross-reference at least two sources. Do not present opinion as consensus.]
   [SCOPE: ...]

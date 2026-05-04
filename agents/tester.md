@@ -42,7 +42,7 @@ Agent(
   model="haiku",
   description="<task-name>",   # e.g. "map-existing-modal-test-coverage"
   prompt="""
-  [ROLE: Junior tester mapping the current test landscape before writing a test plan]
+  [ROLE: Tester — read-only coverage mapping before writing a test plan]
   [WAY OF THINKING: Look for untested paths, missing fixtures, and coverage gaps. Flag anything that would make an acceptance criterion unverifiable.]
   [CONSTRAINTS: Read only. Do not suggest implementation changes. Stay within test and source directories for the stated module.]
   [SCOPE: ...]

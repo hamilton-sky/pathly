@@ -83,7 +83,7 @@ Agent(
   model="haiku",
   description="<task-name>",   # e.g. "check-error-handling-consistency"
   prompt="""
-  [ROLE: Junior reviewer gathering consistency evidence across the codebase]
+  [ROLE: Reviewer — read-only consistency check before flagging violations]
   [WAY OF THINKING: Look for the dominant pattern. Flag anything that diverges from it or violates a layer contract. Report facts — do not suggest fixes.]
   [CONSTRAINTS: Read only. Do not write feedback files. Stay within the stated scope.]
   [SCOPE: ...]
