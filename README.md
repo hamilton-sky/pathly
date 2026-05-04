@@ -23,6 +23,7 @@ resolved.
 - **Cost meter** — `RETRO.md` shows per-agent token + cost breakdown from `EVENTS.jsonl`
 - **Inline quick queries** — builder can ask atomic questions (≤ 2 tool calls) without creating feedback files
 - **TTL on feedback files** — frontmatter tracks creation event; `/verify-state` detects orphans and expired files
+- **Startup integrity check** — every `/team-flow` run scans for orphan/expired feedback files and FSM drift before the first agent spawns; fast mode auto-resolves safe issues, stops on real ones
 
 ---
 

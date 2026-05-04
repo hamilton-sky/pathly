@@ -340,6 +340,22 @@ INVESTIGATING → REPRODUCING → ROOT_CAUSE_FOUND → FIXING → VERIFYING → 
 
 ---
 
+### 3.7 Startup integrity check — בדיקת שלמות בהפעלת pipeline ✅ DONE
+
+**בעיה:** משתמש מגלה orphan files או FSM drift רק אחרי שagent כבר רץ לתוך מצב שבור.
+
+**פתרון:** בדיקה אוטומטית לפני כל spawn של agent ראשון:
+- Orphan/expired feedback files → נמחקים (fast: אוטומטית, normal: בשאלה)
+- FSM drift (STATE=BUILDING אבל אין conversation in_progress) → עצירה + הפנייה ל-`/help --doctor`
+
+**יישום (2026-05-04):**
+- `scripts/team_flow.py` — `_startup_verify()`, `_load_event_ids()`, `_check_feedback_ttl()` — נקראים מ-`run()` אחרי `_pre_flight()`
+- `skills/team-flow/SKILL.md` — סעיף "Startup recovery" הורחב עם טבלת התנהגות לפי מצב ומצב-פעולה (normal vs fast)
+- `docs/ARCHITECTURE_AGENTS.md` — "Startup Check" נוסף לתרשים pipeline לפני Stage 1
+- `README.md` — נוסף לרשימת "New in this version"
+
+---
+
 ## חלק 5 — סדר ביצוע מומלץ
 
 לפי השפעה לכל יחידת מאמץ:

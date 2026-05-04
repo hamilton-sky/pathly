@@ -237,6 +237,13 @@ You: /team-flow payment-flow
               │
               ▼
    ┌────────────────────┐
+   │  Startup Check     │  before any agent spawns:
+   │                    │  • orphan/expired feedback files? → ask to delete (fast: auto)
+   │                    │  • FSM drift? → stop, suggest /help --doctor
+   └─────────┬──────────┘
+              │  clean
+              ▼
+   ┌────────────────────┐
    │  Stage 1 — Storm   │  architect (opus) explores idea technically
    │                    │  → writes STORM_SEED.md on /stop plan
    └─────────┬──────────┘
