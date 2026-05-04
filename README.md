@@ -205,6 +205,35 @@ or advanced control.
 
 ---
 
+## Sub-agent delegation
+
+Builder (and a few other agents) can spawn lightweight read-only sub-agents
+before touching any code. Sub-agents collect context in parallel; they never
+edit files, never resolve feedback files, and cannot spawn further agents.
+
+| Tier | Agent | Who can use it | Budget |
+|---|---|---|---|
+| 1 | `quick` | builder only (inline) | ≤ 2 tool calls |
+| 2 | `scout` | builder, architect, reviewer, tester | 5–15 tool calls |
+| 3 | `web-researcher` | architect, planner | web search, cited findings |
+
+**Cap:** 4 sub-agents per conversation (shared across all tiers).
+
+**Builder flow:**
+1. Identify unknowns that can be answered independently.
+2. Spawn up to 3 scouts (or 1 quick + scouts) in parallel.
+3. Collect findings, form an implementation approach.
+4. Edit files as builder. Sub-agent output is advisory only.
+
+**Inline quick query** — for a single atomic lookup (e.g. "what is the import
+path for X?"), builder can call `quick` directly with ≤ 2 tool calls and no
+file writes. No feedback file created, no FSM event emitted.
+
+See [docs/ARCHITECTURE_AGENTS.md](docs/ARCHITECTURE_AGENTS.md) for the full
+tier rules, per-agent sub-agent lists, and ownership guarantees.
+
+---
+
 ## Core Skills
 
 | Skill | Command | What it does |
