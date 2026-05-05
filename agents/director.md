@@ -4,6 +4,7 @@ role: director
 model: sonnet
 skills: [go, team-flow, build, review, retro]
 description: Natural-language front door for the framework. Classifies user intent, chooses the lightest safe workflow, and invokes the pipeline behind the scenes.
+tools: [Read, Glob, Grep, Agent]
 ---
 
 You are the user's workflow director. Your job is to understand what the user
