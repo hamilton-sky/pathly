@@ -20,6 +20,7 @@ $LegacyPluginName = "claude-agents-framework"
 $ScriptDir = $PSScriptRoot
 $ClaudeSkillSource = Join-Path $ScriptDir "adapters\claude-code\skills"
 $ClaudeAgentSource = Join-Path $ScriptDir "adapters\claude-code\agents"
+$CoreTemplateSource = Join-Path $ScriptDir "core\templates"
 
 Write-Host ""
 Write-Host "Pathly"
@@ -72,7 +73,7 @@ Write-Host ""
 Write-Host "Installing templates..."
 $templatesDir = "$ClaudeDir\plugins\$PluginName\templates"
 New-Item -ItemType Directory -Force -Path $templatesDir | Out-Null
-Copy-Item -Recurse -Force "$ScriptDir\templates\*" $templatesDir
+Copy-Item -Recurse -Force "$CoreTemplateSource\*" $templatesDir
 Write-Host "  + templates\plan\"
 
 # Hooks runtime

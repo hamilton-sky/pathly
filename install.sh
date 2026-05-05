@@ -21,6 +21,7 @@ LEGACY_PLUGIN_NAME="claude-agents-framework"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_SKILL_SOURCE="$SCRIPT_DIR/adapters/claude-code/skills"
 CLAUDE_AGENT_SOURCE="$SCRIPT_DIR/adapters/claude-code/agents"
+CORE_TEMPLATE_SOURCE="$SCRIPT_DIR/core/templates"
 UNINSTALL="${1:-}"
 
 echo ""
@@ -73,7 +74,7 @@ done
 echo ""
 echo "Installing templates..."
 mkdir -p "$CLAUDE_DIR/plugins/$PLUGIN_NAME/templates"
-cp -r "$SCRIPT_DIR/templates/"* "$CLAUDE_DIR/plugins/$PLUGIN_NAME/templates/"
+cp -r "$CORE_TEMPLATE_SOURCE/"* "$CLAUDE_DIR/plugins/$PLUGIN_NAME/templates/"
 echo "  + templates/plan/"
 
 # Hooks runtime

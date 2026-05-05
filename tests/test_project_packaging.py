@@ -119,19 +119,16 @@ def test_core_agent_contracts_exist_for_live_agents():
     assert live_agents <= core_agents
 
 
-def test_core_templates_exist_for_live_templates():
-    """Core should own canonical copies of reusable templates."""
-    live_templates = {
-        path.relative_to(REPO_ROOT / "templates")
-        for path in (REPO_ROOT / "templates").rglob("*.template.md")
-    }
+def test_core_templates_are_canonical():
+    """Reusable templates should live only under core/templates."""
+    template_root = REPO_ROOT / "core" / "templates"
     core_templates = {
         path.relative_to(REPO_ROOT / "core" / "templates")
-        for path in (REPO_ROOT / "core" / "templates").rglob("*.template.md")
+        for path in template_root.rglob("*.template.md")
     }
 
-    assert live_templates
-    assert live_templates <= core_templates
+    assert core_templates
+    assert not (REPO_ROOT / "templates").exists()
 
 
 def test_core_prompts_reference_core_templates():
