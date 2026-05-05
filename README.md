@@ -177,7 +177,17 @@ codex plugin marketplace add C:\tmp\pathly-marketplace
 Then restart/open Codex and check Settings -> Plugins for Pathly. The plugin
 skills are global to that Codex install, not copied into each project.
 
-Then open any project in Codex and invoke Pathly with natural language:
+Then open any project in Codex and invoke Pathly with explicit natural language:
+
+```text
+Use Pathly help
+Use Pathly doctor on this project
+Use Pathly to add user authentication with Google OAuth
+Use Pathly to debug checkout button does nothing
+Use Pathly to explore how checkout works
+```
+
+Short forms may work when Codex confidently selects the plugin:
 
 ```text
 Pathly help
@@ -187,15 +197,10 @@ Pathly debug checkout button does nothing
 Pathly explore how checkout works
 ```
 
-If Codex does not confidently select the plugin, use the explicit form:
-
-```text
-Use Pathly help
-Use Pathly doctor on this project
-Use Pathly to add user authentication with Google OAuth
-Use Pathly to debug checkout button does nothing
-Use Pathly to explore how checkout works
-```
+If Codex replies by inspecting the current repo instead of using Pathly, the
+plugin was not selected. Retry with `Use Pathly ...`, confirm Pathly is enabled
+in Settings -> Plugins, and restart Codex after changing a local marketplace
+plugin.
 
 Do not expect `/pathly` to work in current Codex builds; Codex reserves slash
 commands for its own UI. Codex support currently exposes the skill workflow

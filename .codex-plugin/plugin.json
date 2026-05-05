@@ -29,12 +29,12 @@
     ],
     "websiteURL": "https://github.com/hamilton-sky/pathly",
     "defaultPrompt": [
-      "Pathly help",
-      "Pathly doctor",
-      "Pathly add password reset",
-      "Use Pathly to add password reset",
+      "Use Pathly help",
       "Use Pathly doctor on this project",
-      "Use Pathly to debug checkout button does nothing"
+      "Use Pathly to add password reset",
+      "Use Pathly to debug checkout button does nothing",
+      "Use Pathly to explore how checkout works",
+      "Use Pathly flow for checkout-flow"
     ],
     "brandColor": "#2563EB"
   }

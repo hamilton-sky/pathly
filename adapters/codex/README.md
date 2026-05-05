@@ -4,8 +4,19 @@ Codex exposes Pathly as plugin skills, not as custom slash commands in current
 Codex builds. Do not document `/pathly` as a Codex command unless a future Codex
 release supports plugin-defined slash commands.
 
-Use natural-language skill prompts. Short forms are the nicest user-facing
-contract:
+Use explicit natural-language skill prompts. These give Codex the strongest
+signal to select the Pathly plugin:
+
+```text
+Use Pathly help
+Use Pathly doctor on this project
+Use Pathly to add password reset
+Use Pathly to debug checkout button does nothing
+Use Pathly to explore how auth state flows
+Use Pathly flow for checkout-flow
+```
+
+Short forms may work when Codex confidently selects the plugin:
 
 ```text
 Pathly help
@@ -16,16 +27,10 @@ Pathly explore how auth state flows
 Pathly flow checkout-flow
 ```
 
-If Codex does not confidently select the plugin, use the more explicit form:
-
-```text
-Use Pathly help
-Use Pathly doctor on this project
-Use Pathly to add password reset
-Use Pathly to debug checkout button does nothing
-Use Pathly to explore how auth state flows
-Use Pathly flow for checkout-flow
-```
+If Codex responds by inspecting the current workspace instead of saying it is
+using Pathly, the plugin was not selected. Retry with `Use Pathly ...`, confirm
+Pathly is enabled in Settings -> Plugins, then restart Codex after changing a
+local marketplace plugin.
 
 Codex reserves slash commands such as `/help` for its own UI. If a user types
 `/pathly`, current Codex versions may report it as an unrecognized command.

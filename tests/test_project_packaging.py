@@ -150,7 +150,7 @@ def test_codex_manifest_uses_natural_language_skill_prompts():
 
     prompts = manifest["interface"]["defaultPrompt"]
     assert prompts
-    assert all("Pathly" in prompt for prompt in prompts)
+    assert all(prompt.startswith("Use Pathly") for prompt in prompts)
     assert all(not prompt.startswith("/") for prompt in prompts)
 
 
