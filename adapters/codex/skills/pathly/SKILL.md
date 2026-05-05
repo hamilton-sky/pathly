@@ -9,6 +9,13 @@ argument-hint: "[help|doctor|debug|explore|flow|review|continue|plan|build|archi
 This is the Codex adapter wrapper for the tool-agnostic `core/prompts/pathly.md`
 entry point.
 
+## Run
+
+1. Read `core/prompts/pathly.md`.
+2. Follow that prompt as the source of truth for this workflow.
+3. Use natural-language Codex guidance instead of plugin-defined slash commands.
+4. Do not add Claude-only model frontmatter in Codex wrappers.
+
 Codex users should invoke this skill with natural language, for example:
 
 ```text

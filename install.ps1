@@ -5,8 +5,8 @@
 #   .\install.ps1 -Uninstall   # remove
 #
 # What it installs:
-#   skills\   -> %USERPROFILE%\.claude\skills\   (slash commands)
-#   agents\   -> %USERPROFILE%\.claude\agents\   (sub-agents)
+#   adapters\claude-code\skills\ -> %USERPROFILE%\.claude\skills\ (slash commands)
+#   adapters\claude-code\agents\ -> %USERPROFILE%\.claude\agents\ (sub-agents)
 #   hooks\    -> %USERPROFILE%\.claude\plugins\pathly\hooks\
 #
 # After install, register the feedback hook (optional):
@@ -18,6 +18,8 @@ $ClaudeDir = "$env:USERPROFILE\.claude"
 $PluginName = "pathly"
 $LegacyPluginName = "claude-agents-framework"
 $ScriptDir = $PSScriptRoot
+$ClaudeSkillSource = Join-Path $ScriptDir "adapters\claude-code\skills"
+$ClaudeAgentSource = Join-Path $ScriptDir "adapters\claude-code\agents"
 
 Write-Host ""
 Write-Host "Pathly"
@@ -26,12 +28,12 @@ Write-Host ""
 
 if ($Uninstall) {
     Write-Host "Uninstalling..."
-    Get-ChildItem "$ScriptDir\skills" -Directory | ForEach-Object {
+    Get-ChildItem $ClaudeSkillSource -Directory | ForEach-Object {
         $dest = "$ClaudeDir\skills\$($_.Name)"
         if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
         Write-Host "  - /$($_.Name)"
     }
-    Get-ChildItem "$ScriptDir\agents" -Filter "*.md" | ForEach-Object {
+    Get-ChildItem $ClaudeAgentSource -Filter "*.md" | ForEach-Object {
         $dest = "$ClaudeDir\agents\$($_.Name)"
         if (Test-Path $dest) { Remove-Item -Force $dest }
         Write-Host "  - $($_.Name)"
@@ -49,7 +51,7 @@ if ($Uninstall) {
 # Skills
 Write-Host "Installing skills..."
 New-Item -ItemType Directory -Force -Path "$ClaudeDir\skills" | Out-Null
-Get-ChildItem "$ScriptDir\skills" -Directory | ForEach-Object {
+Get-ChildItem $ClaudeSkillSource -Directory | ForEach-Object {
     $dest = "$ClaudeDir\skills\$($_.Name)"
     if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
     Copy-Item -Recurse $_.FullName $dest
@@ -60,7 +62,7 @@ Get-ChildItem "$ScriptDir\skills" -Directory | ForEach-Object {
 Write-Host ""
 Write-Host "Installing agents..."
 New-Item -ItemType Directory -Force -Path "$ClaudeDir\agents" | Out-Null
-Get-ChildItem "$ScriptDir\agents" -Filter "*.md" | Where-Object { $_.Name -ne "README.md" } | ForEach-Object {
+Get-ChildItem $ClaudeAgentSource -Filter "*.md" | Where-Object { $_.Name -ne "README.md" } | ForEach-Object {
     Copy-Item -Force $_.FullName "$ClaudeDir\agents\$($_.Name)"
     Write-Host "  + $($_.Name)"
 }

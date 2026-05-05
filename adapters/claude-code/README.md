@@ -22,8 +22,10 @@ Claude Code can keep the existing command names for backwards compatibility:
 When docs or generated help describe the portable Pathly command surface, prefer
 `/pathly` examples and mention that `/path` is equivalent.
 
-This adapter should eventually generate Claude Code skill files from
-`core/prompts/` and Claude agent files from `core/agents/`.
+This adapter owns the Claude-facing skill wrappers under
+`adapters/claude-code/skills/`. Those wrappers load the canonical workflows from
+`core/prompts/` while preserving Claude Code slash-command metadata.
 
-Current status: the root `skills/`, `agents/`, `install.sh`, and `install.ps1`
-still provide the working Claude Code install path.
+Current status: `adapters/claude-code/skills/`,
+`adapters/claude-code/agents/`, `install.sh`, and `install.ps1` provide the
+working Claude Code install path.

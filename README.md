@@ -536,7 +536,7 @@ Then continue normally with `/pathly continue hotel-search` or `/pathly flow hot
 ```
 ~/.claude/
 ├── agents/                    ← 11 behavioral contracts (.md files)
-├── skills/                    ← lifecycle skills (go, team-flow, build, plan, ...)
+├── skills/                    ← installed Claude Code lifecycle skills
 └── plugins/pathly/
     ├── hooks/
     │   ├── classify_feedback.py    ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions

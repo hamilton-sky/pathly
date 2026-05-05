@@ -7,20 +7,29 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+CLAUDE_SKILL_ROOT = REPO_ROOT / "adapters" / "claude-code" / "skills"
+CLAUDE_AGENT_ROOT = REPO_ROOT / "adapters" / "claude-code" / "agents"
+CODEX_SKILL_ROOT = REPO_ROOT / "adapters" / "codex" / "skills"
 
 
 def test_plugin_manifests_parse_and_point_to_skills():
     """Claude and Codex manifests should stay valid as branding changes."""
-    for manifest_path in [
-        REPO_ROOT / ".claude-plugin" / "plugin.json",
-        REPO_ROOT / ".codex-plugin" / "plugin.json",
-    ]:
+    expected_skill_dirs = {
+        REPO_ROOT / ".claude-plugin" / "plugin.json": CLAUDE_SKILL_ROOT,
+        REPO_ROOT / ".codex-plugin" / "plugin.json": CODEX_SKILL_ROOT,
+    }
+
+    for manifest_path, expected_skill_dir in expected_skill_dirs.items():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
         assert manifest["name"] == "pathly"
         assert manifest["version"]
-        assert manifest["skills"].strip("./") == "skills"
-        assert (REPO_ROOT / "skills").is_dir()
+        assert (REPO_ROOT / manifest["skills"]).resolve() == expected_skill_dir.resolve()
+        assert expected_skill_dir.is_dir()
+
+        if "agents" in manifest:
+            assert (REPO_ROOT / manifest["agents"]).resolve() == CLAUDE_AGENT_ROOT.resolve()
+            assert CLAUDE_AGENT_ROOT.is_dir()
 
 
 def test_python_distribution_is_pathly():
@@ -59,7 +68,7 @@ def test_claude_install_paths_use_pathly_plugin_dir():
 def test_readme_slash_commands_map_to_skills():
     """Documented Pathly commands should not drift from the skill folders."""
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    skill_names = {path.name for path in (REPO_ROOT / "skills").iterdir() if path.is_dir()}
+    skill_names = {path.name for path in CLAUDE_SKILL_ROOT.iterdir() if path.is_dir()}
 
     # These slash-command entry points are the new-user front doors.
     documented_entrypoints = set(re.findall(r"/(pathly|path)(?=\s|$)", readme))
@@ -72,7 +81,7 @@ def test_readme_slash_commands_map_to_skills():
         documented_pathly_commands
     )
 
-    # The core skill table should only list real root skills.
+    # The core skill table should only list real Claude adapter skills.
     documented_skill_rows = set(re.findall(r"^\| `([a-z][a-z-]*)` \| `/pathly", readme, re.MULTILINE))
     assert documented_skill_rows
     assert documented_skill_rows <= skill_names
@@ -80,7 +89,7 @@ def test_readme_slash_commands_map_to_skills():
 
 def test_skills_are_core_backed_wrappers():
     """Live slash-command skills should point at canonical core prompts."""
-    skill_dirs = [path for path in (REPO_ROOT / "skills").iterdir() if path.is_dir()]
+    skill_dirs = [path for path in CLAUDE_SKILL_ROOT.iterdir() if path.is_dir()]
 
     assert skill_dirs
     for skill_dir in skill_dirs:
@@ -97,7 +106,7 @@ def test_core_agent_contracts_exist_for_live_agents():
     """Core should own host-neutral copies of the agent contracts."""
     live_agents = {
         path.name
-        for path in (REPO_ROOT / "agents").glob("*.md")
+        for path in CLAUDE_AGENT_ROOT.glob("*.md")
         if path.name != "README.md"
     }
     core_agents = {
@@ -158,6 +167,29 @@ def test_codex_adapter_does_not_document_pathly_slash_command():
     assert "Use Pathly help" in readme
     assert "Do not document `/pathly` as a Codex command" in readme
     assert "Do not tell Codex users to type `/pathly ...`" in wrapper
+
+
+def test_codex_adapter_skills_are_codex_safe_core_wrappers():
+    """Codex wrappers should use core prompts without Claude-only model labels."""
+    manifest = json.loads((REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    codex_skill_root = (REPO_ROOT / manifest["skills"]).resolve()
+    claude_skill_names = {path.name for path in CLAUDE_SKILL_ROOT.iterdir() if path.is_dir()}
+    codex_skill_names = {path.name for path in codex_skill_root.iterdir() if path.is_dir()}
+
+    assert claude_skill_names <= codex_skill_names
+
+    for skill_dir in codex_skill_root.iterdir():
+        if not skill_dir.is_dir():
+            continue
+
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        core_prompt = REPO_ROOT / "core" / "prompts" / f"{skill_dir.name}.md"
+
+        assert core_prompt.exists(), f"Missing core prompt for {skill_dir.name}"
+        assert f"core/prompts/{skill_dir.name}.md" in skill_text
+        assert "model: haiku" not in skill_text
+        assert "model: sonnet" not in skill_text
+        assert "model: opus" not in skill_text
 
 
 def test_codex_manifest_has_no_placeholder_paths():

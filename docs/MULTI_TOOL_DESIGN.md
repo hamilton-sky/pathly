@@ -49,9 +49,8 @@ pathly/
 │
 ├── adapters/
 │   ├── claude-code/               ← wraps core/ into ~/.claude/ format
-│   │   ├── install.sh
-│   │   ├── install.ps1
-│   │   └── wrap.sh                ← adds Claude Code frontmatter to core agents
+│   │   ├── agents/                ← Claude Code agent wrappers
+│   │   └── skills/                ← Claude Code skill wrappers
 │   │
 │   ├── cursor/                    ← wraps core/ into Cursor rules format
 │   │   ├── install.sh
@@ -172,10 +171,10 @@ The migration is **non-breaking and additive**. No existing installs break.
 ```
 TODAY (v1)                    TOMORROW (v2)
 ──────────────────────────    ──────────────────────────────────
-agents/*.md                   core/agents/*.md  (body identical)
+adapters/claude-code/agents/  core/agents/*.md  (body identical)
   (with CC frontmatter)         (frontmatter stripped to separate file)
 
-skills/*/SKILL.md             core/prompts/*.md (steps identical)
+adapters/claude-code/skills/  core/prompts/*.md (steps identical)
   (with CC frontmatter)         (steps extracted, frontmatter in adapter)
 
 install.sh / install.ps1      adapters/claude-code/install.sh
@@ -184,9 +183,10 @@ install.sh / install.ps1      adapters/claude-code/install.sh
 
 **Three concrete steps to migrate:**
 
-1. Move `agents/` body content → `core/agents/` (strip frontmatter)
-2. Move `skills/*/SKILL.md` steps → `core/prompts/` (strip frontmatter)
-3. Create `adapters/claude-code/` that re-adds the frontmatter on install
+1. Move agent body content → `core/agents/` (strip frontmatter)
+2. Move skill workflow steps → `core/prompts/` (strip frontmatter)
+3. Keep Claude wrappers in `adapters/claude-code/agents/` and
+   `adapters/claude-code/skills/`
 
 The `adapters/claude-code/install.sh` becomes a two-stage script:
 - Stage 1: prepend frontmatter to each core agent → write to a tmp dir

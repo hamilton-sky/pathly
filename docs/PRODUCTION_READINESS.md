@@ -19,7 +19,8 @@ Required before public release:
 - Keep the Claude Code install scripts working on macOS, Linux, and Windows.
 - Validate `.claude-plugin/plugin.json` and `.codex-plugin/plugin.json` as JSON.
 - Document exactly what each install path writes and how to uninstall it.
-- Add a smoke test that confirms every documented skill exists under `skills/`.
+- Add a smoke test that confirms every documented skill exists under
+  `adapters/claude-code/skills/`.
 - Add a smoke test that confirms every README command maps to a real skill.
 
 Recommended next:
@@ -59,15 +60,15 @@ Before publishing broadly:
 Done:
 
 - Add `.codex-plugin/plugin.json`.
-- Point Codex at `./skills/`.
+- Point Codex at `./adapters/codex/skills/`.
 - Position Claude-style agents as role contracts for now.
 
 Still needed:
 
 - Test local plugin install in Codex.
 - Confirm how Codex should discover or display the skill commands.
-- Decide whether `agents/` needs a Codex-native adapter or can remain reference
-  material.
+- Decide whether `adapters/claude-code/agents/` needs a Codex-native equivalent
+  or can remain reference material.
 - Add Codex-specific install screenshots or exact UI steps once verified.
 
 ## Multi-Tool Adapters

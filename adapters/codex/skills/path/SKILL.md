@@ -1,0 +1,16 @@
+---
+name: path
+description: Codex-safe short alias for the Pathly entry point. Route requests exactly like the Pathly Codex wrapper.
+argument-hint: "[help|doctor|debug|explore|flow|review|continue|plan|build|archive|lessons|verify-state|plain English request]"
+---
+
+# path
+
+This is a Codex adapter wrapper. The canonical workflow lives in `core/prompts/path.md`.
+
+## Run
+
+1. Read `core/prompts/path.md`.
+2. Follow that prompt as the source of truth for this workflow.
+3. Use natural-language Codex guidance instead of plugin-defined slash commands.
+4. Do not add Claude-only model frontmatter to this Codex wrapper.
