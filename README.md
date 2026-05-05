@@ -114,8 +114,27 @@ to get started.
 ### Codex
 
 Pathly includes a Codex plugin manifest at `.codex-plugin/plugin.json`.
-Install it as a local Codex plugin from this repository root, then use the
-Codex-safe `/pathly` entry point:
+Install it as a local Codex plugin from this repository root:
+
+```bash
+# macOS / Linux
+git clone https://github.com/hamilton-sky/pathly
+cd pathly
+python -m pip install -e .
+codex plugin marketplace add .
+codex plugin marketplace upgrade pathly
+```
+
+```powershell
+# Windows (PowerShell)
+git clone https://github.com/hamilton-sky/pathly
+cd pathly
+python -m pip install -e .
+codex plugin marketplace add .
+codex plugin marketplace upgrade pathly
+```
+
+Then open any project in Codex and use the Codex-safe `/pathly` entry point:
 
 ```text
 /pathly add user authentication with Google OAuth
