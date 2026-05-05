@@ -207,7 +207,7 @@ Cost: $4.20
 
 **פתרון:** ברירת מחדל `lite`. ה-orchestrator מציע אוטומטית עלייה ל-`standard` כש:
 - `builder` מוצא תלות חוצה layers
-- `discoverer` מזהה מסלול > 3 קבצים
+- `scout` מזהה מסלול > 3 קבצים
 - מספר conversations > 3
 - מילות מפתח ב-`STORM_SEED.md`: "auth", "payment", "migration"
 
@@ -281,7 +281,7 @@ Scope גדל מעבר ל-lite (3 layers, 5 conversations).
 ```
 explorations/<topic>/
   EXPLORE.md           ← session log: שאלות, ממצאים, file:line refs
-  TRACE.md             ← discoverer output
+  TRACE.md             ← scout output
   CONCLUSIONS.md       ← מה למדנו
   feedback/
     HUMAN_QUESTIONS.md ← נשאר עובד
@@ -289,7 +289,7 @@ explorations/<topic>/
 
 **שינוי לעומת `/team-flow`:**
 - אין `plans/`, אין `STORM_SEED.md`, אין `PROGRESS.md`.
-- ה-driver הוא `discoverer`, לא `builder`. הוא כבר כתוב ל"follows visible
+- ה-driver הוא `scout`, לא `builder`. הוא כבר כתוב ל-read-only codebase tracing
   paths, captures trace".
 - אין `reviewer`, אין `tester`, אין `retro`.
 
@@ -302,7 +302,7 @@ explorations/<topic>/
 ```
 
 **יישום (2026-05-04):**
-- `skills/explore/SKILL.md` — skill חדש עם 4 שלבים: frame question → discoverer trace → quick draws conclusions → graduation offer. Read-only על production code. אין FSM tracking. HUMAN_QUESTIONS.md בלבד כ-feedback. Graduation מוזרק כ-context ל-storm.
+- `skills/explore/SKILL.md` — skill חדש עם 4 שלבים: frame question → scout trace → quick draws conclusions → graduation offer. Read-only על production code. אין FSM tracking. HUMAN_QUESTIONS.md בלבד כ-feedback. Graduation מוזרק כ-context ל-storm.
 
 ### 4.2 `/debug <symptom>` — pipeline ייעודי לבאגים ✅ DONE
 
@@ -313,7 +313,7 @@ explorations/<topic>/
 debugs/<symptom-name>/
   SYMPTOM.md     ← מה נשבר, איך זה מתבטא, סביבה
   REPRO.md       ← שלבים מינימליים לשחזור
-  ROOT_CAUSE.md  ← מה השורש (כתוב על ידי discoverer/builder)
+  ROOT_CAUSE.md  ← מה השורש (כתוב מתוצרי scout או על ידי builder)
   FIX.md         ← מה השינוי
   feedback/
     HUMAN_QUESTIONS.md
@@ -330,13 +330,13 @@ INVESTIGATING → REPRODUCING → ROOT_CAUSE_FOUND → FIXING → VERIFYING → 
 2. **אחרי התיקון** — לוודא שתוקן. אם נכשל — חזרה ל-FIXING דרך `TEST_FAILURES.md`.
 
 **שימוש חוזר ב-agents קיימים:**
-- `discoverer` — מאתר את ה-stack trace, הקבצים המעורבים.
+- `scout` — מאתר את ה-stack trace, הקבצים המעורבים.
 - `builder` — כותב את ה-FIX.
 - `tester` — מאמת.
 - `reviewer` — מצומצם: רק בודק שה-FIX לא שובר חוזים אחרים.
 
 **יישום (2026-05-04):**
-- `skills/debug/SKILL.md` — skill חדש עם 7 שלבים: symptom capture → discoverer repro → tester pre-fix → discoverer root cause → builder fix → tester post-fix → reviewer (narrow scope). Feedback protocol זהה ל-team-flow. Max 2 retries. Regression → human escalation.
+- `skills/debug/SKILL.md` — skill חדש עם 7 שלבים: symptom capture → scout repro → tester pre-fix → scout root cause → builder fix → tester post-fix → reviewer (narrow scope). Feedback protocol זהה ל-team-flow. Max 2 retries. Regression → human escalation.
 
 ---
 

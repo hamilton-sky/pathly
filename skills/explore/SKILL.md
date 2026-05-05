@@ -1,6 +1,6 @@
 ---
 name: explore
-description: Exploratory investigation mode — discoverer traces a question through the codebase, produces structured findings, and optionally graduates into a full team-flow feature. No plan files, no acceptance criteria, no building.
+description: Exploratory investigation mode — scout traces a question through the codebase, produces structured findings, and optionally graduates into a full team-flow feature. No plan files, no acceptance criteria, no building.
 argument-hint: "<topic-or-question>"
 ---
 
@@ -22,10 +22,10 @@ Do NOT use to debug a known bug — use `/debug` instead.
 ```
 explorations/<topic>/
   EXPLORE.md          ← session log: question, findings, file:line refs, open threads
-  TRACE.md            ← discoverer output: code path traced, files visited
+  TRACE.md            ← scout output: code path traced, files visited
   CONCLUSIONS.md      ← what was learned; recommendation (build/don't build/investigate more)
   feedback/
-    HUMAN_QUESTIONS.md  ← same protocol as team-flow; blocks when discoverer needs a decision
+    HUMAN_QUESTIONS.md  ← same protocol as team-flow; blocks when scout needs a decision
 ```
 
 No `plans/`, no `PROGRESS.md`, no `STORM_SEED.md`, no `EVENTS.jsonl`.
@@ -56,13 +56,13 @@ Write `explorations/<topic>/EXPLORE.md`:
 [how we'll know the exploration is complete: "we can answer yes/no to the question above"]
 ```
 
-Ask the user to confirm or adjust the framing before running the discoverer.
+Ask the user to confirm or adjust the framing before running the scout.
 
 ---
 
-## Step 2 — Trace (discoverer)
+## Step 2 — Trace (scout)
 
-Spawn the **discoverer** agent:
+Spawn the **scout** agent:
 
 ```
 Read explorations/<topic>/EXPLORE.md.
@@ -70,11 +70,11 @@ Explore the codebase to answer the question in EXPLORE.md.
 
 Rules:
 - Follow visible code paths. Do not invent interactions.
-- Capture every file you read: explorations/<topic>/TRACE.md
+- Return a TRACE.md-ready list of every file you read:
   Format: [file:line] — [what you found there] — [relevance to the question]
-- Update EXPLORE.md with findings as you go (append under "## Findings")
+- Return findings for the skill to append under `## Findings` in EXPLORE.md
 - If you need a human decision to continue (ambiguity, missing context),
-  write explorations/<topic>/feedback/HUMAN_QUESTIONS.md and stop.
+  return the exact human question and stop; the skill writes `explorations/<topic>/feedback/HUMAN_QUESTIONS.md`.
 - Do NOT write to any production code file.
 - Do NOT build anything. Do NOT suggest fixes. Observe and report only.
 
@@ -82,13 +82,13 @@ Stop when you can answer the question in EXPLORE.md, or when you've exhausted
 visible paths and must report what you found.
 ```
 
-If `HUMAN_QUESTIONS.md` is created: pause, show user the question, wait for answer (delete file), then resume the discoverer.
+If `HUMAN_QUESTIONS.md` is created: pause, show user the question, wait for answer (delete file), then resume the scout.
 
 ---
 
 ## Step 3 — Draw conclusions
 
-After the discoverer finishes, spawn the **quick** agent (haiku):
+After the scout finishes and the skill writes `TRACE.md`, spawn the **quick** agent (haiku):
 
 ```
 Read explorations/<topic>/EXPLORE.md and explorations/<topic>/TRACE.md.
@@ -149,7 +149,7 @@ Reply with 1, 2, 3, or 4:
 
 ## Rules
 
-- **Discoverer only** — no builder, no reviewer, no tester, no planner.
+- **Scout only** — no builder, no reviewer, no tester, no planner.
 - **Read-only on production code.** The only files written are inside `explorations/<topic>/`.
 - **HUMAN_QUESTIONS.md is the only feedback file.** No REVIEW_FAILURES, no TEST_FAILURES.
 - **No PROGRESS.md, no EVENTS.jsonl, no STATE.json.** Explorations are not FSM-tracked.

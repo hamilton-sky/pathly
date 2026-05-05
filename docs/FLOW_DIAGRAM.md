@@ -328,12 +328,27 @@ graph TD
   builder      ── sonnet ──  implementation, fixes REVIEW + TEST failures
   reviewer     ── sonnet ──  adversarial check, writes ARCH + REVIEW files
   tester       ── sonnet ──  AC verification, writes TEST_FAILURES
-  discoverer   ── sonnet ──  live site tracing, POM generation
   orchestrator ── haiku  ──  filesystem FSM, one event → one action
   quick        ── haiku  ──  retro, inline atomic lookups (≤2 tool calls)
   scout        ── haiku  ──  read-only cross-file pattern lookup; advisory, no writes
   web-researcher─ haiku  ──  external docs, standards, design patterns; cited only
 ```
+
+## Enforced Tool Boundaries
+
+| Agent | Tools | Boundary |
+|---|---|---|
+| `director` | Read, Glob, Grep, Agent | read and route only |
+| `architect` | Read, Glob, Grep, Write, Edit, Agent | design docs, no Bash |
+| `po` | Read, Write | PRDs and `PO_NOTES.md` only |
+| `planner` | Read, Glob, Grep, Write, Edit, Agent | plan files, no Bash or web |
+| `builder` | Read, Glob, Grep, Edit, Write, Bash, Agent, TodoWrite | implementation, no web |
+| `reviewer` | Read, Glob, Grep, Write, Agent | feedback files and scouts, no source edits or Bash |
+| `tester` | Read, Glob, Grep, Bash, Write, Agent | tests and `TEST_FAILURES.md`, no source edits |
+| `quick` | Read, Glob, Grep | <=2 local tool calls, no writes |
+| `orchestrator` | Read, Glob, Grep, Write, Edit, Bash, Agent | FSM state and routing, no web |
+| `scout` | Read, Glob, Grep | read-only local investigation |
+| `web-researcher` | WebSearch, WebFetch | web-only cited research |
 
 ---
 

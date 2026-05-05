@@ -107,7 +107,7 @@ planner   ──► plans/<feature>/
                   PASS
                     │ PAUSE
                     ▼
-         quick ──► RETRO.md
+         quick ──► retro summary ──► RETRO.md written by the retro skill/orchestrator
 ```
 
 ## What you must NOT do

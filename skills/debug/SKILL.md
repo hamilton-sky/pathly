@@ -1,6 +1,6 @@
 ---
 name: debug
-description: Dedicated bug-investigation pipeline — discoverer traces the symptom, builder fixes it, tester verifies before and after. FSM states extend IDLE through DONE without touching the main team-flow pipeline.
+description: Dedicated bug-investigation pipeline — scout traces the symptom, builder fixes it, tester verifies before and after. FSM states extend IDLE through DONE without touching the main team-flow pipeline.
 argument-hint: "<symptom-name>"
 ---
 
@@ -22,7 +22,7 @@ Do NOT use when you already know the fix — just fix it directly.
 debugs/<symptom-name>/
   SYMPTOM.md       ← what broke, how it manifests, environment
   REPRO.md         ← minimal steps to reproduce
-  ROOT_CAUSE.md    ← what the root cause is (written by discoverer/builder)
+  ROOT_CAUSE.md    ← what the root cause is (written from scout findings or by builder)
   FIX.md           ← what changed and why
   feedback/
     HUMAN_QUESTIONS.md   ← blocks on user decision (same as team-flow)
@@ -71,24 +71,24 @@ Confirm the symptom is written before continuing.
 
 ## Step 2 — Reproduce (INVESTIGATING → REPRODUCING)
 
-Spawn the **discoverer** agent with this prompt:
+Spawn the **scout** agent with this prompt:
 
 ```
 Read debugs/<symptom-name>/SYMPTOM.md.
 Your goal: find the minimum reproduction path for this bug.
 - Trace the code path from the entry point to where the symptom occurs.
 - Identify the files, functions, and data involved.
-- Write debugs/<symptom-name>/REPRO.md with:
+- Return findings for `debugs/<symptom-name>/REPRO.md` with:
   ## Steps
   [numbered minimal steps to trigger the bug]
   ## Files involved
   [file:line references for each step in the call chain]
   ## Hypothesis
   [one sentence: suspected root cause]
-Do NOT fix anything. Do NOT write to any file other than REPRO.md.
+Do NOT fix anything. Do NOT write files; scout is read-only. The debug skill records your findings in REPRO.md.
 ```
 
-Wait for REPRO.md to exist before continuing.
+Write `debugs/<symptom-name>/REPRO.md` from the scout findings before continuing.
 
 ---
 
@@ -110,21 +110,21 @@ If status is `[NOT REPRODUCED]`: stop. Tell the user the symptom does not reprod
 
 If status is `[CONFIRMED]` or `[PARTIAL]`: continue.
 
-Spawn the **discoverer** again to identify the root cause:
+Spawn the **scout** again to identify the root cause:
 
 ```
 Read debugs/<symptom-name>/SYMPTOM.md and debugs/<symptom-name>/REPRO.md.
 The repro is confirmed. Now identify the exact root cause:
 - Find the specific line or condition that causes the bug.
 - Explain WHY it causes the symptom (not just WHERE).
-Write debugs/<symptom-name>/ROOT_CAUSE.md:
+Return findings for `debugs/<symptom-name>/ROOT_CAUSE.md`:
   ## Root Cause
   [one paragraph: what is wrong and why]
   ## Affected Code
   [file:line — the exact location of the bug]
   ## Impact
   [what else might be affected by this bug or the fix]
-Do NOT fix anything yet.
+Do NOT fix anything and do not write files; scout is read-only. The debug skill records your findings in ROOT_CAUSE.md.
 ```
 
 ---

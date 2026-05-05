@@ -52,10 +52,26 @@ CLAUDE.md to understand local conventions.
 
 ---
 
-## The 12 Agents
+## The 11 Agents
 
 Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
-`name`, `role`, `model`, `skills`, `description` — then behavioral rules in the body.
+`name`, `role`, `model`, `skills`, `description`, and `tools`. The `tools:`
+list is runtime-enforced: tools outside that list are blocked by the framework,
+not merely discouraged by prompt text.
+
+| Agent | Enforced tools | Hard boundary |
+|---|---|---|
+| `director` | Read, Glob, Grep, Agent | Reads and routes; does not write |
+| `architect` | Read, Glob, Grep, Write, Edit, Agent | Writes/edits design docs; no Bash |
+| `po` | Read, Write | Reads PRDs and writes `PO_NOTES.md` only |
+| `planner` | Read, Glob, Grep, Write, Edit, Agent | Writes/edits plan files; no Bash or direct web tools |
+| `builder` | Read, Glob, Grep, Edit, Write, Bash, Agent, TodoWrite | Full implementation access; no web tools |
+| `reviewer` | Read, Glob, Grep, Write, Agent | Writes feedback and spawns scouts; no source edits or Bash |
+| `tester` | Read, Glob, Grep, Bash, Write, Agent | Runs tests and writes test feedback; no source edits |
+| `quick` | Read, Glob, Grep | Local lookup only; no writes or spawning |
+| `orchestrator` | Read, Glob, Grep, Write, Edit, Bash, Agent | Manages FSM state and spawns agents; no web |
+| `scout` | Read, Glob, Grep | Read-only local investigation; no writes, spawn, or web |
+| `web-researcher` | WebSearch, WebFetch | Web-only research; cannot touch local files |
 
 ```
 ~/.claude/agents/
@@ -109,16 +125,11 @@ Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
 │
 ├─ reviewer.md       role: reviewer       model: sonnet
 │   "Find what's wrong before it ships."
-│   Adversarial. Reports violations with file + rule reference. Never edits.
+│   Adversarial. Writes feedback files but cannot edit source or run Bash.
 │   Sub-agents: scout (find similar patterns to validate consistency)
 │   Writes: ARCH_FEEDBACK.md (structural violations)
 │           REVIEW_FAILURES.md (implementation violations)
 │   skills: [review, security-review]
-│
-├─ discoverer.md     role: discoverer     model: sonnet
-│   "Trace before generating. Follow what's visible."
-│   Navigates live sites, captures a11y trace data, pauses at auth.
-│   skills: project-local (defined per project in .claude/skills/)
 │
 ├─ orchestrator.md   role: orchestrator   model: haiku
 │   "Recover state. Process one event. Emit one next action."
@@ -165,7 +176,6 @@ sonnet  ← planner        balanced, requirements thinking
 sonnet  ← builder        code execution, following instructions
 sonnet  ← tester         careful verification, gap analysis
 sonnet  ← reviewer       adversarial analysis, rule checking
-sonnet  ← discoverer     site navigation, pattern recognition
 haiku   ← quick          fast lookups, no reasoning needed
 haiku   ← orchestrator   deterministic FSM transitions, no deep reasoning needed
 haiku   ← scout          read-only codebase lookup, pattern summary
@@ -185,9 +195,9 @@ Skills are `.md` files in a `<skill-name>/SKILL.md` structure with frontmatter:
 team-flow      ← full pipeline: discovery→plan→[build+review]×N→test→retro
                  rigor: lite (default+escalator), standard, strict
                  rigor escalator: checks signals after planning, offers per-file additions
-debug          ← bug pipeline: discoverer traces → tester verifies repro → builder fixes
+debug          ← bug pipeline: scout traces → tester verifies repro → builder fixes
                  → tester verifies fix → reviewer (narrow scope). Max 2 retries.
-explore        ← investigation mode: discoverer answers a codebase question, no building.
+explore        ← investigation mode: scout answers a codebase question, no building.
                  Can graduate to /team-flow with CONCLUSIONS.md as storm context.
 storm          ← architect explores idea with ASCII diagrams → STORM_SEED.md
 plan           ← 4 core files always; planner adds escalator-selected extras
@@ -237,7 +247,7 @@ agent pipeline runs from there. No shared infrastructure, no coupling.
 
 ```
 ~/.claude/                    Global — available in every project
-  agents/                     8 behavioral contracts
+  agents/                     11 behavioral contracts
   skills/                     lifecycle skills (including archive + prd-import + verify-state)
   templates/plan/             8 plan file templates
 
@@ -348,8 +358,8 @@ You: /team-flow payment-flow
                          │
                          ▼
    ┌────────────────────┐
-   │  Stage 5 — Retro   │  quick (haiku) runs /retro
-   │                    │  → writes RETRO.md with cost summary
+   │  Stage 5 — Retro   │  quick (haiku) summarizes /retro inputs
+   │                    │  → retro skill/orchestrator writes RETRO.md with cost summary
    │                    │    (reads EVENTS.jsonl for per-agent token/cost data)
    └────────────────────┘
 ```
@@ -508,7 +518,7 @@ reviewer          feedback/ARCH_FEEDBACK.md       changed files (git diff)
 tester            feedback/TEST_FAILURES.md       USER_STORIES.md
 (test)                      │ PASS               (acceptance criteria)
                             ▼
-quick             RETRO.md                        PROGRESS.md
+quick             retro summary                   PROGRESS.md
 (retro)             "Seed for Next Storm"         CONVERSATION_PROMPTS.md
                   LESSONS_CANDIDATE.md (append)
                             │
@@ -592,7 +602,7 @@ Step 3 — Build:
     → tests/test_user_results.py (empty state edge case)
   reviewer checks architecture + project conventions after each conversation
   tester runs: pytest tests/test_user_search.py
-  quick writes RETRO.md
+  quick summarizes; retro skill/orchestrator writes RETRO.md
 ```
 
 ---
@@ -680,16 +690,15 @@ The rest of the pipeline is identical.
 /storm                           ← architect explores the idea
 /plan <feature>                  ← planner creates plans/<feature>/
 /build <feature>                 ← builder implements next conversation
-/retro <feature>                 ← quick runs the retrospective + extracts lessons
+/retro <feature>                 ← quick summarizes; retro skill writes the retrospective + extracts lessons
 /lessons                         ← promote candidate lessons → LESSONS.md (active)
 /archive <feature>               ← move completed plan to plans/.archive/
 
 # Code quality
 /review                         ← reviewer checks staged changes
 
-# Site/UI discovery (project-local skills — if installed in .claude/skills/)
-/discover-site <url>            ← discoverer traces a live site
-/generate-poms                  ← discoverer generates project-specific page objects
+# Codebase exploration
+/explore <question>             ← scout traces a local codebase question
 ```
 
 ---
@@ -710,7 +719,6 @@ The rest of the pipeline is identical.
 │   ├── tester.md
 │   ├── quick.md
 │   ├── reviewer.md
-│   ├── discoverer.md
 │   ├── orchestrator.md
 │   ├── scout.md
 │   └── web-researcher.md

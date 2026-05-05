@@ -1,24 +1,43 @@
 # Agents
 
 Agents are architectural roles with behavioral contracts. A role defines how the
-agent thinks. Skills are the abilities that role can execute.
+agent thinks. The `tools:` frontmatter is the runtime-enforced capability set for
+that role.
 
 ## Role Map
 
-| Agent | Role | Model | Skills | Invoke when |
+| Agent | Role | Model | Enforced tools | Invoke when |
 |---|---|---|---|---|
-| `director` | director | sonnet | go, team-flow, build, review, retro | Natural-language entry point; chooses workflow, rigor, and entry stage |
-| `architect` | architect | opus | storm | Technical design, layer decisions, trade-offs, system design |
-| `po` | po | opus | — | Interactive requirements discussion; probes scope, challenges assumptions, validates PRDs |
-| `planner` | product-owner | sonnet | storm, plan | Requirements, user stories, conversation decomposition, plans/ folder |
-| `builder` | executor | sonnet | build | Coding, verification, staying in scope |
-| `tester` | tester | sonnet | test | Verifying acceptance criteria, test plans, coverage gaps |
-| `quick` | analyst | haiku | retro | Fast lookups, short summaries, focused tasks (≤2 tool calls) |
-| `reviewer` | reviewer | sonnet | review, verify-layers, security-review | Adversarial review, contract violations, security |
-| `discoverer` | discoverer | sonnet | discover-site, generate-poms | Navigating live sites, tracing user journeys, POM generation |
-| `orchestrator` | orchestrator | haiku | team-flow | Recovering FSM state and running the full pipeline |
-| `scout` | analyst | haiku | — | Read-only codebase investigation; spawned by builder/reviewer/tester/architect |
-| `web-researcher` | analyst | haiku | — | Read-only web research; spawned by architect/planner for external docs and patterns |
+| `director` | director | sonnet | Read, Glob, Grep, Agent | Natural-language entry point; chooses workflow, rigor, and entry stage |
+| `architect` | architect | opus | Read, Glob, Grep, Write, Edit, Agent | Technical design, layer decisions, trade-offs, system design |
+| `po` | po | opus | Read, Write | Interactive requirements discussion; probes scope, challenges assumptions, validates PRDs |
+| `planner` | product-owner | sonnet | Read, Glob, Grep, Write, Edit, Agent | Requirements, user stories, conversation decomposition, plans/ folder |
+| `builder` | executor | sonnet | Read, Glob, Grep, Edit, Write, Bash, Agent, TodoWrite | Coding, verification, staying in scope |
+| `tester` | tester | sonnet | Read, Glob, Grep, Bash, Write, Agent | Verifying acceptance criteria, test plans, coverage gaps |
+| `reviewer` | reviewer | sonnet | Read, Glob, Grep, Write, Agent | Adversarial review, feedback files, scout delegation |
+| `quick` | analyst | haiku | Read, Glob, Grep | Fast lookups, short summaries, focused tasks (<=2 tool calls) |
+| `orchestrator` | orchestrator | haiku | Read, Glob, Grep, Write, Edit, Bash, Agent | Recovering FSM state and running the full pipeline |
+| `scout` | analyst | haiku | Read, Glob, Grep | Read-only codebase investigation; spawned by builder/reviewer/tester/architect |
+| `web-researcher` | analyst | haiku | WebSearch, WebFetch | Web-only research; spawned by architect/planner for external docs and patterns |
+
+## Enforcement Summary
+
+The `tools:` list is not just documentation. The runtime blocks tools outside the
+declared list:
+
+| Agent | Enforced boundary |
+|---|---|
+| `scout` | Cannot write, spawn agents, browse, or touch external resources |
+| `web-researcher` | Cannot write or read local files; web search/fetch only |
+| `quick` | Cannot write or spawn agents; limited to small local lookups |
+| `reviewer` | Can write feedback files and spawn scouts; cannot edit source or run Bash |
+| `tester` | Can run Bash and write test feedback; cannot edit source |
+| `builder` | Full implementation access except web tools |
+| `architect` | Can write and edit design docs; cannot run Bash |
+| `planner` | Can write and edit plan files; cannot run Bash or web tools directly |
+| `director` | Can read and route; cannot write |
+| `po` | Can read PRDs and write `PO_NOTES.md`; no codebase glob/grep/edit/bash |
+| `orchestrator` | Can manage FSM state and spawn agents; no web tools |
 
 ## Architecture
 
@@ -104,5 +123,4 @@ Each role is a clear ownership boundary:
 - **tester** owns verifying what was built matches what was planned.
 - **analyst** owns learning and reporting fast.
 - **reviewer** owns finding what is wrong before it ships.
-- **discoverer** owns understanding a site or code path before implementation.
 - **orchestrator** owns deterministic workflow state and feedback routing.

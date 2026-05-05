@@ -39,8 +39,8 @@ type State =
   | "IDLE"
   | "PO_DISCUSSING"      // option [5] phase 1 — orchestrator asks PO questions, no agent spawn
   | "PO_PAUSED"          // PO Q&A done, waiting for human to proceed to architect storm
-  | "EXPLORING"          // option [4] — Explorer (subagent_type: Explore) maps codebase
-  | "EXPLORE_PAUSED"     // Explorer done, waiting for A (plan) / B (nano) / C (stop)
+  | "EXPLORING"          // option [4] — scout maps codebase
+  | "EXPLORE_PAUSED"     // scout done, waiting for A (plan) / B (nano) / C (stop)
   | "STORMING"
   | "STORM_PAUSED"
   | "PLANNING"
@@ -154,9 +154,9 @@ IDLE + COMMAND("/team-flow <feature>")
 // Option [4] — Explore first
 IDLE + COMMAND + STATE_TRANSITION(to=EXPLORING)
 -> EXPLORING
--> spawn(explorer)
+-> spawn(scout)
 
-EXPLORING + AGENT_DONE(explorer)
+EXPLORING + AGENT_DONE(scout)
 -> EXPLORE_PAUSED                    // interactive; PLANNING in fast mode
 
 EXPLORE_PAUSED + HUMAN_RESPONSE("A")

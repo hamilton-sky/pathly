@@ -34,7 +34,6 @@ claude-agents-framework/
 │   │   ├── builder.md
 │   │   ├── reviewer.md
 │   │   ├── tester.md
-│   │   ├── discoverer.md
 │   │   ├── orchestrator.md
 │   │   └── quick.md
 │   ├── prompts/                   ← skill steps as numbered instructions

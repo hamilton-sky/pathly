@@ -29,7 +29,7 @@ A persona drifts. Given enough turns, a "senior architect" starts writing code, 
 ```
 reviewer.md:
   "Find what's wrong before it ships."
-  "Adversarial. Reports violations with file + rule reference. Never edits."
+  "Adversarial. Writes feedback files, but cannot edit source or run Bash."
 ```
 
 That is not a personality. It is a constraint. The role is stable across every project.

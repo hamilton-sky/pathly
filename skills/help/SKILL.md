@@ -307,7 +307,7 @@ On '5': print full command reference
   /plan <feature> [rigor]            planner creates 4 or 8 plan files
   /build <feature>                   builder implements next TODO conversation
   /review                            reviewer audits staged changes
-  /retro <feature>                   quick writes RETRO.md + extracts lessons
+  /retro <feature>                   quick summarizes; retro skill writes RETRO.md + extracts lessons
   /lessons                           promote candidate lessons → LESSONS.md
   /archive <feature>                 move completed feature to plans/.archive/
   /prd-import <feature> <file> [rigor] translate any PRD file → plan files

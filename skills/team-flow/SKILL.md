@@ -260,7 +260,7 @@ Each additional file has exactly one trigger signal. Check these after planning:
 | `ARCHITECTURE_PROPOSAL.md` | Cross-layer dependency found | Architect or planner mentions > 1 layer, or STORM_SEED.md references multiple layers |
 | `EDGE_CASES.md` | High-risk keyword in a risk context | See rule below |
 | `HAPPY_FLOW.md` | > 3 conversations planned | CONVERSATION_PROMPTS.md has more than 3 conversation blocks |
-| `FLOW_DIAGRAM.md` | Long discovery path | STORM_SEED.md or discoverer output references > 3 files, or architect drew a multi-component diagram |
+| `FLOW_DIAGRAM.md` | Long discovery path | STORM_SEED.md or scout/explore output references > 3 files, or architect drew a multi-component diagram |
 
 A file is only recommended if its signal fires. Files with no signal are not offered.
 
@@ -375,7 +375,7 @@ If multiple feedback files exist, route one at a time in this priority order:
 | Action | Spawn | Why |
 |---|---|---|
 | Storm | `architect` | technical exploration, opus |
-| Explore codebase | `Explore` | map existing code before planning |
+| Explore codebase | `scout` | map existing code before planning |
 | Plan | `planner` | user stories + decomposition |
 | Implement | `builder` | code execution, scoped to one conversation |
 | Review | `reviewer` | adversarial check after each conversation |
@@ -384,7 +384,7 @@ If multiple feedback files exist, route one at a time in this priority order:
 | Clarify requirement | `planner` | unblock builder on ambiguous spec |
 | Test | `tester` | verify acceptance criteria |
 | Fix test failure | `builder` | address failing criteria |
-| Retro | `quick` | fast retrospective |
+| Retro | `quick` | fast retrospective summary; retro skill/orchestrator writes files |
 
 ---
 
@@ -472,7 +472,7 @@ Reply with 1, 2, 3, 4, or 5:
 
 **On '4'** → run a codebase exploration, then let the user choose their next step:
 
-  **Spawn** `Explore` (subagent_type: Explore):
+  **Spawn** `scout`:
   ```
   Explore the codebase for the feature: [feature name]
   Map where this functionality would live — layers, existing files, dependencies, anything already present.
@@ -480,19 +480,19 @@ Reply with 1, 2, 3, 4, or 5:
   Do not plan or implement — explore only.
   ```
 
-  After explorer completes, print:
+  After scout completes, print:
   ```
-  [Explore complete] Explorer mapped the codebase.
+  [Explore complete] Scout mapped the codebase.
 
   What next?
-    [A] Plan — go to Stage 2 (planner uses explore findings as context)
+    [A] Plan — go to Stage 2 (planner uses scout findings as context)
     [B] Implement directly — nano mode, no plan (best if explore showed ≤ 2 files to touch)
     [C] Stop here — I'll review the explore output first
 
   Reply with A, B, or C:
   ```
   Wait for user reply.
-  - **A** → set `exploreContext = explorer output`. Proceed to Stage 2 (Plan). Planner will use explore findings.
+  - **A** → set `exploreContext = scout output`. Proceed to Stage 2 (Plan). Planner will use scout findings.
   - **B** → switch to `mode = nano`. Skip Stage 2. Jump to nano mode flow (builder + reviewer only).
   - **C** → stop. Print: `Pipeline paused after explore. Resume with /team-flow [feature] build when ready.`
 
@@ -807,7 +807,8 @@ If autoFlow: record `HumanResponseEvent(value="auto-advance")` at this skipped p
 **Spawn** `quick`:
 ```
 Run /retro [feature].
-Ask the 3 retrospective questions and write RETRO.md.
+Ask the 3 retrospective questions and return the RETRO.md-ready summary.
+Do not write files; quick is read-only. The retro skill/orchestrator writes RETRO.md.
 ```
 
 Report:

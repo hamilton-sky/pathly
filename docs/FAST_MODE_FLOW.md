@@ -143,7 +143,7 @@ graph TD
         TEST -->|"⚡ all PASS → auto-advance"| DONE_TEST["exit test loop"]
     end
 
-    DONE_TEST -->|"⚡ auto-advance"| RETRO["STAGE 5 — Retro\n🤖 quick (haiku)\n→ RETRO.md"]
+    DONE_TEST -->|"⚡ auto-advance"| RETRO["STAGE 5 — Retro\n🤖 quick summary\n→ retro skill writes RETRO.md"]
     RETRO --> End((DONE ✓))
 
     classDef stop fill:#ffcdd2,stroke:#c62828,stroke-width:3px;

@@ -6,7 +6,7 @@ route issues back to the right agent automatically.
 
 ## What this is
 
-12 specialized agents + lifecycle skills that give Claude Code a structured
+11 specialized agents + lifecycle skills that give Claude Code a structured
 development pipeline: brainstorm → plan → implement → review → test → retro → learn.
 
 Unlike conversation-based workflows, state lives on disk. Agents hand off via
@@ -21,7 +21,7 @@ users normally install and use the Claude plugin, not a standalone Python app.
 
 **New in this version:**
 - **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
-- **`/debug <symptom>`** — dedicated bug pipeline: discoverer traces, tester verifies before and after fix
+- **`/debug <symptom>`** — dedicated bug pipeline: scout traces, tester verifies before and after fix
 - **`/explore <question>`** — investigation mode: answer questions about the codebase without building
 - **`/help --doctor`** — diagnoses stuck FSM, orphan feedback files, stale state; offers one action per issue
 - **`[AUTO_FIX]` in reviewer** — trivial findings (unused import, missing newline) applied in batch, no human turn
@@ -186,22 +186,21 @@ or advanced control.
 
 ---
 
-## The 12 Agents
+## The 11 Agents
 
-| Agent | Model | Role | Thinks about |
+| Agent | Model | Tools | Enforced boundary |
 |---|---|---|---|
-| `director` | Sonnet | Workflow direction | Intent, risk, rigor, entry point |
-| `architect` | Opus | Technical architecture | Layers, trade-offs, dependency direction |
-| `po` | Opus | Requirements advisor | Scope, assumptions, MVP, PRD validation |
-| `planner` | Sonnet | Requirements | User value, stories, acceptance criteria |
-| `builder` | Sonnet | Implementation | Exact scope, verify before done |
-| `reviewer` | Sonnet | Adversarial review | Contract violations, never fixes |
-| `tester` | Sonnet | Verification | AC coverage, reports bugs only |
-| `discoverer` | Sonnet | Site tracing | Follows visible paths, captures trace |
-| `quick` | Haiku | Fast lookups | 2 tool calls max |
-| `orchestrator` | Haiku | FSM sequencing | Recovers state, processes events, emits one agent action |
-| `scout` | Haiku | Codebase investigation | Read-only cross-file pattern lookup; advisory, no writes |
-| `web-researcher` | Haiku | External research | Web search for docs, patterns, standards; cited findings only |
+| `director` | Sonnet | Read, Glob, Grep, Agent | Reads and routes; does not write |
+| `architect` | Opus | Read, Glob, Grep, Write, Edit, Agent | Writes/edits design docs; no Bash |
+| `po` | Opus | Read, Write | Reads PRDs and writes `PO_NOTES.md` only |
+| `planner` | Sonnet | Read, Glob, Grep, Write, Edit, Agent | Writes/edits plans; no Bash or direct web tools |
+| `builder` | Sonnet | Read, Glob, Grep, Edit, Write, Bash, Agent, TodoWrite | Full implementation access; no web tools |
+| `reviewer` | Sonnet | Read, Glob, Grep, Write, Agent | Writes feedback and spawns scouts; no source edits or Bash |
+| `tester` | Sonnet | Read, Glob, Grep, Bash, Write, Agent | Runs tests and writes failures; no source edits |
+| `quick` | Haiku | Read, Glob, Grep | Local lookup only; no writes or spawning |
+| `orchestrator` | Haiku | Read, Glob, Grep, Write, Edit, Bash, Agent | Manages FSM state and spawns agents; no web |
+| `scout` | Haiku | Read, Glob, Grep | Read-only local investigation; no writes, spawn, or web |
+| `web-researcher` | Haiku | WebSearch, WebFetch | Web-only research; cannot touch local files |
 
 ---
 
@@ -249,7 +248,7 @@ tier rules, per-agent sub-agent lists, and ownership guarantees.
 | `prd-import` | `/prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file into plan files |
 | `bmad-import` | `/bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
 | `verify-state` | `/verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
-| `debug` | `/debug <symptom>` | Bug pipeline: discoverer traces → builder fixes → tester verifies before + after |
+| `debug` | `/debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
 | `explore` | `/explore <question>` | Investigation mode: answer codebase questions without building anything |
 | `help` | `/help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
 
@@ -299,7 +298,7 @@ references while future gates become lighter.
        └─ reviewer passes → advance
        PAUSE: "Commit. continue / stop"
   Stage 4 — Test       tester maps ACs to tests → TEST_FAILURES.md → builder
-  Stage 5 — Retro      quick writes RETRO.md
+  Stage 5 — Retro      quick summarizes; retro skill writes RETRO.md
 ```
 
 Add `fast` to skip pause points:
@@ -378,7 +377,7 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 
 ```
 ~/.claude/
-├── agents/                    ← 9 behavioral contracts (.md files)
+├── agents/                    ← 11 behavioral contracts (.md files)
 ├── skills/                    ← lifecycle skills (go, team-flow, build, plan, ...)
 └── plugins/claude-agents-framework/
     ├── hooks/
