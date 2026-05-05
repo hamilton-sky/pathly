@@ -35,6 +35,36 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _feature_slug(value: str) -> str:
+    slug = "".join(char.lower() if char.isalnum() else "-" for char in value)
+    parts = [part for part in slug.split("-") if part]
+    return "-".join(parts[:6]) or "demo"
+
+
+def cmd_go(args: argparse.Namespace) -> int:
+    root = _project_root(args)
+    request = " ".join(args.request).strip()
+
+    print("Pathly go")
+    print(f"Project: {root}")
+    print()
+    if not request:
+        print("Tell Pathly what you want to build or do.")
+        print()
+        print("Examples:")
+        print("  pathly go add password reset")
+        print("  pathly go fix checkout button")
+        print("  pathly help")
+        return 0
+
+    feature = _feature_slug(request)
+    print(f"Request: {request}")
+    print()
+    print("Suggested next command:")
+    print(f"  pathly flow {feature}")
+    return 0
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     root = _project_root(args)
     plan_dir = root / "plans" / args.feature
@@ -44,6 +74,54 @@ def cmd_init(args: argparse.Namespace) -> int:
         if not path.exists() or args.force:
             path.write_text(content, encoding="utf-8")
     print(f"Initialized Pathly plan at {plan_dir}")
+    return 0
+
+
+def cmd_explore(args: argparse.Namespace) -> int:
+    root = _project_root(args)
+    topic = " ".join(args.topic).strip()
+
+    print("Pathly explore")
+    print(f"Project: {root}")
+    if topic:
+        print(f"Question: {topic}")
+    print()
+    print("Codex/agent workflow:")
+    print("  Use Pathly to explore " + (topic or "<question>"))
+    print()
+    print("CLI fallback:")
+    print("  Create an exploration note under explorations/<topic>/, then ask Codex to investigate it.")
+    return 0
+
+
+def cmd_debug(args: argparse.Namespace) -> int:
+    root = _project_root(args)
+    symptom = " ".join(args.symptom).strip()
+
+    print("Pathly debug")
+    print(f"Project: {root}")
+    if symptom:
+        print(f"Symptom: {symptom}")
+    print()
+    print("Codex/agent workflow:")
+    print("  Use Pathly to debug " + (symptom or "<symptom>"))
+    print()
+    print("CLI fallback:")
+    print("  Capture the symptom, reproduction, root cause, and fix under debugs/<symptom>/.")
+    return 0
+
+
+def cmd_review(args: argparse.Namespace) -> int:
+    root = _project_root(args)
+
+    print("Pathly review")
+    print(f"Project: {root}")
+    print()
+    print("Codex/agent workflow:")
+    print("  Use Pathly review")
+    print()
+    print("CLI fallback:")
+    print("  Run git diff, inspect risks, and record findings before changing code.")
     return 0
 
 
@@ -65,6 +143,50 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         ok = False
 
     return 0 if ok else 1
+
+
+def _plan_dirs(root: Path) -> list[Path]:
+    plans_dir = root / "plans"
+    if not plans_dir.exists():
+        return []
+    return sorted(
+        (path for path in plans_dir.iterdir() if path.is_dir() and path.name != ".archive"),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True,
+    )
+
+
+def cmd_help(args: argparse.Namespace) -> int:
+    root = _project_root(args)
+    plans = _plan_dirs(root)
+
+    print("Pathly help")
+    print(f"Project: {root}")
+    print(f"plans/: {'ok' if plans else 'missing'}")
+    print()
+
+    if not plans:
+        print("No active Pathly plans found.")
+        print()
+        print("Next:")
+        print("  pathly init <feature>        Create starter plan files")
+        print("  pathly doctor                Check local setup")
+        return 0
+
+    print("Plans:")
+    for plan in plans[:5]:
+        progress = plan / "PROGRESS.md"
+        status = "has PROGRESS.md" if progress.exists() else "missing PROGRESS.md"
+        print(f"  {plan.name}: {status}")
+
+    feature = args.feature or plans[0].name
+    print()
+    print("Next:")
+    print(f"  pathly run {feature} --entry discovery")
+    print(f"  pathly run {feature} --entry build")
+    print(f"  pathly run {feature} --entry test")
+    print("  pathly doctor")
+    return 0
 
 
 def cmd_install(args: argparse.Namespace) -> int:
@@ -100,6 +222,13 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--recover", action="store_true", help="Log reconstructed state before running.")
     run.set_defaults(func=cmd_run)
 
+    flow = subparsers.add_parser("flow", help="Alias for run using Pathly workflow language.")
+    flow.add_argument("feature", help="Feature name under plans/<feature>.")
+    flow.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")
+    flow.add_argument("--fast", action="store_true", help="Skip human pause points.")
+    flow.add_argument("--recover", action="store_true", help="Log reconstructed state before running.")
+    flow.set_defaults(func=cmd_run)
+
     team = subparsers.add_parser("team-flow", help="Alias for run.")
     team.add_argument("feature", help="Feature name under plans/<feature>.")
     team.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")
@@ -111,6 +240,25 @@ def build_parser() -> argparse.ArgumentParser:
     init.add_argument("feature", nargs="?", default="demo", help="Feature name to initialize.")
     init.add_argument("--force", action="store_true", help="Overwrite starter files if they exist.")
     init.set_defaults(func=cmd_init)
+
+    go = subparsers.add_parser("go", help="Suggest the next Pathly workflow for a plain-English request.")
+    go.add_argument("request", nargs="*", help="Plain-English request.")
+    go.set_defaults(func=cmd_go)
+
+    help_cmd = subparsers.add_parser("help", help="Show project status and suggested next actions.")
+    help_cmd.add_argument("feature", nargs="?", help="Optional feature name under plans/<feature>.")
+    help_cmd.set_defaults(func=cmd_help)
+
+    explore = subparsers.add_parser("explore", help="Expose the Pathly exploration workflow.")
+    explore.add_argument("topic", nargs="*", help="Question or topic to explore.")
+    explore.set_defaults(func=cmd_explore)
+
+    debug = subparsers.add_parser("debug", help="Expose the Pathly debug workflow.")
+    debug.add_argument("symptom", nargs="*", help="Bug symptom to investigate.")
+    debug.set_defaults(func=cmd_debug)
+
+    review = subparsers.add_parser("review", help="Expose the Pathly review workflow.")
+    review.set_defaults(func=cmd_review)
 
     doctor = subparsers.add_parser("doctor", help="Check local Pathly prerequisites.")
     doctor.set_defaults(func=cmd_doctor)
