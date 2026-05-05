@@ -2,6 +2,13 @@
 
 Tool-agnostic plan, debug, feedback, and retro templates belong here.
 
-Existing templates remain in `templates/` for now. During migration, copy or
-move only stable template bodies into this folder, then let adapters package
-them for each host tool.
+`core/templates/` is the canonical template source. Adapter and runtime install
+surfaces may copy these files into host-specific locations, but workflow prompts
+should refer back to these core templates first.
+
+Current template sets:
+
+- `plan/`: Pathly plan files used by planning and import workflows.
+
+The repo-root `templates/` folder remains as a compatibility/install surface for
+current packaging.

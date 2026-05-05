@@ -4,26 +4,13 @@ description: Short alias for the Pathly entry point. Route /path help, doctor, d
 argument-hint: "[help|doctor|debug|explore|flow|review|continue|plan|build|archive|lessons|verify-state|plain English request]"
 ---
 
-# Path
+# path
 
-Use this skill as the short slash-command alias for Pathly.
+This skill is an adapter-facing wrapper. The canonical workflow lives in core/prompts/path.md.
 
-`/path` is equivalent to `/pathly`. Keep `/pathly` as the canonical command in
-formal docs and examples, but accept `/path` for day-to-day use across supported
-slash-command frameworks.
+## Run
 
-## Route
-
-Follow the same routing behavior as `skills/pathly/SKILL.md`:
-
-- `help`: run the Pathly help workflow.
-- `doctor`: run Pathly doctor diagnostics.
-- `debug <symptom>`: run the debug workflow.
-- `explore <question>`: run the explore workflow.
-- `flow <feature>` or `run <feature>`: run the team-flow workflow.
-- `continue <feature>`: resume team-flow build for that feature.
-- `review`: run the review workflow.
-- any root skill name: run that skill with the remaining text as arguments.
-- anything else: route through the director workflow as a plain-English request.
-
-Before starting a route, print a one-sentence summary of the chosen action.
+1. Read core/prompts/path.md.
+2. Follow that prompt as the source of truth for this workflow.
+3. Preserve the slash-command contract from this skill's frontmatter.
+4. Prefer /pathly ... or /path ... in user-facing guidance; treat legacy direct skill names as compatibility aliases.

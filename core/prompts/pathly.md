@@ -1,77 +1,104 @@
-# pathly - Universal Entry Point
+# pathly
 
-`pathly` is the tool-agnostic front door for Pathly.
+This is the canonical, tool-agnostic Pathly behavior for the pathly workflow.
+Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-It accepts a short command or a plain-English request and routes to the lightest
-safe workflow.
+# Pathly
 
-For slash-command adapters, `/pathly` is the canonical Pathly command and
-`/path` is the supported short alias. Both commands must route to this same
-entry point. Legacy framework commands can remain as compatibility aliases, but
-new cross-framework docs should lead with `/pathly` and mention `/path` for
-daily use.
+Use this workflow as the canonical front door for Pathly.
 
-## Inputs
+For slash-command hosts, `/pathly` is canonical and `/path` is the supported
+short alias. Do not tell Codex users to type Codex-conflicting commands like
+`/help`; use `/pathly help` or `/path help` instead.
 
-- Optional command word: `help`, `doctor`, `debug`, `explore`, `flow`, `run`,
-  `continue`, `review`, or any root skill name such as `plan`, `build`,
-  `archive`, `lessons`, `prd-import`, `bmad-import`, `retro`, `storm`,
-  `team-flow`, or `verify-state`
-- Optional free text request
-- Current project files, especially `plans/`, `debugs/`, and git status
+## Parse `$ARGUMENTS`
 
-## Routing
+Trim `$ARGUMENTS` and inspect the first word case-insensitively.
 
-Use this order:
+## Routes
 
-1. `help` with no other request: show Pathly help, not host-tool help.
-2. `doctor`: diagnose Pathly state, stale feedback, missing files, and local
-   prerequisites.
-3. `debug <symptom>`: route to the debug workflow.
-4. `explore <question>`: route to the read-only exploration workflow.
-5. `flow <feature>` or `run <feature>`: route to the team-flow workflow.
-6. `review`: review current code changes.
-7. Any root skill name: route to that skill with the remaining text.
-8. Any other text: treat as a plain-English request and route through the
-   director workflow.
+### `help`
 
-## Examples
+Run the Pathly help behavior from `core/prompts/help.md`, without relying on the
+literal `/help` command name.
 
-```text
-pathly help
-pathly doctor
-pathly add password reset
-pathly debug checkout button does nothing
-pathly explore how auth state flows
-pathly flow checkout-flow
-pathly continue checkout-flow
-```
+When rendering portable help output, namespace user-facing commands under
+`/pathly` and mention that `/path` is equivalent:
 
-Slash-command adapters should expose the same examples as:
+- `/help` -> `/pathly help`
+- `/help --doctor [feature]` -> `/pathly doctor [feature]`
+- `/go <request>` -> `/pathly <request>`
+- `/team-flow <feature> ...` -> `/pathly flow <feature> ...`
+- `/debug <symptom>` -> `/pathly debug <symptom>`
+- `/explore <question>` -> `/pathly explore <question>`
+- `/review` -> `/pathly review`
+- `/build <feature>` -> `/pathly continue <feature>`
 
-```text
-/pathly help
-/pathly doctor
-/pathly add password reset
-/pathly debug checkout button does nothing
-/pathly explore how auth state flows
-/pathly flow checkout-flow
-/pathly continue checkout-flow
-/pathly plan checkout-flow standard
-/pathly verify-state checkout-flow
-```
+### `doctor`
 
-The short alias is equivalent:
+Run doctor mode from `core/prompts/help.md` as if the user requested Pathly
+doctor diagnostics.
+
+### `debug <symptom>`
+
+Run the debug workflow from `core/prompts/debug.md` using the remaining text as
+the symptom.
+
+### `explore <question>`
+
+Run the explore workflow from `core/prompts/explore.md` using the remaining text
+as the question.
+
+### `flow <feature>` or `run <feature>`
+
+Run the team-flow workflow from `core/prompts/team-flow.md` using the remaining
+text as the feature and options.
+
+### `continue <feature>`
+
+Run team-flow build entry for the feature:
 
 ```text
-/path help
-/path add password reset
+team-flow <feature> build
 ```
 
-## Adapter Notes
+### `review`
 
-- Slash-command adapters expose this as `/pathly ...` and `/path ...`.
-- Codex uses `/pathly help` or `/path help` to avoid its built-in `/help`.
-- Claude Code should support `/pathly ...` and `/path ...`; it may also keep
-  `/go`, `/help`, `/debug`, and `/explore` for backwards compatibility.
-- CLI exposes this through `pathly ...` commands where practical.
+Run the review workflow from `core/prompts/review.md`.
+
+### Direct skill routes
+
+If the first word is one of these root skill names, run that skill with the
+remaining text as its arguments:
+
+- `archive` -> `core/prompts/archive.md`
+- `bmad-import` -> `core/prompts/bmad-import.md`
+- `build` -> `core/prompts/build.md`
+- `go` -> `core/prompts/go.md`
+- `lessons` -> `core/prompts/lessons.md`
+- `plan` -> `core/prompts/plan.md`
+- `prd-import` -> `core/prompts/prd-import.md`
+- `retro` -> `core/prompts/retro.md`
+- `storm` -> `core/prompts/storm.md`
+- `team-flow` -> `core/prompts/team-flow.md`
+- `verify-state` -> `core/prompts/verify-state.md`
+
+Prefer the friendlier aliases in new guidance:
+
+- `/pathly flow <feature>` instead of `/pathly team-flow <feature>`
+- `/pathly continue <feature>` instead of `/pathly build <feature>`
+- `/pathly doctor [feature]` instead of `/pathly help --doctor [feature]`
+
+### Anything else
+
+Treat `$ARGUMENTS` as a plain-English request and run the director behavior from
+`core/prompts/go.md`.
+
+## Response Rule
+
+Before invoking the selected behavior, print a short summary:
+
+```text
+Pathly route: <help|doctor|debug|explore|team-flow|review|director>
+Reason: <one sentence>
+```

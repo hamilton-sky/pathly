@@ -36,6 +36,13 @@ def test_python_distribution_is_pathly():
     ]
 
 
+def test_orchestrator_stays_top_level_runtime_package():
+    """The Python FSM runtime should not be absorbed into core content files."""
+    assert (REPO_ROOT / "orchestrator" / "__init__.py").exists()
+    assert (REPO_ROOT / "orchestrator" / "reducer.py").exists()
+    assert not (REPO_ROOT / "core" / "orchestrator").exists()
+
+
 def test_claude_install_paths_use_pathly_plugin_dir():
     """Installers should install runtime plugin files under the Pathly name."""
     install_sh = (REPO_ROOT / "install.sh").read_text(encoding="utf-8")
@@ -71,6 +78,66 @@ def test_readme_slash_commands_map_to_skills():
     assert documented_skill_rows <= skill_names
 
 
+def test_skills_are_core_backed_wrappers():
+    """Live slash-command skills should point at canonical core prompts."""
+    skill_dirs = [path for path in (REPO_ROOT / "skills").iterdir() if path.is_dir()]
+
+    assert skill_dirs
+    for skill_dir in skill_dirs:
+        skill = skill_dir.name
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+        core_prompt = REPO_ROOT / "core" / "prompts" / f"{skill}.md"
+
+        assert core_prompt.exists(), f"Missing core prompt for {skill}"
+        assert f"core/prompts/{skill}.md" in skill_text
+        assert "adapter-facing wrapper" in skill_text
+
+
+def test_core_agent_contracts_exist_for_live_agents():
+    """Core should own host-neutral copies of the agent contracts."""
+    live_agents = {
+        path.name
+        for path in (REPO_ROOT / "agents").glob("*.md")
+        if path.name != "README.md"
+    }
+    core_agents = {
+        path.name
+        for path in (REPO_ROOT / "core" / "agents").glob("*.md")
+        if path.name != "README.md"
+    }
+
+    assert live_agents
+    assert live_agents <= core_agents
+
+
+def test_core_templates_exist_for_live_templates():
+    """Core should own canonical copies of reusable templates."""
+    live_templates = {
+        path.relative_to(REPO_ROOT / "templates")
+        for path in (REPO_ROOT / "templates").rglob("*.template.md")
+    }
+    core_templates = {
+        path.relative_to(REPO_ROOT / "core" / "templates")
+        for path in (REPO_ROOT / "core" / "templates").rglob("*.template.md")
+    }
+
+    assert live_templates
+    assert live_templates <= core_templates
+
+
+def test_core_prompts_reference_core_templates():
+    """Canonical prompts should not point to host-specific template installs."""
+    for prompt_path in [
+        REPO_ROOT / "core" / "prompts" / "plan.md",
+        REPO_ROOT / "core" / "prompts" / "prd-import.md",
+        REPO_ROOT / "core" / "prompts" / "bmad-import.md",
+    ]:
+        prompt = prompt_path.read_text(encoding="utf-8")
+
+        assert "~/.claude/plugins" not in prompt
+        assert "core/templates/plan/" in prompt
+
+
 def test_codex_manifest_uses_pathly_entrypoint():
     """Codex examples should avoid built-in command names like /help."""
     manifest = json.loads((REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
@@ -93,17 +160,17 @@ def test_codex_manifest_has_no_placeholder_paths():
 
 def test_pathly_router_namespaces_help_for_codex():
     """The Codex front door should prevent raw /help guidance from leaking back out."""
-    router = (REPO_ROOT / "skills" / "pathly" / "SKILL.md").read_text(encoding="utf-8")
+    router = (REPO_ROOT / "core" / "prompts" / "pathly.md").read_text(encoding="utf-8")
 
     assert "/help --doctor [feature]` -> `/pathly doctor [feature]" in router
     assert "/team-flow <feature> ...` -> `/pathly flow <feature> ..." in router
-    assert "`verify-state` -> `skills/verify-state/SKILL.md`" in router
-    assert "`prd-import` -> `skills/prd-import/SKILL.md`" in router
+    assert "`verify-state` -> `core/prompts/verify-state.md`" in router
+    assert "`prd-import` -> `core/prompts/prd-import.md`" in router
 
 
 def test_path_alias_routes_like_pathly():
     """The short slash-command alias should exist and point users to the same router."""
-    alias = (REPO_ROOT / "skills" / "path" / "SKILL.md").read_text(encoding="utf-8")
+    alias = (REPO_ROOT / "core" / "prompts" / "path.md").read_text(encoding="utf-8")
 
     assert "equivalent to `/pathly`" in alias
-    assert "skills/pathly/SKILL.md" in alias
+    assert "core/prompts/pathly.md" in alias

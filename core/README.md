@@ -13,9 +13,9 @@ Adapters turn this core into tool-specific experiences:
 - CLI commands
 - future Cursor, Windsurf, BMAD, or generic prompt packs
 
-Current status: this is an additive scaffold. The existing repo-root `agents/`
-and `skills/` folders still power the working plugin while the core is filled
-in.
+Current status: `core/` now contains the canonical prompt and agent contract
+copies. The existing repo-root `skills/` and `agents/` folders still power the
+working plugin as compatibility surfaces for current tool packaging.
 
 ## Repository Boundaries
 
@@ -40,8 +40,8 @@ The target direction is:
 
 - `core/` owns canonical behavior and reusable content.
 - `adapters/` wrap `core/` for each host tool.
-- `skills/` either remain thin wrappers around `core/` or become generated
-  adapter output once the adapter layer is mature.
+- `skills/` remain thin wrappers around `core/prompts/` until they can be
+  generated as adapter output.
 
 Do not move install scripts, tests, Python package files, or runtime code into
 `core/` unless `core/` is deliberately redesigned as a runtime package.
