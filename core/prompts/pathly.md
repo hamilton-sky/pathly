@@ -7,9 +7,8 @@ Adapter skills should load and follow this prompt instead of duplicating workflo
 
 Use this workflow as the canonical front door for Pathly.
 
-For slash-command hosts, `/pathly` is canonical and `/path` is the supported
-short alias. Do not tell Codex users to type Codex-conflicting commands like
-`/help`; use `/pathly help` or `/path help` instead.
+This core router works in host-neutral route names. Adapters decide how a user
+invokes those routes in their environment.
 
 ## Parse `$ARGUMENTS`
 
@@ -19,20 +18,10 @@ Trim `$ARGUMENTS` and inspect the first word case-insensitively.
 
 ### `help`
 
-Run the Pathly help behavior from `core/prompts/help.md`, without relying on the
-literal `/help` command name.
+Run the Pathly help behavior from `core/prompts/help.md`.
 
-When rendering portable help output, namespace user-facing commands under
-`/pathly` and mention that `/path` is equivalent:
-
-- `/help` -> `/pathly help`
-- `/help --doctor [feature]` -> `/pathly doctor [feature]`
-- `/go <request>` -> `/pathly <request>`
-- `/team-flow <feature> ...` -> `/pathly flow <feature> ...`
-- `/debug <symptom>` -> `/pathly debug <symptom>`
-- `/explore <question>` -> `/pathly explore <question>`
-- `/review` -> `/pathly review`
-- `/build <feature>` -> `/pathly continue <feature>`
+When rendering help output, present route names unless the adapter has supplied
+host-specific command formatting.
 
 ### `doctor`
 
@@ -56,11 +45,7 @@ text as the feature and options.
 
 ### `continue <feature>`
 
-Run team-flow build entry for the feature:
-
-```text
-team-flow <feature> build
-```
+Run team-flow build entry for the feature: `team-flow <feature> build`.
 
 ### `review`
 
@@ -83,11 +68,11 @@ remaining text as its arguments:
 - `team-flow` -> `core/prompts/team-flow.md`
 - `verify-state` -> `core/prompts/verify-state.md`
 
-Prefer the friendlier aliases in new guidance:
+Prefer the friendlier route aliases in new guidance:
 
-- `/pathly flow <feature>` instead of `/pathly team-flow <feature>`
-- `/pathly continue <feature>` instead of `/pathly build <feature>`
-- `/pathly doctor [feature]` instead of `/pathly help --doctor [feature]`
+- `flow <feature>` instead of `team-flow <feature>`
+- `continue <feature>` instead of `build <feature>`
+- `doctor [feature]` instead of `help --doctor [feature]`
 
 ### Anything else
 

@@ -5,11 +5,11 @@ Adapter skills should load and follow this prompt instead of duplicating workflo
 
 # Path
 
-Use this workflow as the short slash-command alias for Pathly.
+Use this workflow as the short alias route for Pathly in adapters that support
+aliases.
 
-`/path` is equivalent to `/pathly`. Keep `/pathly` as the canonical command in
-formal docs and examples, but accept `/path` for day-to-day use across supported
-slash-command frameworks.
+`path` is equivalent to `pathly`. Adapters may render this alias according to
+their host.
 
 ## Route
 

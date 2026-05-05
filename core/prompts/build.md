@@ -3,11 +3,12 @@
 This is the canonical, tool-agnostic Pathly behavior for the build workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
-Parse `$ARGUMENTS`: the first word is the **plan folder name**, and if a second word "auto" is present, that signals non-interactive auto-flow mode. For example, `/pathly continue refactor-main auto` → plan = `refactor-main`, auto mode = true.
+Parse `$ARGUMENTS`: the first word is the **plan folder name**, and if a second word "auto" is present, that signals non-interactive auto-flow mode. For example, `continue refactor-main auto` -> plan = `refactor-main`, auto mode = true.
 
 ## Step 0: Execution Mode Selection
 
@@ -65,7 +66,7 @@ During implementation (Step 5), builder may spawn sub-agents to gather codebase 
 - **Summarize before editing (load-bearing):** after all sub-agents return, compress findings into a short summary before touching any file. Raw sub-agent output must not persist into the edit phase.
 - If a scout returns conflicting findings: factual conflict → spawn a third targeted scout; architectural conflict → write `DESIGN_QUESTIONS.md [ARCH]` and stop.
 
-Invocation: `Agent(subagent_type="scout", model="haiku", prompt="[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]")`
+Invocation: spawn the `scout` role with `[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]`.
 
 ## Step 2: Locate the plan folder
 
@@ -103,7 +104,7 @@ Execute exactly what the conversation prompt specifies:
 
 1. Read each file that will be modified
 2. Make changes following the prompt's specifications exactly
-3. Follow all project conventions from CLAUDE.md and .claude/rules/
+3. Follow all project conventions from the project's guidance and rule files.
 4. Stay strictly within the conversation's scope — do NOT touch files outside the listed scope
 5. **No silent refactoring**: do not rename, reformat, or clean up anything outside what the prompt explicitly requires
 
@@ -136,7 +137,7 @@ After successful verification, update `plans/$PLAN/PROGRESS.md`:
    git add [all files modified] plans/$PLAN/PROGRESS.md
    git commit -m "feat: $PLAN conv N done
 
-   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
+   Co-Authored-By: <adapter-specific assistant identity>"
    ```
 
 2. **Check what's next** — read PROGRESS.md for the next TODO conversation.
@@ -149,7 +150,7 @@ After successful verification, update `plans/$PLAN/PROGRESS.md`:
 
    Context is accumulating. To continue with a fresh session:
    👉 Run: /clear
-   👉 Then: /pathly continue $PLAN
+   Then route to: `continue $PLAN`
    ```
 
 4. **If all conversations are DONE:**

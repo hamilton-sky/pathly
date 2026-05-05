@@ -3,20 +3,21 @@
 This is the canonical, tool-agnostic Pathly behavior for the explore workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 ## When to use
 
-Use `/pathly explore <topic>` when you have a question, not a task:
+Use route `explore <topic>` when you have a question, not a task:
 - "How does X affect Y?"
 - "Is it safe to change Z?"
 - "What is the data flow for feature A?"
 - "Should we migrate from B to C?"
 
-Do NOT use when you already have acceptance criteria — use `/pathly flow` instead.
-Do NOT use to debug a known bug — use `/pathly debug` instead.
+Do NOT use when you already have acceptance criteria — use `team-flow` instead.
+Do NOT use to debug a known bug — use `debug` instead.
 
 ---
 
@@ -91,7 +92,7 @@ If `HUMAN_QUESTIONS.md` is created: pause, show user the question, wait for answ
 
 ## Step 3 — Draw conclusions
 
-After the scout finishes and the skill writes `TRACE.md`, spawn the **quick** agent (haiku):
+After the scout finishes and the skill writes `TRACE.md`, spawn the **quick** agent:
 
 ```
 Read explorations/<topic>/EXPLORE.md and explorations/<topic>/TRACE.md.
@@ -124,8 +125,8 @@ Then ask:
 ```
 Exploration complete. What next?
 
-[1] Graduate to feature pipeline   → /pathly flow <topic> --from-exploration <topic>
-[2] Explore a follow-up question   → /pathly explore <follow-up>
+[1] Graduate to feature pipeline   -> team-flow <topic> --from-exploration <topic>
+[2] Explore a follow-up question   -> explore <follow-up>
 [3] Done — keep as reference only
 [4] Archive this exploration
 
@@ -133,12 +134,12 @@ Reply with 1, 2, 3, or 4:
 ```
 
 **On '1' — Graduate:**
-- Run `/pathly flow <name>` with `CONCLUSIONS.md` injected as context for the storm stage.
+- Run `team-flow <name>` with `CONCLUSIONS.md` injected as context for the storm stage.
   Tell the orchestrator: "Context from exploration: [paste CONCLUSIONS.md summary]."
 - The storm agent starts with the exploration's answer as input, not from scratch.
 
 **On '2' — Follow-up:**
-- Ask "New question?" → run `/pathly explore <new-topic>`
+- Ask "New question?" -> route to `explore <new-topic>`
 
 **On '3' — Done:**
 - Print: `Exploration saved: explorations/<topic>/CONCLUSIONS.md`
@@ -156,5 +157,5 @@ Reply with 1, 2, 3, or 4:
 - **Read-only on production code.** The only files written are inside `explorations/<topic>/`.
 - **HUMAN_QUESTIONS.md is the only feedback file.** No REVIEW_FAILURES, no TEST_FAILURES.
 - **No PROGRESS.md, no EVENTS.jsonl, no STATE.json.** Explorations are not FSM-tracked.
-- **Graduation is opt-in.** The exploration never automatically spawns `/pathly flow`.
+- **Graduation is opt-in.** The exploration never automatically starts `team-flow`.
 - **An exploration can end with "don't build."** That is a valid and valuable outcome.

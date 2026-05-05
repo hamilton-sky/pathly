@@ -3,15 +3,16 @@
 This is the canonical, tool-agnostic Pathly behavior for the lessons workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 ## Skill Contract
 
 **Consumes:** `LESSONS_CANDIDATE.md` + `plans/.archive/*/RETRO.md` (up to last 6)
 **Produces:** `LESSONS.md` (active lessons, planner reads this)
-**When to run:** After any `/pathly retro`, or manually when you want to update active lessons.
+**When to run:** After any `retro` workflow, or manually when you want to update active lessons.
 
 ---
 
@@ -21,7 +22,7 @@ Read in order:
 1. `LESSONS_CANDIDATE.md` — all candidate lessons (may not exist yet)
 2. Up to 6 most recent `plans/.archive/*/RETRO.md` files — scan the "What to Improve Next Time" sections
 
-If neither exists, report: "No lessons found. Run /pathly retro on completed features first." and stop.
+If neither exists, report: "No lessons found. Run retro on completed features first." and stop.
 
 ---
 
@@ -88,5 +89,5 @@ Active lessons: <N>
 New this run: <titles of newly added lessons>
 Dropped: <titles removed, if any>
 
-Planner will apply these on the next /pathly plan run.
+Planner will apply these on the next `plan` run.
 ```

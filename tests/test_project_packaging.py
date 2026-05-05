@@ -150,7 +150,7 @@ def test_codex_manifest_uses_natural_language_skill_prompts():
 
     prompts = manifest["interface"]["defaultPrompt"]
     assert prompts
-    assert all(prompt.startswith("Use Pathly") for prompt in prompts)
+    assert all("Pathly" in prompt for prompt in prompts)
     assert all(not prompt.startswith("/") for prompt in prompts)
 
 
@@ -189,6 +189,54 @@ def test_codex_adapter_skills_are_codex_safe_core_wrappers():
         assert "model: opus" not in skill_text
 
 
+def test_codex_skills_match_adapter_wrapper_shape():
+    """Codex skills should mirror Claude wrapper structure with Codex invocation rules."""
+    for skill_dir in CODEX_SKILL_ROOT.iterdir():
+        if not skill_dir.is_dir():
+            continue
+
+        skill_name = skill_dir.name
+        skill_text = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
+
+        assert f"# you are at adapters/codex/skills/{skill_name}/SKILL.md." in skill_text
+        assert "0. User invokes this skill with natural language" in skill_text
+        assert f"Read `core/prompts/{skill_name}.md`" in skill_text
+        assert "plugin-defined slash commands" in skill_text
+        assert "CLI fallback" in skill_text
+        assert f"pathly/core/prompts/{skill_name}.md" not in skill_text
+
+
+def test_codex_director_and_team_flow_do_not_fall_back_to_cli():
+    """Codex workflow skills should route in-plugin unless CLI fallback is explicit."""
+    for skill_name in ["go", "help", "pathly", "team-flow"]:
+        skill_text = (
+            REPO_ROOT / "adapters" / "codex" / "skills" / skill_name / "SKILL.md"
+        ).read_text(encoding="utf-8")
+        normalized = " ".join(skill_text.split())
+
+        assert "CLI fallback" in skill_text
+        assert "unless the user explicitly asks" in normalized
+
+
+def test_core_help_menu_is_pathly_native_and_offers_storm():
+    """The shared help workflow should not expose Claude branding as core behavior."""
+    help_prompt = (REPO_ROOT / "core" / "prompts" / "help.md").read_text(encoding="utf-8")
+
+    assert "Claude Agents Framework" not in help_prompt
+    assert "Brainstorm/refine an unclear idea" in help_prompt
+    assert "route to `storm <answer>`" in help_prompt
+
+
+def test_director_routes_to_workflow_ids_not_shell_commands():
+    """The director should choose Pathly workflows; adapters render commands."""
+    go_prompt = (REPO_ROOT / "core" / "prompts" / "go.md").read_text(encoding="utf-8")
+
+    assert "Do not run a shell command merely because this prompt chooses a route" in go_prompt
+    assert "storm <topic>" in go_prompt
+    assert "team-flow <feature> lite" in go_prompt
+    assert "/pathly flow <feature> lite" not in go_prompt
+
+
 def test_codex_manifest_has_no_placeholder_paths():
     """Published Codex metadata should not reference non-existent TODO resources."""
     manifest_text = (REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
@@ -200,19 +248,42 @@ def test_codex_manifest_has_no_placeholder_paths():
     assert "apps" not in manifest
 
 
-def test_pathly_router_namespaces_help_for_codex():
-    """The Codex front door should prevent raw /help guidance from leaking back out."""
+def test_pathly_router_uses_host_neutral_routes():
+    """The core front door should route by workflow id, not host command syntax."""
     router = (REPO_ROOT / "core" / "prompts" / "pathly.md").read_text(encoding="utf-8")
 
-    assert "/help --doctor [feature]` -> `/pathly doctor [feature]" in router
-    assert "/team-flow <feature> ...` -> `/pathly flow <feature> ..." in router
+    assert "This core router works in host-neutral route names" in router
+    assert "host-specific command formatting" in router
+    assert "`flow <feature>` instead of `team-flow <feature>`" in router
     assert "`verify-state` -> `core/prompts/verify-state.md`" in router
     assert "`prd-import` -> `core/prompts/prd-import.md`" in router
 
 
 def test_path_alias_routes_like_pathly():
-    """The short slash-command alias should exist and point users to the same router."""
+    """The short alias route should exist and point users to the same router."""
     alias = (REPO_ROOT / "core" / "prompts" / "path.md").read_text(encoding="utf-8")
 
-    assert "equivalent to `/pathly`" in alias
+    assert "`path` is equivalent to `pathly`" in alias
     assert "core/prompts/pathly.md" in alias
+
+
+def test_core_prompts_do_not_leak_host_specific_surfaces():
+    """Core prompts should stay generic; adapters own host-specific invocation."""
+    forbidden = [
+        "`/pathly",
+        " /pathly",
+        "~/.claude",
+        ".claude",
+        "CLAUDE.md",
+        "Claude Code",
+        "Codex",
+        "model=\"haiku\"",
+        "model: haiku",
+        "model: sonnet",
+        "model: opus",
+    ]
+
+    for prompt_path in (REPO_ROOT / "core" / "prompts").glob("*.md"):
+        prompt_text = prompt_path.read_text(encoding="utf-8")
+        for token in forbidden:
+            assert token not in prompt_text, f"{prompt_path.name} leaks {token}"

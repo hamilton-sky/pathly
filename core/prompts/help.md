@@ -3,13 +3,15 @@
 This is the canonical, tool-agnostic Pathly behavior for the help workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Adapter Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt names Pathly workflows and menu actions. Adapters translate
+those actions into their native surface. Do not satisfy a menu action by running
+an adapter-specific command unless the user explicitly asked for that fallback.
 
-## Doctor mode (`/pathly doctor`)
+## Doctor mode (`doctor`)
 
-If `$ARGUMENTS` contains `--doctor` (e.g. `/pathly doctor` or `/pathly help my-feature --doctor`),
+If `$ARGUMENTS` contains `--doctor` (e.g. `doctor` or `help my-feature --doctor`),
 run the diagnostic flow below instead of the normal menu. Extract the feature name from
 `$ARGUMENTS` if one is provided alongside `--doctor`; otherwise scan `plans/` for the most
 recently modified feature folder.
@@ -37,7 +39,7 @@ Print a diagnostic summary in this format:
 
 ```
 ╔══════════════════════════════════════════╗
-  /pathly doctor — <feature>
+  doctor — <feature>
 ╚══════════════════════════════════════════╝
 
 ✓  Everything looks healthy.
@@ -47,7 +49,7 @@ Or, if issues found:
 
 ```
 ╔══════════════════════════════════════════╗
-  /pathly doctor — <feature>
+  doctor — <feature>
   N issue(s) found
 ╚══════════════════════════════════════════╝
 
@@ -57,7 +59,7 @@ Issue 1: REVIEW_FAILURES.md is a leftover from a previous run
 
 Issue 2: STATE.json says BUILDING but no conversation is active
   Why: PROGRESS.md shows all conversations as either DONE or TODO — none are in_progress.
-  Suggestion: run /pathly flow <feature> build to return the pipeline to a stable state.
+  Suggestion: route to `team-flow <feature> build` to return the pipeline to a stable state.
 
 ────────────────────────────────────────────
 Run suggestion 1? [yes / no / show all suggestions]
@@ -67,14 +69,14 @@ Run suggestion 1? [yes / no / show all suggestions]
 
 If there are suggestions, ask: `Run suggestion 1? [yes / no / show all suggestions]`
 
-- **yes** → execute the first suggestion (delete orphan file, or run the recommended command)
+- **yes** → execute the first suggestion (delete orphan file, or run the recommended route)
 - **no** → print the full list of suggestions and stop
 - **show all suggestions** → print the full list and ask "Which suggestion to run? [1/2/…/none]"
 
 **Rules for doctor mode:**
 - Never auto-fix without explicit user confirmation.
 - If a suggestion is "delete a file", show the file path clearly before confirming.
-- If a suggestion is "run a command", show the exact command before running.
+- If a suggestion is "run a route", show the exact route before running.
 - One action at a time — do not batch multiple fixes without explicit approval.
 
 ---
@@ -118,24 +120,26 @@ Print the banner, then the numbered options for the detected state. Wait for use
 
 ```
 ═══════════════════════════════════════════
-  Claude Agents Framework
+  Pathly
   No active feature found
 ═══════════════════════════════════════════
 
   What do you want to do?
 
-  [1] Describe what you want (plain English)  → /pathly
-  [2] Start a new feature (full pipeline)     → /pathly flow
-  [3] Start a new feature with a PRD/BMAD file
-  [4] See all commands
+  [1] Brainstorm/refine an unclear idea       -> storm
+  [2] Describe what you want (plain English)  -> director
+  [3] Start a new feature (full pipeline)     -> team-flow
+  [4] Start a new feature with a PRD/BMAD file
+  [5] See all commands
 
-Reply with 1, 2, 3, or 4:
+Reply with 1, 2, 3, 4, or 5:
 ```
 
-On '1': ask "What do you want to build?" → run `/pathly <answer>`
-On '2': ask "Feature name?" → run `/pathly flow <name>`
-On '3': ask "Feature name?" then "PRD or BMAD file path?" → run `/pathly flow <name>` and user selects [3] at the path selector
-On '4': print full command reference (Step 3)
+On '1': ask "What idea do you want to refine?" -> route to `storm <answer>`
+On '2': ask "What do you want to build or do?" -> route to director with the answer
+On '3': ask "Feature name?" -> route to `team-flow <name>`
+On '4': ask "Feature name?" then "PRD or BMAD file path?" -> route to `team-flow <name>` and user selects PRD/BMAD at the path selector
+On '5': print full command reference (Step 3)
 
 ---
 
@@ -148,15 +152,15 @@ On '4': print full command reference (Step 3)
 
   What do you want to do?
 
-  [1] Plan the feature now      → /pathly plan <feature>
-  [2] Run full pipeline         → /pathly flow <feature>
+  [1] Plan the feature now      -> plan <feature>
+  [2] Run full pipeline         -> team-flow <feature>
   [3] See all commands
 
 Reply with 1, 2, or 3:
 ```
 
-On '1': run `/pathly plan <feature>`
-On '2': run `/pathly flow <feature>`
+On '1': route to `plan <feature>`
+On '2': route to `team-flow <feature>`
 On '3': print full command reference
 
 ---
@@ -177,17 +181,17 @@ Read PROGRESS.md: X conversations done, Y remaining.
   [1] Continue building         → next TODO conversation
   [2] Run full pipeline         → build + review + test + retro
   [3] Run full pipeline (fast)  → no pause points
-  [4] Review current code       → /pathly review
+  [4] Review current code       -> review
   [5] Change rigor              → see options
   [6] See all commands
 
 Reply with 1–6:
 ```
 
-On '1': run `/pathly flow <feature> build`
-On '2': run `/pathly flow <feature> build`  (with pauses)
-On '3': run `/pathly flow <feature> build fast`
-On '4': run `/pathly review`
+On '1': route to `team-flow <feature> build`
+On '2': route to `team-flow <feature> build`  (with pauses)
+On '3': route to `team-flow <feature> build fast`
+On '4': route to `review`
 On '5': print the "CHANGING RIGOR" section from Step 3
 On '6': print full command reference
 
@@ -216,7 +220,7 @@ List which feedback files exist and who must act.
 Reply with 1, 2, or 3:
 ```
 
-On '1': run `/pathly flow <feature> build`
+On '1': route to `team-flow <feature> build`
 On '2': read and print the feedback file(s)
 On '3': print full command reference
 
@@ -234,15 +238,15 @@ On '3': print full command reference
 
   [1] Run tests                 → tester verifies all ACs
   [2] Run tests + retro         → full finish
-  [3] Write retro only          → /pathly retro <feature>
+  [3] Write retro only          -> retro <feature>
   [4] See all commands
 
 Reply with 1–4:
 ```
 
-On '1': run `/pathly flow <feature> test`
-On '2': run `/pathly flow <feature> test` (includes retro at end)
-On '3': run `/pathly retro <feature>`
+On '1': route to `team-flow <feature> test`
+On '2': route to `team-flow <feature> test` (includes retro at end)
+On '3': route to `retro <feature>`
 On '4': print full command reference
 
 ---
@@ -259,17 +263,17 @@ On '4': print full command reference
   What do you want to do?
 
   [1] Archive this feature      → moves to plans/.archive/
-  [2] Promote lessons           → /pathly lessons (update active memory)
-  [3] Start next feature        → /pathly flow <new-feature>
+  [2] Promote lessons           -> lessons (update active memory)
+  [3] Start next feature        -> team-flow <new-feature>
   [4] Read the retro            → show RETRO.md
   [5] See all commands
 
 Reply with 1–5:
 ```
 
-On '1': run `/pathly archive <feature>`
-On '2': run `/pathly lessons`
-On '3': ask "New feature name?" → run `/pathly flow <name>`
+On '1': route to `archive <feature>`
+On '2': route to `lessons`
+On '3': ask "New feature name?" -> route to `team-flow <name>`
 On '4': read and print RETRO.md
 On '5': print full command reference
 
@@ -282,60 +286,60 @@ On '5': print full command reference
   ENTRY POINTS
 ───────────────────────────────────────────
 
-  /pathly                                prompts "What do you want?" → routes
-  /pathly <what you want>                skip prompt, routes immediately
-  /pathly help [feature]                    detect state → show this menu
-  /pathly doctor [feature]           diagnose stuck FSM, orphan files, stale feedback
+  pathly                                prompts "What do you want?" -> routes
+  pathly <what you want>                skip prompt, routes immediately
+  help [feature]                        detect state -> show this menu
+  doctor [feature]                      diagnose stuck FSM, orphan files, stale feedback
 
 ───────────────────────────────────────────
   MAIN COMMAND
 ───────────────────────────────────────────
 
-  /pathly flow <feature>               full pipeline, standard rigor by default
-  /pathly flow <feature> lite          small change, 4-file plan, lighter gates
-  /pathly flow <feature> standard      current full 8-file pipeline
-  /pathly flow <feature> strict        mandatory approvals + audit-grade gates
-  /pathly flow <feature> build         skip to build stage
-  /pathly flow <feature> test          skip to test stage
-  /pathly flow <feature> plan          skip discovery, start planning
-  /pathly flow <feature> fast          no pause points
-  /pathly flow <feature> build fast    resume build, no pauses
+  flow <feature>                       full pipeline, standard rigor by default
+  flow <feature> lite                  small change, 4-file plan, lighter gates
+  flow <feature> standard              current full 8-file pipeline
+  flow <feature> strict                mandatory approvals + audit-grade gates
+  flow <feature> build                 skip to build stage
+  flow <feature> test                  skip to test stage
+  flow <feature> plan                  skip discovery, start planning
+  flow <feature> fast                  no pause points
+  flow <feature> build fast            resume build, no pauses
 
 ───────────────────────────────────────────
   INDIVIDUAL STAGES
 ───────────────────────────────────────────
 
-  /pathly storm                             architect explores idea → STORM_SEED.md
-  /pathly plan <feature> [rigor]            planner creates 4 or 8 plan files
-  /pathly continue <feature>                   builder implements next TODO conversation
-  /pathly review                            reviewer audits staged changes
-  /pathly retro <feature>                   quick summarizes; retro skill writes RETRO.md + extracts lessons
-  /pathly lessons                           promote candidate lessons → LESSONS.md
-  /pathly archive <feature>                 move completed feature to plans/.archive/
-  /pathly prd-import <feature> <file> [rigor] translate any PRD file → plan files
-  /pathly bmad-import <feature> <file> [rigor] translate BMAD PRD → plan files
-  /pathly verify-state [feature]            check stale feedback, PROGRESS drift, dead references
+  storm                                     architect explores idea -> STORM_SEED.md
+  plan <feature> [rigor]                    planner creates 4 or 8 plan files
+  continue <feature>                        builder implements next TODO conversation
+  review                                    reviewer audits staged changes
+  retro <feature>                           quick summarizes; retro skill writes RETRO.md + extracts lessons
+  lessons                                   promote candidate lessons -> LESSONS.md
+  archive <feature>                         move completed feature to plans/.archive/
+  prd-import <feature> <file> [rigor]        translate any PRD file -> plan files
+  bmad-import <feature> <file> [rigor]       translate BMAD PRD -> plan files
+  verify-state [feature]                    check stale feedback, PROGRESS drift, dead references
 
 ───────────────────────────────────────────
   CHANGING RIGOR
 ───────────────────────────────────────────
 
-  /pathly help [feature] should show the inferred current rigor.
+  help [feature] should show the inferred current rigor.
 
   Upgrade lite → standard:
-    /pathly plan <feature> standard
+    plan <feature> standard
     Adds missing standard files. Keeps existing plan content.
 
   Upgrade standard → strict:
-    /pathly plan <feature> strict
+    plan <feature> strict
     Adds strict risk, rollback, approval, and verification mapping.
 
   Downgrade strict → standard:
-    /pathly flow <feature> standard
+    flow <feature> standard
     Uses standard gates from now on. Do not delete audit files.
 
   Downgrade standard → lite:
-    /pathly flow <feature> lite
+    flow <feature> lite
     Uses lighter gates from now on. Keep extra plan files as references.
 
   Never delete plan files just to downgrade. Rigor controls future gates.
@@ -361,7 +365,7 @@ On '5': print full command reference
   docs/ORCHESTRATOR_FSM.md      deterministic workflow state machine
   docs/FEEDBACK_PROTOCOL.md     feedback file formats
   docs/CONCEPTS.md              philosophy
-  https://github.com/hamilton-sky/claude-agents-framework
+  docs/README.md or the adapter-specific documentation
 
 ═══════════════════════════════════════════
 ```

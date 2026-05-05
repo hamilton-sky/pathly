@@ -3,9 +3,10 @@
 This is the canonical, tool-agnostic Pathly behavior for the verify-state workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 Run a consistency check on the feature plan pipeline. If `$ARGUMENTS` is given, check that feature only. If blank, check all features in `plans/`.
 

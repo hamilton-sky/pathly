@@ -87,6 +87,17 @@ def test_debug_explore_and_review_are_exposed(tmp_path, capsys):
     assert "Use Pathly review" in capsys.readouterr().out
 
 
+def test_install_codex_prints_complete_marketplace_setup(capsys):
+    result = cli.main(["install", "codex"])
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "pathly-local" in output
+    assert "marketplace.json" in output
+    assert "codex plugin marketplace add $market" in output
+    assert "globally on this machine" in output
+
+
 def test_run_uses_current_project_as_team_flow_root(tmp_path, monkeypatch):
     seen = {}
 

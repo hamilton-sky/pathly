@@ -3,9 +3,10 @@
 This is the canonical, tool-agnostic Pathly behavior for the review workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 Review code at $ARGUMENTS against this project's architectural standards.
 
@@ -21,7 +22,7 @@ Run the appropriate git diff command based on `$ARGUMENTS`.
 
 Read (if present):
 1. The `ARCHITECTURE_PROPOSAL.md` in the `plans/*/` folder that most closely matches the changed files — defines the intended architecture for in-progress work
-2. All `.md` files in `.claude/rules/` — project-wide architectural contracts
+2. Project rule files — project-wide architectural contracts
 
 If neither exists, review against general software engineering good practices and note the absence.
 
@@ -38,7 +39,7 @@ For each changed file, check:
 - Are concerns properly separated (e.g., data access vs. business logic vs. presentation)?
 
 ### Conventions
-- Does the file follow naming and structural conventions shown in `.claude/rules/`?
+- Does the file follow naming and structural conventions shown in project rules?
 - Are interfaces and contracts implemented correctly per the rules files?
 
 ### Scope

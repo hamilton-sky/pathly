@@ -3,18 +3,19 @@
 This is the canonical, tool-agnostic Pathly behavior for the debug workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 ## When to use
 
-Use `/pathly debug <symptom-name>` when:
+Use route `debug <symptom-name>` when:
 - A bug is observed (symptom is known) but the root cause is not
 - You need a traceable, auditable fix with before/after test evidence
-- The bug is in production code (not a plan/pipeline issue — use `/pathly verify-state` for that)
+- The bug is in production code (not a plan/pipeline issue — use `verify-state` for that)
 
-Do NOT use for exploratory questions ("how does X work?") — use `/pathly explore` instead.
+Do NOT use for exploratory questions ("how does X work?") — use `explore` instead.
 Do NOT use when you already know the fix — just fix it directly.
 
 ---
@@ -50,7 +51,7 @@ If `$ARGUMENTS` is blank: ask "Describe the bug symptom in a few words (used as 
 
 Create `debugs/<symptom-name>/` if it doesn't exist.
 
-Ask the user to fill in `SYMPTOM.md`. If the user already described it in the `/pathly debug` invocation, pre-fill it:
+Ask the user to fill in `SYMPTOM.md`. If the user already described it in the debug invocation, pre-fill it:
 
 ```markdown
 # Symptom — <symptom-name>
@@ -194,7 +195,7 @@ Spawn the **reviewer** agent with a reduced scope:
 Read debugs/<symptom-name>/FIX.md and the files listed under "Files changed".
 Check only:
 - Does the fix introduce any new security issues?
-- Does the fix violate any layer contracts (check CLAUDE.md rules)?
+- Does the fix violate any layer contracts from project guidance or rules?
 Do NOT review for style or unrelated issues.
 If violations found: write debugs/<symptom-name>/feedback/REVIEW_FAILURES.md.
 If clean: say "Fix review: no violations."
@@ -210,7 +211,7 @@ Print:
 
 ```
 ╔══════════════════════════════════════════╗
-  /pathly debug — <symptom-name> — DONE
+  debug — <symptom-name> — DONE
 ╚══════════════════════════════════════════╝
 
 Root cause:   debugs/<symptom-name>/ROOT_CAUSE.md

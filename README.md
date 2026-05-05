@@ -120,7 +120,12 @@ Current Codex builds load local plugins through a marketplace root. Create a
 small local marketplace that points to your Pathly checkout, then add that
 marketplace to Codex.
 
-Example Windows setup:
+For one machine, this is effectively global: once Codex has the marketplace
+registered, the Pathly plugin is available from any workspace on that machine.
+Your friend still needs their own clone on their machine, because local
+marketplaces point at local files.
+
+Example Windows setup after cloning:
 
 ```powershell
 git clone https://github.com/hamilton-sky/pathly
@@ -160,7 +165,29 @@ codex plugin marketplace add $market
 For local marketplaces, `codex plugin marketplace upgrade pathly-local` is not
 needed; upgrade is for Git-backed marketplaces.
 
+If a friend clones the repo, their next steps are:
+
+```powershell
+cd pathly
+python -m pip install -e .
+pathly install codex       # prints the Codex marketplace setup
+codex plugin marketplace add C:\tmp\pathly-marketplace
+```
+
+Then restart/open Codex and check Settings -> Plugins for Pathly. The plugin
+skills are global to that Codex install, not copied into each project.
+
 Then open any project in Codex and invoke Pathly with natural language:
+
+```text
+Pathly help
+Pathly doctor
+Pathly add user authentication with Google OAuth
+Pathly debug checkout button does nothing
+Pathly explore how checkout works
+```
+
+If Codex does not confidently select the plugin, use the explicit form:
 
 ```text
 Use Pathly help
@@ -207,6 +234,10 @@ Adapter install helpers show the commands for each host:
 pathly install codex
 pathly install claude
 ```
+
+The `pathly/` folder is the Python package behind that CLI. Keep it: it provides
+the `pathly` command declared in `pyproject.toml`, adapter install guidance, and
+the stable fallback contract for users who are not inside Claude Code or Codex.
 
 ### Developer Install
 

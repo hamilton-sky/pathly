@@ -3,9 +3,10 @@
 This is the canonical, tool-agnostic Pathly behavior for the bmad-import workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 ## Skill Contract
 
@@ -25,8 +26,8 @@ Split `$ARGUMENTS` on the first space:
 
 If either is missing, stop and tell the user:
 ```
-Usage: /pathly bmad-import <feature-name> <path/to/PRD.md>
-Example: /pathly bmad-import hotel-search docs/hotel-search-prd.md
+Route: `bmad-import <feature-name> <path/to/PRD.md>`
+Example route: `bmad-import hotel-search docs/hotel-search-prd.md`
 ```
 
 Check that `PRD_PATH` exists. If not, stop and report the missing file.
@@ -53,9 +54,9 @@ If the PRD uses different section names (e.g., "Non-functional requirements", "C
 
 ## Step 2: Read Project Conventions
 
-1. Read `CLAUDE.md` — layer structure, run commands, project architecture
-2. Read all `.md` files in `.claude/rules/` (if the directory exists) — architectural contracts, dependency rules, naming conventions
-3. Identify the project's layer structure from CLAUDE.md (e.g., what layers exist, what belongs where)
+1. Read the project's guidance files — layer structure, run commands, project architecture
+2. Read project rule files if present — architectural contracts, dependency rules, naming conventions
+3. Identify the project's layer structure from the available guidance (e.g., what layers exist, what belongs where)
 4. Find similar existing components in the codebase — use as reference patterns for naming and structure
 
 ---
@@ -78,15 +79,15 @@ If complexity is HIGH (5+ stories or 9+ ACs): consider splitting into two plan f
 
 ## Step 4: Translate ACs to Verify Commands
 
-This is the core translation step. For each acceptance criterion, generate an appropriate verify command using the project's own test/run conventions (read from CLAUDE.md).
+This is the core translation step. For each acceptance criterion, generate an appropriate verify command using the project's own test/run conventions.
 
 **General approach:**
 
 | AC type | Verify method |
 |---|---|
 | Structure exists (class, file, interface) | `grep` or file existence check |
-| Logic executes correctly | unit test or integration test command from CLAUDE.md |
-| End-to-end behavior | full run command from CLAUDE.md |
+| Logic executes correctly | unit test or integration test command from project guidance |
+| End-to-end behavior | full run command from project guidance |
 | Error/edge state handled | targeted test for the edge case |
 
 **Verify command format:**
@@ -143,7 +144,7 @@ Read `core/templates/plan/PROGRESS.template.md` for structure.
 ### FILE 4: CONVERSATION_PROMPTS.md
 Read `core/templates/plan/CONVERSATION_PROMPTS.template.md` for structure.
 
-Each conversation prompt must be self-contained, scoped to specific files and layers, include the relevant architectural boundary rules from `.claude/rules/`, Do NOT list, verify command, and end with:
+Each conversation prompt must be self-contained, scoped to specific files and layers, include the relevant architectural boundary rules from project guidance, Do NOT list, verify command, and end with:
 `After done, update plans/$FEATURE/PROGRESS.md phase X to DONE.`
 
 ### FILE 5: HAPPY_FLOW.md
@@ -184,8 +185,8 @@ Conversations planned: [count]
 Edge cases covered: [count]
 
 Next step: Review the plan, then run:
-  /pathly continue $FEATURE        ← implement Conversation 1
-  /pathly flow $FEATURE    ← run the full pipeline
+  continue $FEATURE        <- implement Conversation 1
+  team-flow $FEATURE       <- run the full pipeline
 ```
 
 If a section was missing from the PRD (e.g., no edge cases listed), note it in the report and leave the relevant section minimal rather than inventing content.

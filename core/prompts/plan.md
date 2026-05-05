@@ -3,9 +3,10 @@
 This is the canonical, tool-agnostic Pathly behavior for the plan workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 ## Skill Contract
 
@@ -49,7 +50,7 @@ If `rigor = strict`, do not skip risk questions. Explicitly ask about security, 
 
 ## Step 3: Research The Codebase
 
-1. Read `CLAUDE.md` and linked rules files for layer structure, dependency direction, naming conventions, and test commands.
+1. Read project guidance and linked rule files for layer structure, dependency direction, naming conventions, and test commands.
 2. Find similar existing components and use them as reference patterns.
 3. Identify files to create or modify.
 4. Check test directory conventions if tests are in scope.
@@ -184,5 +185,5 @@ Files:
 - FLOW_DIAGRAM.md - ASCII flow diagram [standard/strict only]
 
 Seed consumed: [yes / no]
-Next: /pathly continue $FEATURE
+Next route: `continue $FEATURE`
 ```

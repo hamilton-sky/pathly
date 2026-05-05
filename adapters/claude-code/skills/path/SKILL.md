@@ -10,7 +10,10 @@ This skill is an adapter-facing wrapper. The canonical workflow lives in core/pr
 
 ## Run
 
-1. Read core/prompts/path.md.
+# you are at adapters/claude-code/skills/path/SKILL.md.
+
+0. User runs `/pathly path` or `/path path` (or the legacy `path`) with an optional argument describing their request.
+1. Read `pathly/core/prompts/path.md`.
 2. Follow that prompt as the source of truth for this workflow.
 3. Preserve the slash-command contract from this skill's frontmatter.
 4. Prefer /pathly ... or /path ... in user-facing guidance; treat legacy direct skill names as compatibility aliases.

@@ -1,5 +1,14 @@
 # Agents
 
+Claude Code agent files are adapter packaging around the canonical role
+contracts in `core/agents/`. The behavioral source of truth belongs in core;
+this directory adds Claude-specific frontmatter such as `model`, `tools`, and
+`skills`.
+
+When changing how an agent thinks, edit the matching `core/agents/<agent>.md`
+first, then sync this adapter file. Do not let the Claude copy become an
+independent fork of the role contract.
+
 Agents are architectural roles with behavioral contracts. A role defines how the
 agent thinks. The `tools:` frontmatter is the runtime-enforced capability set for
 that role.

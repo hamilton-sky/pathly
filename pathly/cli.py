@@ -191,9 +191,35 @@ def cmd_help(args: argparse.Namespace) -> int:
 
 def cmd_install(args: argparse.Namespace) -> int:
     if args.target == "codex":
-        print("Install the Codex plugin from this repository root:")
-        print("  codex plugin marketplace add <path-to-pathly-repo>")
-        print("  codex plugin marketplace upgrade pathly")
+        repo_root = Path(__file__).resolve().parents[1]
+        print("Install the Codex plugin through a local marketplace:")
+        print()
+        print("  python -m pip install -e .")
+        print("  $market = \"C:\\tmp\\pathly-marketplace\"")
+        print("  New-Item -ItemType Directory -Path \"$market\\.agents\\plugins\" -Force")
+        print("  New-Item -ItemType Directory -Path \"$market\\plugins\" -Force")
+        print(f"  New-Item -ItemType Junction -Path \"$market\\plugins\\pathly\" -Target \"{repo_root}\"")
+        print("  @'")
+        print("  {")
+        print("    \"name\": \"pathly-local\",")
+        print("    \"interface\": { \"displayName\": \"Pathly Local\" },")
+        print("    \"plugins\": [")
+        print("      {")
+        print("        \"name\": \"pathly\",")
+        print("        \"source\": { \"source\": \"local\", \"path\": \"./plugins/pathly\" },")
+        print("        \"policy\": { \"installation\": \"AVAILABLE\", \"authentication\": \"ON_INSTALL\" },")
+        print("        \"category\": \"Developer Tools\"")
+        print("      }")
+        print("    ]")
+        print("  }")
+        print("  '@ | Set-Content \"$market\\.agents\\plugins\\marketplace.json\"")
+        print("  codex plugin marketplace add $market")
+        print()
+        print("This registers Pathly for Codex globally on this machine. Each user")
+        print("still needs their own local clone or installed copy of this repo.")
+        print()
+        print("If PowerShell cannot find codex, run the same command with the full")
+        print("codex.exe path from your Codex or ChatGPT VS Code extension.")
         return 0
     if args.target == "claude":
         print("Install Claude Code support from this repository root:")

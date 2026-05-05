@@ -3,16 +3,17 @@
 This is the canonical, tool-agnostic Pathly behavior for the archive workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 ## Step 1: Validate
 
 If `$ARGUMENTS` is empty: stop →
 ```
-Usage: /pathly archive <feature-name>
-Example: /pathly archive hotel-search
+Route: `archive <feature-name>`
+Example route: `archive hotel-search`
 ```
 
 Set `FEATURE = $ARGUMENTS`.
@@ -24,7 +25,7 @@ plans/$FEATURE/ not found. Nothing to archive.
 
 Check `plans/$FEATURE/RETRO.md` exists. If not: stop →
 ```
-RETRO.md missing. Run /pathly retro $FEATURE before archiving.
+RETRO.md missing. Run route `retro $FEATURE` before archiving.
 The retro seed is needed for future storm sessions.
 ```
 
@@ -49,7 +50,7 @@ Create `plans/.archive/` if it does not exist.
 
 Move `plans/$FEATURE/` → `plans/.archive/$FEATURE/`
 
-Use the Bash tool:
+Use the host's shell tool:
 ```bash
 mv plans/$FEATURE plans/.archive/$FEATURE
 ```
@@ -73,5 +74,5 @@ plans/ is now clean.
 If `plans/` now has no remaining active features, add:
 ```
 No active features remaining. Start the next one with:
-  /pathly flow <new-feature>
+  team-flow <new-feature>
 ```

@@ -3,9 +3,10 @@
 This is the canonical, tool-agnostic Pathly behavior for the retro workflow.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
-## Pathly Command Surface
+## Workflow Surface
 
-Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+This core prompt uses host-neutral Pathly route names. Adapters are responsible
+for rendering those routes in their host-native form.
 
 ## Skill Contract
 
@@ -57,10 +58,10 @@ Total: $X.XX
 
 | Agent     | Model          | Tokens in | Tokens out | Cost     | % of total |
 |-----------|----------------|-----------|------------|----------|------------|
-| architect | claude-opus-4-7 | 12,400   | 2,100      | $2.50    | 60%        |
-| builder   | claude-sonnet-4-6 | 8,200  | 4,300      | $1.10    | 26%        |
-| reviewer  | claude-sonnet-4-6 | 5,100  | 1,200      | $0.40    | 10%        |
-| tester    | claude-sonnet-4-6 | 3,000  | 900        | $0.20    | 5%         |
+| architect | advanced | 12,400   | 2,100      | $2.50    | 60%        |
+| builder   | normal   | 8,200    | 4,300      | $1.10    | 26%        |
+| reviewer  | normal   | 5,100    | 1,200      | $0.40    | 10%        |
+| tester    | normal   | 3,000    | 900        | $0.20    | 5%         |
 
 > Use this to decide: was standard rigor worth the cost? Would lite have been enough?
 
@@ -102,7 +103,7 @@ For each lesson, append to `LESSONS_CANDIDATE.md` in the project root (create if
 - <add more only if needed>
 
 ### Source
-Feature: $ARGUMENTS | Stage: <planning/implementation/pathly review/test> | Date: <today>
+Feature: $ARGUMENTS | Stage: <planning/implementation/review/test> | Date: <today>
 ```
 
 Do NOT invent lessons. Only extract from what the user actually said.
@@ -114,9 +115,9 @@ Retro written: plans/$ARGUMENTS/RETRO.md
 Lessons appended: LESSONS_CANDIDATE.md
 
 To use in your next storm session:
-1. Run /pathly storm
+1. Run route `storm`
 2. Paste the "Seed for Next Storm" block from RETRO.md as opening context
 
 To promote lessons to active memory:
-  /pathly lessons
+  lessons
 ```

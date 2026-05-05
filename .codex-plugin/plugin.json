@@ -29,6 +29,9 @@
     ],
     "websiteURL": "https://github.com/hamilton-sky/pathly",
     "defaultPrompt": [
+      "Pathly help",
+      "Pathly doctor",
+      "Pathly add password reset",
       "Use Pathly to add password reset",
       "Use Pathly doctor on this project",
       "Use Pathly to debug checkout button does nothing"
