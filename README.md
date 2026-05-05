@@ -116,42 +116,65 @@ to get started.
 ### Codex
 
 Pathly includes a Codex plugin manifest at `.codex-plugin/plugin.json`.
-Install it as a local Codex plugin from this repository root:
+Current Codex builds load local plugins through a marketplace root. Create a
+small local marketplace that points to your Pathly checkout, then add that
+marketplace to Codex.
 
-```bash
-# macOS / Linux
-git clone https://github.com/hamilton-sky/pathly
-cd pathly
-python -m pip install -e .
-codex plugin marketplace add .
-codex plugin marketplace upgrade pathly
-```
+Example Windows setup:
 
 ```powershell
-# Windows (PowerShell)
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
 python -m pip install -e .
-codex plugin marketplace add .
-codex plugin marketplace upgrade pathly
+
+$market = "C:\tmp\pathly-marketplace"
+New-Item -ItemType Directory -Path "$market\.agents\plugins" -Force
+New-Item -ItemType Directory -Path "$market\plugins" -Force
+New-Item -ItemType Junction -Path "$market\plugins\pathly" -Target (Get-Location)
+@'
+{
+  "name": "pathly-local",
+  "interface": {
+    "displayName": "Pathly Local"
+  },
+  "plugins": [
+    {
+      "name": "pathly",
+      "source": {
+        "source": "local",
+        "path": "./plugins/pathly"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
+'@ | Set-Content "$market\.agents\plugins\marketplace.json"
+
+codex plugin marketplace add $market
 ```
 
-Then open any project in Codex and use the Codex-safe `/pathly` entry point or the `/path` short alias:
+For local marketplaces, `codex plugin marketplace upgrade pathly-local` is not
+needed; upgrade is for Git-backed marketplaces.
+
+Then open any project in Codex and invoke Pathly with natural language:
 
 ```text
-/pathly add user authentication with Google OAuth
-/path add password reset
-/pathly help
-/pathly doctor
-/pathly debug checkout button does nothing
-/pathly explore how does checkout work?
+Use Pathly help
+Use Pathly doctor on this project
+Use Pathly to add user authentication with Google OAuth
+Use Pathly to debug checkout button does nothing
+Use Pathly to explore how checkout works
 ```
 
-Codex has its own built-in `/help`, so Pathly uses `/pathly help` and
-`/pathly doctor` instead of claiming the global help command. Codex support
-currently exposes the skill workflow layer. Claude-style custom agent files
-remain available as role contracts, but full multi-tool adapter packaging is
-tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
+Do not expect `/pathly` to work in current Codex builds; Codex reserves slash
+commands for its own UI. Codex support currently exposes the skill workflow
+layer through plugin skills and the `pathly` CLI fallback. Claude-style custom
+agent files remain available as role contracts, but full multi-tool adapter
+packaging is tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
 
 ### Pathly CLI
 

@@ -138,13 +138,26 @@ def test_core_prompts_reference_core_templates():
         assert "core/templates/plan/" in prompt
 
 
-def test_codex_manifest_uses_pathly_entrypoint():
-    """Codex examples should avoid built-in command names like /help."""
+def test_codex_manifest_uses_natural_language_skill_prompts():
+    """Codex examples should not promise plugin-defined slash commands."""
     manifest = json.loads((REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
 
     prompts = manifest["interface"]["defaultPrompt"]
     assert prompts
-    assert all(prompt.startswith("/pathly ") for prompt in prompts)
+    assert all(prompt.startswith("Use Pathly") for prompt in prompts)
+    assert all(not prompt.startswith("/") for prompt in prompts)
+
+
+def test_codex_adapter_does_not_document_pathly_slash_command():
+    """Current Codex builds expose Pathly as skills, not custom slash commands."""
+    readme = (REPO_ROOT / "adapters" / "codex" / "README.md").read_text(encoding="utf-8")
+    wrapper = (
+        REPO_ROOT / "adapters" / "codex" / "skills" / "pathly" / "SKILL.md"
+    ).read_text(encoding="utf-8")
+
+    assert "Use Pathly help" in readme
+    assert "Do not document `/pathly` as a Codex command" in readme
+    assert "Do not tell Codex users to type `/pathly ...`" in wrapper
 
 
 def test_codex_manifest_has_no_placeholder_paths():
