@@ -1,6 +1,6 @@
 # Philosophy — Why This System Is Built the Way It Is
 
-*The five convictions behind the Claude Agents Framework.*
+*The five convictions behind Pathly.*
 
 ---
 

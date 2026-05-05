@@ -1,5 +1,5 @@
-#!/bin/bash
-# install.sh — Claude Agents Framework installer
+﻿#!/bin/bash
+# install.sh — Pathly installer for Claude Code
 #
 # Usage:
 #   bash install.sh            # install
@@ -8,7 +8,7 @@
 # What it installs:
 #   skills/   → ~/.claude/skills/   (slash commands)
 #   agents/   → ~/.claude/agents/   (sub-agents)
-#   hooks/    → ~/.claude/plugins/claude-agents-framework/hooks/
+#   hooks/    → ~/.claude/plugins/pathly/hooks/
 #
 # After install, register the feedback hook (optional):
 #   bash scripts/setup-hook.sh
@@ -16,12 +16,14 @@
 set -euo pipefail
 
 CLAUDE_DIR="$HOME/.claude"
+PLUGIN_NAME="pathly"
+LEGACY_PLUGIN_NAME="claude-agents-framework"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 UNINSTALL="${1:-}"
 
 echo ""
-echo "Claude Agents Framework"
-echo "======================="
+echo "Pathly"
+echo "======"
 echo ""
 
 if [ "$UNINSTALL" = "--uninstall" ]; then
@@ -36,7 +38,8 @@ if [ "$UNINSTALL" = "--uninstall" ]; then
         rm -f "$CLAUDE_DIR/agents/$agent_name"
         echo "  - $agent_name"
     done
-    rm -rf "$CLAUDE_DIR/plugins/claude-agents-framework"
+    rm -rf "$CLAUDE_DIR/plugins/$PLUGIN_NAME"
+    rm -rf "$CLAUDE_DIR/plugins/$LEGACY_PLUGIN_NAME"
     echo ""
     echo "Uninstalled. Run 'bash scripts/setup-hook.sh --remove' to remove the hook."
     echo "Note: skills and agents in ~/.claude/ must be removed manually if desired."
@@ -67,15 +70,15 @@ done
 # Templates
 echo ""
 echo "Installing templates..."
-mkdir -p "$CLAUDE_DIR/plugins/claude-agents-framework/templates"
-cp -r "$SCRIPT_DIR/templates/"* "$CLAUDE_DIR/plugins/claude-agents-framework/templates/"
+mkdir -p "$CLAUDE_DIR/plugins/$PLUGIN_NAME/templates"
+cp -r "$SCRIPT_DIR/templates/"* "$CLAUDE_DIR/plugins/$PLUGIN_NAME/templates/"
 echo "  + templates/plan/"
 
 # Hooks runtime
 echo ""
 echo "Installing hooks..."
-mkdir -p "$CLAUDE_DIR/plugins/claude-agents-framework/hooks"
-cp "$SCRIPT_DIR/hooks/"*.py "$CLAUDE_DIR/plugins/claude-agents-framework/hooks/"
+mkdir -p "$CLAUDE_DIR/plugins/$PLUGIN_NAME/hooks"
+cp "$SCRIPT_DIR/hooks/"*.py "$CLAUDE_DIR/plugins/$PLUGIN_NAME/hooks/"
 echo "  + classify_feedback.py"
 
 echo ""

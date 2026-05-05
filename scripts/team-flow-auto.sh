@@ -11,7 +11,7 @@
 #
 # Prerequisites:
 #   - Claude Code CLI installed and authenticated (claude command available)
-#   - Working directory is repo root (claude-agents-framework/)
+#   - Working directory is the Pathly repo root
 #   - Git working directory is clean before each build conversation
 
 set -euo pipefail

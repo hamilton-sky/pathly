@@ -1,23 +1,64 @@
-# Claude Agents Framework
+﻿# Pathly
 
-A role-based agent system for Claude Code where **files are the protocol**,
+Tell it what you want. Pathly chooses the path.
+
+Pathly is a guided agent workflow system for real software development. It helps
+AI coding tools plan, build, review, debug, test, and learn from changes without
+making you manage the process by hand.
+
+Start with plain English:
+
+```text
+/go add password reset
+/go fix the checkout bug
+/go review my current changes
+/go continue the current feature
+```
+
+Not sure what to do next?
+
+```text
+/help
+```
+
+Something stuck?
+
+```text
+/help --doctor
+```
+
+Have a question about the codebase?
+
+```text
+/explore how does checkout state flow through the app?
+```
+
+Have a bug?
+
+```text
+/debug checkout button does nothing
+```
+
+## What This Is
+
+A role-based agent system where **files are the protocol**,
 **behavioral contracts** define how each agent thinks, and **feedback loops**
-route issues back to the right agent automatically.
+route issues back to the right role automatically.
 
-## What this is
-
-11 specialized agents + lifecycle skills that give Claude Code a structured
-development pipeline: brainstorm → plan → implement → review → test → retro → learn.
+11 specialized agents + lifecycle skills give AI coding tools a structured
+development pipeline: brainstorm -> plan -> implement -> review -> test ->
+retro -> learn.
 
 Unlike conversation-based workflows, state lives on disk. Agents hand off via
 files, and the orchestrator behaves as a deterministic filesystem state
 machine. An open feedback file blocks the pipeline. A deleted file means
 resolved.
 
-Claude Agents Framework is primarily a **Claude Code plugin**. It also includes
-a small Python orchestrator module used by the `team-flow` driver and tests. The
-Python package metadata exists to make local development and CI repeatable; end
-users normally install and use the Claude plugin, not a standalone Python app.
+Pathly currently ships with Claude Code support and a Codex plugin manifest.
+It also includes a small Python orchestrator module used by the `team-flow`
+driver and tests. The Python package metadata exists to make local development
+and CI repeatable; end users normally install the plugin, not a standalone
+Python app.
 
 **New in this version:**
 - **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
@@ -32,12 +73,14 @@ users normally install and use the Claude plugin, not a standalone Python app.
 
 ---
 
-## Quick install
+## Install
+
+### Claude Code
 
 ```bash
 # macOS / Linux
-git clone https://github.com/hamilton/claude-agents-framework
-cd claude-agents-framework
+git clone https://github.com/hamilton-sky/pathly
+cd pathly
 bash install.sh
 
 # Optional: register the auto-classification hook
@@ -46,8 +89,8 @@ bash scripts/setup-hook.sh
 
 ```powershell
 # Windows (PowerShell)
-git clone https://github.com/hamilton/claude-agents-framework
-cd claude-agents-framework
+git clone https://github.com/hamilton-sky/pathly
+cd pathly
 .\install.ps1
 
 # Optional: register the auto-classification hook
@@ -66,12 +109,46 @@ Then open any project in Claude Code and run:
 ```
 
 Director reads the current project state, chooses the lightest safe workflow,
-and routes into the right skill:
-```
+and routes into the right skill. You do not need to know the pipeline commands
+to get started.
+
+### Codex
+
+Pathly includes a Codex plugin manifest at `.codex-plugin/plugin.json`.
+Install it as a local Codex plugin from this repository root, then use the same
+skills:
+
+```text
 /go add user authentication with Google OAuth
+/help
+/help --doctor
+/debug checkout button does nothing
+/explore how does checkout work?
 ```
 
-No need to know the pipeline commands to get started.
+Codex support currently exposes the skill workflow layer. Claude-style custom
+agent files remain available as role contracts, but full multi-tool adapter
+packaging is tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
+
+### Developer Install
+
+Use Python only when developing Pathly itself or running tests:
+
+```bash
+python -m pip install -e ".[dev]"
+pytest -q
+```
+
+A future CLI can make this friendlier:
+
+```bash
+pathly install codex
+pathly install claude
+pathly doctor
+```
+
+For now, plugin install is the user path; Python packaging is the contributor
+path.
 
 **If you already know the pipeline**, use skills directly:
 ```
@@ -111,13 +188,16 @@ because strict mode requires human approval gates.
 
 ---
 
-## Supported versions
+## Supported Versions
 
-- Claude Code plugin system is the primary runtime.
+- Claude Code plugin support is available today.
+- Codex plugin support is available through `.codex-plugin/plugin.json`.
+- Cursor, Windsurf, BMAD, and generic prompt adapters are planned in
+  [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
 - Python 3.11+ is required for local development and tests.
 - CI runs the test suite on Python 3.11, 3.12, and 3.13.
-- The plugin is designed for project-local use through Claude Code. The Python
-  metadata is for development and CI, not a separate production service.
+- The Python metadata is for development and CI, not a separate production
+  service.
 
 ---
 
@@ -141,7 +221,7 @@ validated with smoke runs before release.
 
 ---
 
-## Director, /go, and /team-flow
+## Everyday Commands
 
 **Director** is the decision-making agent role. It reads the user's free-form
 request, inspects project state, chooses `nano`, `lite`, `standard`, or
@@ -169,6 +249,16 @@ the feature name, rigor, and entry point:
 Direct skills such as `/build`, `/review`, and `/retro` are for manual recovery
 or advanced control.
 
+**`/help`** is the state-aware menu. Use it when you are unsure what to do next.
+`/help --doctor` runs diagnostics for stuck state, orphan feedback files, and
+pipeline drift.
+
+**`/debug`** is for known bug symptoms. It traces the repro, confirms the bug
+before the fix, applies the fix, and verifies after.
+
+**`/explore`** is for codebase questions. It investigates and writes findings
+without building anything.
+
 ---
 
 ## Docs
@@ -181,6 +271,7 @@ or advanced control.
 | [docs/ORCHESTRATOR_FSM.md](docs/ORCHESTRATOR_FSM.md) | Deterministic state machine model, events, recovery, guards |
 | [docs/FEEDBACK_PROTOCOL.md](docs/FEEDBACK_PROTOCOL.md) | Each feedback file format with templates + escalation rules |
 | [docs/SECURITY_RELIABILITY_REVIEW.md](docs/SECURITY_RELIABILITY_REVIEW.md) | Security/reliability posture, risks, mitigations, and production checklist |
+| [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md) | Release criteria, install checks, naming tasks, and adapter-readiness gaps |
 | [docs/CONCEPTS.md](docs/CONCEPTS.md) | Philosophy — why files as protocol, why feedback loops |
 | [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md) | Roadmap for Cursor / Windsurf / BMAD adapter layer |
 
@@ -379,7 +470,7 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
 ~/.claude/
 ├── agents/                    ← 11 behavioral contracts (.md files)
 ├── skills/                    ← lifecycle skills (go, team-flow, build, plan, ...)
-└── plugins/claude-agents-framework/
+└── plugins/pathly/
     ├── hooks/
     │   ├── classify_feedback.py    ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
     │   └── inject_feedback_ttl.py  ← injects TTL frontmatter into every feedback file on write

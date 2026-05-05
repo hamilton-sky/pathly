@@ -7,7 +7,7 @@
 
 param([switch]$Remove)
 
-$PluginDir = "$env:USERPROFILE\.claude\plugins\claude-agents-framework"
+$PluginDir = "$env:USERPROFILE\.claude\plugins\pathly"
 $HookCmd   = "python $PluginDir\hooks\classify_feedback.py"
 $Settings  = "$env:USERPROFILE\.claude\settings.json"
 

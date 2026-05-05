@@ -25,7 +25,7 @@ The knowledge (behavioral contracts, skill steps) is tool-agnostic. The packagin
 Separate WHAT the agents know from HOW each tool loads them.
 
 ```
-claude-agents-framework/
+pathly/
 │
 ├── core/                          ← tool-agnostic source of truth
 │   ├── agents/                    ← pure markdown behavioral contracts

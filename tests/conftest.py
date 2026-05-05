@@ -13,7 +13,7 @@ def tmp_path():
     """Workspace-safe replacement for pytest's default temp path fixture."""
     default_root = r"C:\tmp" if os.name == "nt" else tempfile.gettempdir()
     tmp_root = Path(os.environ.get("PYTEST_TMPDIR", default_root))
-    tmp_root = tmp_root / "claude-agents-framework-tests"
+    tmp_root = tmp_root / "pathly-tests"
     tmp_root.mkdir(parents=True, exist_ok=True)
     path = Path(tempfile.mkdtemp(dir=tmp_root))
     try:

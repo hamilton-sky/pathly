@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-team_flow.py — Python FSM driver for the claude-agents-framework pipeline.
+team_flow.py - Python FSM driver for the Pathly pipeline.
 
 Replaces team-flow-auto.sh. Uses orchestrator/ for deterministic state
 tracking. Each agent runs in a fresh `claude -p` subprocess.
@@ -662,7 +662,7 @@ class Driver:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="FSM-driven pipeline driver for claude-agents-framework"
+        description="FSM-driven pipeline driver for Pathly"
     )
     parser.add_argument("feature", help="Feature name (plans/<feature>/ must exist for build/test entry)")
     parser.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")

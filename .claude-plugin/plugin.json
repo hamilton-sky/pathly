@@ -1,7 +1,7 @@
 {
-  "name": "claude-agents-framework",
+  "name": "pathly",
   "version": "2.0.0",
-  "description": "Natural-language directed agent pipeline for Claude Code. Director chooses the lightest safe workflow; orchestrator runs storm, plan, build, review, test, and retro.",
+  "description": "Guided agent workflows for real software development. Tell Pathly what you want; it chooses the path through planning, building, review, debug, test, and retro.",
   "author": "hamilton",
   "skills": "skills/",
   "agents": "agents/"

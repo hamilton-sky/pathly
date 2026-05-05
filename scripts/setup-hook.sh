@@ -9,7 +9,7 @@
 set -euo pipefail
 
 SETTINGS="$HOME/.claude/settings.json"
-PLUGIN_DIR="$HOME/.claude/plugins/claude-agents-framework"
+PLUGIN_DIR="$HOME/.claude/plugins/pathly"
 HOOK_CMD="python $PLUGIN_DIR/hooks/classify_feedback.py"
 
 # Ensure settings.json exists
