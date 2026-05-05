@@ -1,4 +1,4 @@
-﻿# Pathly
+# Pathly
 
 Tell it what you want. Pathly chooses the path.
 
@@ -54,11 +54,10 @@ files, and the orchestrator behaves as a deterministic filesystem state
 machine. An open feedback file blocks the pipeline. A deleted file means
 resolved.
 
-Pathly currently ships with Claude Code support and a Codex plugin manifest.
-It also includes a small Python orchestrator module used by the `team-flow`
-driver and tests. The Python package metadata exists to make local development
-and CI repeatable; end users normally install the plugin, not a standalone
-Python app.
+Pathly ships as an installable Python tool with adapter layers for Claude Code
+and Codex. The `pathly` CLI owns the stable local contract: install it once,
+run it from any project folder, and let the Claude/Codex adapters expose the
+same workflow in their native UI.
 
 **New in this version:**
 - **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
@@ -115,40 +114,63 @@ to get started.
 ### Codex
 
 Pathly includes a Codex plugin manifest at `.codex-plugin/plugin.json`.
-Install it as a local Codex plugin from this repository root, then use the same
-skills:
+Install it as a local Codex plugin from this repository root, then use the
+Codex-safe `/pathly` entry point:
 
 ```text
-/go add user authentication with Google OAuth
-/help
-/help --doctor
-/debug checkout button does nothing
-/explore how does checkout work?
+/pathly add user authentication with Google OAuth
+/pathly help
+/pathly doctor
+/pathly debug checkout button does nothing
+/pathly explore how does checkout work?
 ```
 
-Codex support currently exposes the skill workflow layer. Claude-style custom
-agent files remain available as role contracts, but full multi-tool adapter
-packaging is tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
+Codex has its own built-in `/help`, so Pathly uses `/pathly help` and
+`/pathly doctor` instead of claiming the global help command. Codex support
+currently exposes the skill workflow layer. Claude-style custom agent files
+remain available as role contracts, but full multi-tool adapter packaging is
+tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
+
+### Pathly CLI
+
+Install Pathly as an editable package while developing or from a cloned repo on
+a new machine:
+
+```bash
+python -m pip install -e ".[dev]"
+pathly --help
+```
+
+Run Pathly from any project folder:
+
+```bash
+pathly init checkout-flow
+pathly run checkout-flow --entry build
+pathly doctor
+```
+
+You can also point Pathly at another project explicitly:
+
+```bash
+pathly --project-dir C:\Users\Yafit\pathly-test init demo
+pathly --project-dir C:\Users\Yafit\pathly-test run demo --entry build
+```
+
+Adapter install helpers show the commands for each host:
+
+```bash
+pathly install codex
+pathly install claude
+```
 
 ### Developer Install
 
-Use Python only when developing Pathly itself or running tests:
+Use the development extra when changing Pathly itself or running tests:
 
 ```bash
 python -m pip install -e ".[dev]"
 pytest -q
 ```
-
-A future CLI can make this friendlier:
-
-```bash
-pathly install codex
-pathly install claude
-pathly doctor
-```
-
-For now, plugin install is the user path; Python packaging is the contributor
-path.
 
 **If you already know the pipeline**, use skills directly:
 ```
@@ -196,8 +218,8 @@ because strict mode requires human approval gates.
   [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
 - Python 3.11+ is required for local development and tests.
 - CI runs the test suite on Python 3.11, 3.12, and 3.13.
-- The Python metadata is for development and CI, not a separate production
-  service.
+- The Python package exposes the `pathly` CLI used by local development,
+  smoke tests, and adapter wrappers.
 
 ---
 
@@ -490,3 +512,4 @@ Run `bash scripts/setup-hook.sh` (or `.\scripts\setup-hook.ps1`) after install t
 4. **Feedback loops, not a linear chain.** Wrong problem routes to the right role automatically.
 
 See [docs/ARCHITECTURE_AGENTS.md](docs/ARCHITECTURE_AGENTS.md) for the full architecture.
+

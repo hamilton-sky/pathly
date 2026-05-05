@@ -29,9 +29,9 @@
     ],
     "websiteURL": "https://github.com/hamilton-sky/pathly",
     "defaultPrompt": [
-      "/go add password reset",
-      "/help --doctor",
-      "/debug checkout button does nothing"
+      "/pathly add password reset",
+      "/pathly doctor",
+      "/pathly debug checkout button does nothing"
     ],
     "brandColor": "#2563EB"
   }

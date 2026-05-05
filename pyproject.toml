@@ -9,6 +9,9 @@ dependencies = [
     "anthropic>=0.40.0",
 ]
 
+[project.scripts]
+pathly = "pathly.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8",
@@ -23,3 +26,6 @@ Issues = "https://github.com/hamilton-sky/pathly/issues"
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = ["-p", "no:cacheprovider"]
+
+[tool.setuptools.packages.find]
+include = ["orchestrator*", "pathly*", "scripts*"]

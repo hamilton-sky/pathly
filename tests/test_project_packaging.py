@@ -28,6 +28,12 @@ def test_python_distribution_is_pathly():
     pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
     assert pyproject["project"]["name"] == "pathly"
+    assert pyproject["project"]["scripts"]["pathly"] == "pathly.cli:main"
+    assert pyproject["tool"]["setuptools"]["packages"]["find"]["include"] == [
+        "orchestrator*",
+        "pathly*",
+        "scripts*",
+    ]
 
 
 def test_claude_install_paths_use_pathly_plugin_dir():
@@ -50,5 +56,14 @@ def test_readme_slash_commands_map_to_skills():
     skill_names = {path.name for path in (REPO_ROOT / "skills").iterdir() if path.is_dir()}
 
     # These commands are the new-user front door and should always be real.
-    assert {"go", "help", "debug", "explore"}.issubset(documented)
+    assert {"go", "help", "debug", "explore", "pathly"}.issubset(documented)
     assert documented <= skill_names
+
+
+def test_codex_manifest_uses_pathly_entrypoint():
+    """Codex examples should avoid built-in command names like /help."""
+    manifest = json.loads((REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+
+    prompts = manifest["interface"]["defaultPrompt"]
+    assert prompts
+    assert all(prompt.startswith("/pathly ") for prompt in prompts)
