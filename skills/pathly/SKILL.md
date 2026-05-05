@@ -1,15 +1,16 @@
 ---
 name: pathly
-description: Codex-safe Pathly entry point. Route /pathly help, doctor, debug, explore, flow, review, continue, or plain-English requests to the right Pathly workflow without using Codex built-in /help.
-argument-hint: "[help|doctor|debug|explore|flow|review|continue|plain English request]"
+description: Pathly entry point. Route /pathly or /path help, doctor, debug, explore, flow, review, continue, plan, build, archive, lessons, imports, verify-state, or plain-English requests to the right Pathly workflow.
+argument-hint: "[help|doctor|debug|explore|flow|review|continue|plan|build|archive|lessons|verify-state|plain English request]"
 ---
 
 # Pathly
 
-Use this skill as the Codex-safe front door for Pathly.
+Use this skill as the canonical front door for Pathly.
 
-Do not tell the user to type Codex-conflicting commands like `/help`. In Codex,
-Pathly commands should be namespaced under `/pathly`.
+For slash-command hosts, `/pathly` is canonical and `/path` is the supported
+short alias. Do not tell Codex users to type Codex-conflicting commands like
+`/help`; use `/pathly help` or `/path help` instead.
 
 ## Parse `$ARGUMENTS`
 
@@ -21,6 +22,18 @@ Trim `$ARGUMENTS` and inspect the first word case-insensitively.
 
 Run the Pathly help behavior from `skills/help/SKILL.md`, without relying on the
 literal `/help` command name.
+
+When rendering portable help output, namespace user-facing commands under
+`/pathly` and mention that `/path` is equivalent:
+
+- `/help` -> `/pathly help`
+- `/help --doctor [feature]` -> `/pathly doctor [feature]`
+- `/go <request>` -> `/pathly <request>`
+- `/team-flow <feature> ...` -> `/pathly flow <feature> ...`
+- `/debug <symptom>` -> `/pathly debug <symptom>`
+- `/explore <question>` -> `/pathly explore <question>`
+- `/review` -> `/pathly review`
+- `/build <feature>` -> `/pathly continue <feature>`
 
 ### `doctor`
 
@@ -53,6 +66,29 @@ team-flow <feature> build
 ### `review`
 
 Run the review workflow from `skills/review/SKILL.md`.
+
+### Direct skill routes
+
+If the first word is one of these root skill names, run that skill with the
+remaining text as its arguments:
+
+- `archive` -> `skills/archive/SKILL.md`
+- `bmad-import` -> `skills/bmad-import/SKILL.md`
+- `build` -> `skills/build/SKILL.md`
+- `go` -> `skills/go/SKILL.md`
+- `lessons` -> `skills/lessons/SKILL.md`
+- `plan` -> `skills/plan/SKILL.md`
+- `prd-import` -> `skills/prd-import/SKILL.md`
+- `retro` -> `skills/retro/SKILL.md`
+- `storm` -> `skills/storm/SKILL.md`
+- `team-flow` -> `skills/team-flow/SKILL.md`
+- `verify-state` -> `skills/verify-state/SKILL.md`
+
+Prefer the friendlier aliases in new guidance:
+
+- `/pathly flow <feature>` instead of `/pathly team-flow <feature>`
+- `/pathly continue <feature>` instead of `/pathly build <feature>`
+- `/pathly doctor [feature]` instead of `/pathly help --doctor [feature]`
 
 ### Anything else
 

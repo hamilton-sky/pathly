@@ -5,6 +5,10 @@ argument-hint: "[plan-folder-name, e.g., add-saucedemo-checkout]"
 model: haiku
 ---
 
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
 ## Skill Contract
 
 **Consumes:** `plans/$ARGUMENTS/PROGRESS.md` + `plans/$ARGUMENTS/CONVERSATION_PROMPTS.md`
@@ -100,7 +104,7 @@ For each lesson, append to `LESSONS_CANDIDATE.md` in the project root (create if
 - <add more only if needed>
 
 ### Source
-Feature: $ARGUMENTS | Stage: <planning/implementation/review/test> | Date: <today>
+Feature: $ARGUMENTS | Stage: <planning/implementation/pathly review/test> | Date: <today>
 ```
 
 Do NOT invent lessons. Only extract from what the user actually said.
@@ -112,9 +116,9 @@ Retro written: plans/$ARGUMENTS/RETRO.md
 Lessons appended: LESSONS_CANDIDATE.md
 
 To use in your next storm session:
-1. Run /storm
+1. Run /pathly storm
 2. Paste the "Seed for Next Storm" block from RETRO.md as opening context
 
 To promote lessons to active memory:
-  /lessons
+  /pathly lessons
 ```

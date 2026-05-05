@@ -4,6 +4,10 @@ description: Consistency check — detects stale feedback files, PROGRESS.md dri
 argument-hint: "[feature-name]"
 ---
 
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
 Run a consistency check on the feature plan pipeline. If `$ARGUMENTS` is given, check that feature only. If blank, check all features in `plans/`.
 
 ---
@@ -127,7 +131,7 @@ Print a structured summary:
 [EXPIRED FEEDBACK]  plans/.../feedback/ARCH_FEEDBACK.md — TTL expired at 2026-04-29T10:00:00Z → safe to delete
 [STALE FEEDBACK]    plans/.../feedback/REVIEW_FAILURES.md — open since 2026-04-28, no commits since
 [PROGRESS DRIFT]    hotel-search — 3 conversations DONE but only 1 implementation commit found
-[DEAD REFERENCE]    nl-workflow-compiler — 'src/engine/planner/nl_compiler.py' mentioned but not found
+[DEAD REFERENCE]    nl-workflow-compiler — 'src/engine/pathly planner/nl_compiler.py' mentioned but not found
 [INVALID STATE]     hotel-search — STATE.json has unknown state: BLOCKED
 [STATE DRIFT]       hotel-search — STATE.json says BUILDING but REVIEW_FAILURES.md is open
 [CORRUPT EVENTS]    hotel-search — EVENTS.jsonl invalid JSONL at line 7

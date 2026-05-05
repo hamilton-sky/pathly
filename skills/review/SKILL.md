@@ -4,6 +4,10 @@ description: Review code changes against project architectural rules and convent
 argument-hint: "[file-path | 'staged' | 'last']"
 ---
 
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
 Review code at $ARGUMENTS against this project's architectural standards.
 
 - `staged` or empty → review `git diff --staged`

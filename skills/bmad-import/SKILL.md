@@ -5,6 +5,10 @@ argument-hint: "<feature-name> <path/to/PRD.md> [lite|standard|strict]  — e.g.
 model: opus
 ---
 
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
 ## Skill Contract
 
 **Consumes:** A BMAD PRD file (path provided as second argument)
@@ -23,8 +27,8 @@ Split `$ARGUMENTS` on the first space:
 
 If either is missing, stop and tell the user:
 ```
-Usage: /bmad-import <feature-name> <path/to/PRD.md>
-Example: /bmad-import hotel-search docs/hotel-search-prd.md
+Usage: /pathly bmad-import <feature-name> <path/to/PRD.md>
+Example: /pathly bmad-import hotel-search docs/hotel-search-prd.md
 ```
 
 Check that `PRD_PATH` exists. If not, stop and report the missing file.
@@ -130,16 +134,16 @@ If `rigor = standard` or `strict`, write all 8 files.
 If `rigor = strict`, add explicit risk, rollback, verification mapping, and approval notes.
 
 ### FILE 1: USER_STORIES.md
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/USER_STORIES.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/USER_STORIES.template.md` for structure.
 
 ### FILE 2: IMPLEMENTATION_PLAN.md
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/IMPLEMENTATION_PLAN.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/IMPLEMENTATION_PLAN.template.md` for structure.
 
 ### FILE 3: PROGRESS.md
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/PROGRESS.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/PROGRESS.template.md` for structure.
 
 ### FILE 4: CONVERSATION_PROMPTS.md
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/CONVERSATION_PROMPTS.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/CONVERSATION_PROMPTS.template.md` for structure.
 
 Each conversation prompt must be self-contained, scoped to specific files and layers, include the relevant architectural boundary rules from `.claude/rules/`, Do NOT list, verify command, and end with:
 `After done, update plans/$FEATURE/PROGRESS.md phase X to DONE.`
@@ -147,22 +151,22 @@ Each conversation prompt must be self-contained, scoped to specific files and la
 ### FILE 5: HAPPY_FLOW.md
 Standard/strict only. Skip in lite.
 
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/HAPPY_FLOW.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/HAPPY_FLOW.template.md` for structure.
 
 ### FILE 6: EDGE_CASES.md
 Standard/strict only. Skip in lite.
 
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/EDGE_CASES.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/EDGE_CASES.template.md` for structure.
 
 ### FILE 7: ARCHITECTURE_PROPOSAL.md
 Standard/strict only. Skip in lite; merge short architecture notes into IMPLEMENTATION_PLAN.md.
 
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/ARCHITECTURE_PROPOSAL.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/ARCHITECTURE_PROPOSAL.template.md` for structure.
 
 ### FILE 8: FLOW_DIAGRAM.md
 Standard/strict only. Skip in lite unless the flow is unclear without a diagram.
 
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/FLOW_DIAGRAM.template.md` for structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/FLOW_DIAGRAM.template.md` for structure.
 ASCII only. Max ~70 chars wide.
 
 ---
@@ -182,8 +186,8 @@ Conversations planned: [count]
 Edge cases covered: [count]
 
 Next step: Review the plan, then run:
-  /build $FEATURE        ← implement Conversation 1
-  /team-flow $FEATURE    ← run the full pipeline
+  /pathly continue $FEATURE        ← implement Conversation 1
+  /pathly flow $FEATURE    ← run the full pipeline
 ```
 
 If a section was missing from the PRD (e.g., no edge cases listed), note it in the report and leave the relevant section minimal rather than inventing content.

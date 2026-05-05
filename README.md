@@ -9,34 +9,36 @@ making you manage the process by hand.
 Start with plain English:
 
 ```text
-/go add password reset
-/go fix the checkout bug
-/go review my current changes
-/go continue the current feature
+/pathly add password reset
+/pathly fix the checkout bug
+/pathly review my current changes
+/pathly continue the current feature
 ```
+
+/path is the short alias for /pathly in slash-command tools.
 
 Not sure what to do next?
 
 ```text
-/help
+/pathly help
 ```
 
 Something stuck?
 
 ```text
-/help --doctor
+/pathly doctor
 ```
 
 Have a question about the codebase?
 
 ```text
-/explore how does checkout state flow through the app?
+/pathly explore how does checkout state flow through the app?
 ```
 
 Have a bug?
 
 ```text
-/debug checkout button does nothing
+/pathly debug checkout button does nothing
 ```
 
 ## What This Is
@@ -61,14 +63,14 @@ same workflow in their native UI.
 
 **New in this version:**
 - **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
-- **`/debug <symptom>`** — dedicated bug pipeline: scout traces, tester verifies before and after fix
-- **`/explore <question>`** — investigation mode: answer questions about the codebase without building
-- **`/help --doctor`** — diagnoses stuck FSM, orphan feedback files, stale state; offers one action per issue
+- **`/pathly debug <symptom>`** — dedicated bug pipeline: scout traces, tester verifies before and after fix
+- **`/pathly explore <question>`** — investigation mode: answer questions about the codebase without building
+- **`/pathly doctor`** — diagnoses stuck FSM, orphan feedback files, stale state; offers one action per issue
 - **`[AUTO_FIX]` in reviewer** — trivial findings (unused import, missing newline) applied in batch, no human turn
 - **Cost meter** — `RETRO.md` shows per-agent token + cost breakdown from `EVENTS.jsonl`
 - **Inline quick queries** — builder can ask atomic questions (≤ 2 tool calls) without creating feedback files
-- **TTL on feedback files** — frontmatter tracks creation event; `/verify-state` detects orphans and expired files
-- **Startup integrity check** — every `/team-flow` run scans for orphan/expired feedback files and FSM drift before the first agent spawns; fast mode auto-resolves safe issues, stops on real ones
+- **TTL on feedback files** — frontmatter tracks creation event; `/pathly verify-state` detects orphans and expired files
+- **Startup integrity check** — every `/pathly flow` run scans for orphan/expired feedback files and FSM drift before the first agent spawns; fast mode auto-resolves safe issues, stops on real ones
 
 ---
 
@@ -104,7 +106,7 @@ bash install.sh --uninstall           # macOS / Linux
 
 Then open any project in Claude Code and run:
 ```
-/go <what you want>
+/pathly <what you want>
 ```
 
 Director reads the current project state, chooses the lightest safe workflow,
@@ -134,10 +136,11 @@ codex plugin marketplace add .
 codex plugin marketplace upgrade pathly
 ```
 
-Then open any project in Codex and use the Codex-safe `/pathly` entry point:
+Then open any project in Codex and use the Codex-safe `/pathly` entry point or the `/path` short alias:
 
 ```text
 /pathly add user authentication with Google OAuth
+/path add password reset
 /pathly help
 /pathly doctor
 /pathly debug checkout button does nothing
@@ -193,15 +196,15 @@ pytest -q
 
 **If you already know the pipeline**, use skills directly:
 ```
-/go                                       ← prompts "What do you want?" then routes
-/go I want to add user authentication     ← skip the prompt, routes immediately
-/team-flow <feature-name>                 ← direct pipeline entry
-/team-flow <feature-name> build           ← resume implementation
-/team-flow <feature-name> test            ← run test stage
-/review                                   ← review the current diff
+/pathly                                       ← prompts "What do you want?" then routes
+/pathly I want to add user authentication     ← skip the prompt, routes immediately
+/pathly flow <feature-name>                 ← direct pipeline entry
+/pathly flow <feature-name> build           ← resume implementation
+/pathly flow <feature-name> test            ← run test stage
+/pathly review                                   ← review the current diff
 ```
 
-`/team-flow` opens with a path selector:
+`/pathly flow` opens with a path selector:
 ```
 [1] Quick storm    — architect explores the idea first
 [2] Skip discovery — you know what to build, go straight to planning
@@ -209,14 +212,14 @@ pytest -q
 ```
 
 Pick your path, type the number, and the pipeline runs from there.
-The other skills (`/storm`, `/plan`, `/prd-import`, `/bmad-import`) exist for manual control
+The other skills (`/pathly storm`, `/pathly plan`, `/pathly prd-import`, `/pathly bmad-import`) exist for manual control
 when you need to jump into the middle of a pipeline.
 
 Choose process rigor with `lite`, `standard`, or `strict`:
 ```
-/team-flow small-ui-copy lite       ← 4-file plan, lighter gates
-/team-flow payment-flow standard    ← full 8-file pipeline
-/team-flow auth-migration strict    ← mandatory approvals, audit logs, full gates
+/pathly flow small-ui-copy lite       ← 4-file plan, lighter gates
+/pathly flow payment-flow standard    ← full 8-file pipeline
+/pathly flow auth-migration strict    ← mandatory approvals, audit logs, full gates
 ```
 
 Default is `lite` — the **rigor escalator** detects signals during planning
@@ -269,35 +272,35 @@ request, inspects project state, chooses `nano`, `lite`, `standard`, or
 `strict`, and decides whether to start discovery, planning, build, test, review,
 or retro.
 
-**`/go`** is the normal user command. It activates Director:
+**`/pathly`** is the normal user command. It activates Director:
 
 ```text
-/go fix the broken checkout button
-/go add password reset
-/go continue the login work
-/go review my current changes
+/pathly fix the broken checkout button
+/pathly add password reset
+/pathly continue the login work
+/pathly review my current changes
 ```
 
-**`/team-flow`** is the explicit pipeline command. Use it when you already know
+**`/pathly flow`** is the explicit pipeline command. Use it when you already know
 the feature name, rigor, and entry point:
 
 ```text
-/team-flow password-reset strict
-/team-flow navbar-copy nano
-/team-flow checkout build
+/pathly flow password-reset strict
+/pathly flow navbar-copy nano
+/pathly flow checkout build
 ```
 
-Direct skills such as `/build`, `/review`, and `/retro` are for manual recovery
+Direct skills such as `/pathly continue`, `/pathly review`, and `/pathly retro` are for manual recovery
 or advanced control.
 
-**`/help`** is the state-aware menu. Use it when you are unsure what to do next.
-`/help --doctor` runs diagnostics for stuck state, orphan feedback files, and
+**`/pathly help`** is the state-aware menu. Use it when you are unsure what to do next.
+`/pathly doctor` runs diagnostics for stuck state, orphan feedback files, and
 pipeline drift.
 
-**`/debug`** is for known bug symptoms. It traces the repro, confirms the bug
+**`/pathly debug`** is for known bug symptoms. It traces the repro, confirms the bug
 before the fix, applies the fix, and verifies after.
 
-**`/explore`** is for codebase questions. It investigates and writes findings
+**`/pathly explore`** is for codebase questions. It investigates and writes findings
 without building anything.
 
 ---
@@ -369,20 +372,20 @@ tier rules, per-agent sub-agent lists, and ownership guarantees.
 
 | Skill | Command | What it does |
 |---|---|---|
-| `team-flow` | `/team-flow <feature>` | Full pipeline: discovery→plan→build×N→test→retro with rigor escalator |
-| `storm` | `/storm` | Architect explores the idea with ASCII diagrams |
-| `plan` | `/plan <feature> [lite|standard|strict]` | Creates `plans/<feature>/` with 4 core files + escalator-selected extras |
-| `build` | `/build <feature>` | Implements the next TODO conversation |
-| `review` | `/review` | Reviewer audits code; trivial findings tagged `[AUTO_FIX]` for batch apply |
-| `retro` | `/retro <feature>` | Writes RETRO.md with cost summary + appends to LESSONS_CANDIDATE.md |
-| `lessons` | `/lessons` | Promotes candidate lessons to LESSONS.md for planner |
-| `archive` | `/archive <feature>` | Moves completed plan to `plans/.archive/` |
-| `prd-import` | `/prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file into plan files |
-| `bmad-import` | `/bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
-| `verify-state` | `/verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
-| `debug` | `/debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
-| `explore` | `/explore <question>` | Investigation mode: answer codebase questions without building anything |
-| `help` | `/help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
+| `team-flow` | `/pathly flow <feature>` | Full pipeline: discovery→plan→build×N→test→retro with rigor escalator |
+| `storm` | `/pathly storm` | Architect explores the idea with ASCII diagrams |
+| `plan` | `/pathly plan <feature> [lite|standard|strict]` | Creates `plans/<feature>/` with 4 core files + escalator-selected extras |
+| `build` | `/pathly continue <feature>` | Implements the next TODO conversation |
+| `review` | `/pathly review` | Reviewer audits code; trivial findings tagged `[AUTO_FIX]` for batch apply |
+| `retro` | `/pathly retro <feature>` | Writes RETRO.md with cost summary + appends to LESSONS_CANDIDATE.md |
+| `lessons` | `/pathly lessons` | Promotes candidate lessons to LESSONS.md for planner |
+| `archive` | `/pathly archive <feature>` | Moves completed plan to `plans/.archive/` |
+| `prd-import` | `/pathly prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file into plan files |
+| `bmad-import` | `/pathly bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
+| `verify-state` | `/pathly verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
+| `debug` | `/pathly debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
+| `explore` | `/pathly explore <question>` | Investigation mode: answer codebase questions without building anything |
+| `help` | `/pathly help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
 
 ---
 
@@ -406,8 +409,8 @@ mode, all recommended files are added automatically. Explicit rigor flags (`stan
 `strict`) bypass the escalator and add the full file set.
 
 To move a feature between rigor levels, do not delete files. Upgrade by running
-`/plan <feature> standard` or `/plan <feature> strict` to add missing plan
-files. Downgrade by running `/team-flow <feature> lite`; extra files remain as
+`/pathly plan <feature> standard` or `/pathly plan <feature> strict` to add missing plan
+files. Downgrade by running `/pathly flow <feature> lite`; extra files remain as
 references while future gates become lighter.
 
 ---
@@ -415,7 +418,7 @@ references while future gates become lighter.
 ## The Feature Pipeline
 
 ```
-/team-flow payment-flow
+/pathly flow payment-flow
 
   Stage 1 — Storm      architect explores idea  →  STORM_SEED.md
        PAUSE: "Ready to plan?"
@@ -435,16 +438,16 @@ references while future gates become lighter.
 
 Add `fast` to skip pause points:
 ```
-/team-flow payment-flow fast
+/pathly flow payment-flow fast
 ```
 
 Jump into the middle of a pipeline:
 ```
-/team-flow payment-flow build   ← plan exists, start implementing
-/team-flow payment-flow test    ← all built, run tests only
-/team-flow payment-flow plan    ← skip discovery, start planning
-/team-flow payment-flow fast    ← no pauses, run to completion
-/team-flow payment-flow build fast  ← resume build with no pauses
+/pathly flow payment-flow build   ← plan exists, start implementing
+/pathly flow payment-flow test    ← all built, run tests only
+/pathly flow payment-flow plan    ← skip discovery, start planning
+/pathly flow payment-flow fast    ← no pauses, run to completion
+/pathly flow payment-flow build fast  ← resume build with no pauses
 ```
 
 Each flag runs a health check first — missing plan files or incomplete
@@ -464,7 +467,7 @@ created_by_event: <last-event-id>
 ttl_hours: 24
 ---
 ```
-`/verify-state` and `/help --doctor` use this to detect orphan files (event not in current log) and expired files (TTL elapsed) — both are safe to delete automatically.
+`/pathly verify-state` and `/pathly doctor` use this to detect orphan files (event not in current log) and expired files (TTL elapsed) — both are safe to delete automatically.
 
 | File | Written by | Resolved by |
 |---|---|---|
@@ -485,13 +488,13 @@ The full transition model is defined in [docs/ORCHESTRATOR_FSM.md](docs/ORCHESTR
 If you have a hand-written spec, AI-generated PRD, or any structured requirements file:
 
 ```
-/prd-import hotel-search docs/hotel-search-prd.md standard
+/pathly prd-import hotel-search docs/hotel-search-prd.md standard
 ```
 
 If the PRD came from BMAD, use the BMAD-specific importer:
 
 ```
-/bmad-import hotel-search docs/hotel-search-prd.md standard
+/pathly bmad-import hotel-search docs/hotel-search-prd.md standard
 ```
 
 This reads the PRD and generates plan files for the selected rigor — translating:
@@ -499,9 +502,9 @@ This reads the PRD and generates plan files for the selected rigor — translati
 - Edge Cases → workflow conversation prompts
 - Out of Scope → Do NOT lists in every builder prompt
 
-Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
+Then continue normally with `/pathly continue hotel-search` or `/pathly flow hotel-search`.
 
-**No PRD?** Use `/team-flow` — it asks you to choose: quick storm, skip discovery, or import a PRD.
+**No PRD?** Use `/pathly flow` — it asks you to choose: quick storm, skip discovery, or import a PRD.
 
 ---
 
@@ -515,7 +518,7 @@ Then continue normally with `/build hotel-search` or `/team-flow hotel-search`.
     ├── hooks/
     │   ├── classify_feedback.py    ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
     │   └── inject_feedback_ttl.py  ← injects TTL frontmatter into every feedback file on write
-    └── templates/plan/             ← plan file templates used by /plan, /prd-import, /bmad-import
+    └── templates/pathly plan/             ← plan file templates used by /pathly plan, /pathly prd-import, /pathly bmad-import
         └── *.template.md
 ```
 

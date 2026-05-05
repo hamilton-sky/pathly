@@ -19,3 +19,7 @@ pathly install claude
 
 Future work: align `pathly <plain English request>` with the universal
 `core/prompts/pathly.md` router.
+
+The CLI adapter should stay a terminal-facing wrapper. Shared routing language,
+workflow semantics, and template definitions belong in `core/`; Python command
+implementation belongs in the repo-root `pathly/` package.

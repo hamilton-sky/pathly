@@ -5,7 +5,11 @@ argument-hint: "[plan-folder-name, e.g., refactor-main]"
 model: sonnet
 ---
 
-Parse `$ARGUMENTS`: the first word is the **plan folder name**, and if a second word "auto" is present, that signals non-interactive auto-flow mode. For example, `/build refactor-main auto` → plan = `refactor-main`, auto mode = true.
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
+Parse `$ARGUMENTS`: the first word is the **plan folder name**, and if a second word "auto" is present, that signals non-interactive auto-flow mode. For example, `/pathly continue refactor-main auto` → plan = `refactor-main`, auto mode = true.
 
 ## Step 0: Execution Mode Selection
 
@@ -147,7 +151,7 @@ After successful verification, update `plans/$PLAN/PROGRESS.md`:
 
    Context is accumulating. To continue with a fresh session:
    👉 Run: /clear
-   👉 Then: /build $PLAN
+   👉 Then: /pathly continue $PLAN
    ```
 
 4. **If all conversations are DONE:**

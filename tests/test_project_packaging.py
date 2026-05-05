@@ -50,14 +50,25 @@ def test_claude_install_paths_use_pathly_plugin_dir():
 
 
 def test_readme_slash_commands_map_to_skills():
-    """Documented slash commands should not drift from the skill folders."""
+    """Documented Pathly commands should not drift from the skill folders."""
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
-    documented = set(re.findall(r"^/([a-z][a-z-]*)(?=\s|$)", readme, re.MULTILINE))
     skill_names = {path.name for path in (REPO_ROOT / "skills").iterdir() if path.is_dir()}
 
-    # These commands are the new-user front door and should always be real.
-    assert {"go", "help", "debug", "explore", "pathly"}.issubset(documented)
-    assert documented <= skill_names
+    # These slash-command entry points are the new-user front doors.
+    documented_entrypoints = set(re.findall(r"/(pathly|path)(?=\s|$)", readme))
+    assert {"pathly", "path"}.issubset(documented_entrypoints)
+    assert documented_entrypoints <= skill_names
+
+    # The README intentionally namespaces user-facing commands under /pathly.
+    documented_pathly_commands = set(re.findall(r"/pathly\s+([a-z][a-z-]*)(?=\s|$)", readme))
+    assert {"help", "doctor", "debug", "explore", "flow", "review"}.issubset(
+        documented_pathly_commands
+    )
+
+    # The core skill table should only list real root skills.
+    documented_skill_rows = set(re.findall(r"^\| `([a-z][a-z-]*)` \| `/pathly", readme, re.MULTILINE))
+    assert documented_skill_rows
+    assert documented_skill_rows <= skill_names
 
 
 def test_codex_manifest_uses_pathly_entrypoint():
@@ -67,3 +78,32 @@ def test_codex_manifest_uses_pathly_entrypoint():
     prompts = manifest["interface"]["defaultPrompt"]
     assert prompts
     assert all(prompt.startswith("/pathly ") for prompt in prompts)
+
+
+def test_codex_manifest_has_no_placeholder_paths():
+    """Published Codex metadata should not reference non-existent TODO resources."""
+    manifest_text = (REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+    manifest = json.loads(manifest_text)
+
+    assert "[TODO:" not in manifest_text
+    assert "hooks" not in manifest
+    assert "mcpServers" not in manifest
+    assert "apps" not in manifest
+
+
+def test_pathly_router_namespaces_help_for_codex():
+    """The Codex front door should prevent raw /help guidance from leaking back out."""
+    router = (REPO_ROOT / "skills" / "pathly" / "SKILL.md").read_text(encoding="utf-8")
+
+    assert "/help --doctor [feature]` -> `/pathly doctor [feature]" in router
+    assert "/team-flow <feature> ...` -> `/pathly flow <feature> ..." in router
+    assert "`verify-state` -> `skills/verify-state/SKILL.md`" in router
+    assert "`prd-import` -> `skills/prd-import/SKILL.md`" in router
+
+
+def test_path_alias_routes_like_pathly():
+    """The short slash-command alias should exist and point users to the same router."""
+    alias = (REPO_ROOT / "skills" / "path" / "SKILL.md").read_text(encoding="utf-8")
+
+    assert "equivalent to `/pathly`" in alias
+    assert "skills/pathly/SKILL.md" in alias

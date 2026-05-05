@@ -5,12 +5,16 @@ argument-hint: "<feature-name>"
 model: haiku
 ---
 
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
 ## Step 1: Validate
 
 If `$ARGUMENTS` is empty: stop →
 ```
-Usage: /archive <feature-name>
-Example: /archive hotel-search
+Usage: /pathly archive <feature-name>
+Example: /pathly archive hotel-search
 ```
 
 Set `FEATURE = $ARGUMENTS`.
@@ -22,7 +26,7 @@ plans/$FEATURE/ not found. Nothing to archive.
 
 Check `plans/$FEATURE/RETRO.md` exists. If not: stop →
 ```
-RETRO.md missing. Run /retro $FEATURE before archiving.
+RETRO.md missing. Run /pathly retro $FEATURE before archiving.
 The retro seed is needed for future storm sessions.
 ```
 
@@ -71,5 +75,5 @@ plans/ is now clean.
 If `plans/` now has no remaining active features, add:
 ```
 No active features remaining. Start the next one with:
-  /team-flow <new-feature>
+  /pathly flow <new-feature>
 ```

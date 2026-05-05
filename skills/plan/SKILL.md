@@ -5,6 +5,10 @@ argument-hint: "[feature-name] [lite|standard|strict]"
 model: opus
 ---
 
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
 ## Skill Contract
 
 **Consumes (optional):** `plans/STORM_SEED.md` - pre-filled answers for the interview
@@ -88,13 +92,13 @@ Conversation cap rule: max 4 conversations per folder. If more are needed, split
 
 ### 4a. USER_STORIES.md
 
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/USER_STORIES.template.md` for the exact file structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/USER_STORIES.template.md` for the exact file structure.
 
 In lite, include only the stories and acceptance criteria needed for the small change.
 
 ### 4b. IMPLEMENTATION_PLAN.md
 
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/IMPLEMENTATION_PLAN.template.md` for the exact file structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/IMPLEMENTATION_PLAN.template.md` for the exact file structure.
 
 In lite, add short sections for happy path, edge cases, and architecture notes directly in this file instead of creating separate files.
 
@@ -102,12 +106,12 @@ In strict, add risk, rollback, approval, and verification mapping sections.
 
 ### 4c. PROGRESS.md
 
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/PROGRESS.template.md` for the exact file structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/PROGRESS.template.md` for the exact file structure.
 
 ### 4d. CONVERSATION_PROMPTS.md
 
 This is the key file: verbatim prompts for each builder conversation. Max 4 conversations per folder.
-Read `~/.claude/plugins/claude-agents-framework/templates/plan/CONVERSATION_PROMPTS.template.md` for the exact file structure.
+Read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/CONVERSATION_PROMPTS.template.md` for the exact file structure.
 
 Each prompt must be self-contained and runnable without reading every plan file.
 
@@ -115,25 +119,25 @@ Each prompt must be self-contained and runnable without reading every plan file.
 
 Skip in `lite`; merge the happy path into `USER_STORIES.md` or `IMPLEMENTATION_PLAN.md`.
 
-For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/plan/HAPPY_FLOW.template.md` for the exact file structure.
+For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/HAPPY_FLOW.template.md` for the exact file structure.
 
 ### 4f. EDGE_CASES.md
 
 Skip in `lite`; merge only relevant edge cases into `USER_STORIES.md` and `CONVERSATION_PROMPTS.md`.
 
-For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/plan/EDGE_CASES.template.md` for the exact file structure.
+For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/EDGE_CASES.template.md` for the exact file structure.
 
 ### 4g. ARCHITECTURE_PROPOSAL.md
 
 Skip in `lite`; put short architecture notes directly in `IMPLEMENTATION_PLAN.md`.
 
-For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/plan/ARCHITECTURE_PROPOSAL.template.md` for the exact file structure.
+For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/ARCHITECTURE_PROPOSAL.template.md` for the exact file structure.
 
 ### 4h. FLOW_DIAGRAM.md
 
 Skip in `lite` unless the flow is unclear without a diagram.
 
-For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/plan/FLOW_DIAGRAM.template.md` for the exact file structure.
+For standard and strict, read `~/.claude/plugins/claude-agents-framework/templates/pathly plan/FLOW_DIAGRAM.template.md` for the exact file structure.
 Use ASCII only. Show only layers touched. Include happy path and fallback. Label arrows with action name or config key. Max about 70 chars wide.
 
 ## Conversation Splitting Rules
@@ -182,5 +186,5 @@ Files:
 - FLOW_DIAGRAM.md - ASCII flow diagram [standard/strict only]
 
 Seed consumed: [yes / no]
-Next: /build $FEATURE
+Next: /pathly continue $FEATURE
 ```

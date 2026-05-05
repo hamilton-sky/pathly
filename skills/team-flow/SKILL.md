@@ -4,6 +4,10 @@ description: Full feature pipeline with feedback loops — discovery → plan �
 argument-hint: "<feature-name> [lite|standard|strict|nano] [fast] [plan|build|test]"
 ---
 
+## Pathly Command Surface
+
+Use `/pathly <command>` as the canonical cross-framework command form. `/path <command>` is the short alias. Legacy direct skill commands may remain available in some hosts for backwards compatibility, but user-facing guidance should prefer `/pathly` or `/path`.
+
 Run the full feature pipeline for `$ARGUMENTS`.
 
 ## Argument parsing
@@ -29,14 +33,14 @@ If `nano` is present with `strict`, `standard`, or `plan`/`build`/`test` entry s
 
 Examples:
 ```
-/team-flow hotel-search              ← full pipeline, path selector
-/team-flow hotel-search build        ← skip to build stage
-/team-flow hotel-search test         ← skip to test stage
-/team-flow hotel-search fast         ← full pipeline, no pauses
-/team-flow hotel-search build fast   ← resume build, no pauses
-/team-flow hotel-search lite         ← small change, 4-file plan, lighter gates
-/team-flow hotel-search strict       ← high-risk change, mandatory gates + audit
-/team-flow my-fix nano               ← ≤ 2 file change, no plan, builder + reviewer only
+/pathly flow hotel-search              ← full pipeline, path selector
+/pathly flow hotel-search build        ← skip to build stage
+/pathly flow hotel-search test         ← skip to test stage
+/pathly flow hotel-search fast         ← full pipeline, no pauses
+/pathly flow hotel-search build fast   ← resume build, no pauses
+/pathly flow hotel-search lite         ← small change, 4-file plan, lighter gates
+/pathly flow hotel-search strict       ← high-risk change, mandatory gates + audit
+/pathly flow my-fix nano               ← ≤ 2 file change, no plan, builder + reviewer only
 ```
 
 ## Nano mode (≤ 2 file changes)
@@ -56,7 +60,7 @@ Nano task: [NANO_TASK]
 
 Make only the changes needed. Touch at most 2 files.
 If the fix requires touching more than 2 files, STOP immediately and report:
-  "Scope too large for nano — recommend upgrading to /team-flow [feature] lite"
+  "Scope too large for nano — recommend upgrading to /pathly flow [feature] lite"
 Do not create any plan files.
 Verify with the project's standard verify command when done.
 Report: files changed, verify result.
@@ -73,7 +77,7 @@ Count the files changed (excluding `plans/`). If the count is > 2 and builder di
   ```
   [NANO ESCALATION] Builder touched N files (nano limit is 2).
   [1] Accept — proceed with review as-is
-  [2] Upgrade — restart as /team-flow [feature] lite
+  [2] Upgrade — restart as /pathly flow [feature] lite
   [3] Cancel
   ```
 - Wait for reply. On [2]: stop and instruct user to rerun. On [3]: stop.
@@ -105,7 +109,7 @@ Exit. Do not run test or retro stages.
 ## Core rules
 
 - Spawn the right subagent for each stage — never execute work yourself.
-- Treat `/team-flow` as a deterministic filesystem FSM. Before each action:
+- Treat `/pathly flow` as a deterministic filesystem FSM. Before each action:
   read disk, recover state, process one event, and emit one next action.
 - Store workflow checkpoints in `plans/$FEATURE/STATE.json` and append events
   to `plans/$FEATURE/EVENTS.jsonl` using `orchestrator/eventlog.py`.
@@ -129,7 +133,7 @@ The orchestrator (LLM) must consult `orchestrator/` at three specific points.
 
 ### 1. Startup recovery + integrity check
 
-When `/team-flow` starts or resumes, recover state in this order:
+When `/pathly flow` starts or resumes, recover state in this order:
 
 1. **Read STATE.json** — load `plans/<feature>/STATE.json` using `State` (`orchestrator/state.py`). If the file exists and parses cleanly, use that state.
 2. **Fall back to EVENTS.jsonl replay** — if STATE.json is absent or unreadable, instantiate `EventLog(feature=FEATURE)` (`orchestrator/eventlog.py`) and call `log.reconstruct_state()`. Use the resulting state.
@@ -160,7 +164,7 @@ Check for two categories of problems:
 | Situation | Normal (interactive) | Fast |
 |---|---|---|
 | Safe issues only | Show each file + reason, ask "delete and continue? [yes/no]" | Delete silently, log `[FSM AUTO] Removed orphan: <file>` |
-| Real issues only | Show issue + suggestion, ask "continue anyway? [yes/no]" | Print issues, suggest `/help --doctor`, stop |
+| Real issues only | Show issue + suggestion, ask "continue anyway? [yes/no]" | Print issues, suggest `/pathly doctor`, stop |
 | Both | Handle safe first, then ask about real issues | Delete safe, stop on real |
 | No issues | Proceed silently | Proceed silently |
 
@@ -260,7 +264,7 @@ Each additional file has exactly one trigger signal. Check these after planning:
 | `ARCHITECTURE_PROPOSAL.md` | Cross-layer dependency found | Architect or planner mentions > 1 layer, or STORM_SEED.md references multiple layers |
 | `EDGE_CASES.md` | High-risk keyword in a risk context | See rule below |
 | `HAPPY_FLOW.md` | > 3 conversations planned | CONVERSATION_PROMPTS.md has more than 3 conversation blocks |
-| `FLOW_DIAGRAM.md` | Long discovery path | STORM_SEED.md or scout/explore output references > 3 files, or architect drew a multi-component diagram |
+| `FLOW_DIAGRAM.md` | Long discovery path | STORM_SEED.md or scout/pathly explore output references > 3 files, or architect drew a multi-component diagram |
 
 A file is only recommended if its signal fires. Files with no signal are not offered.
 
@@ -327,7 +331,7 @@ Print: `[RIGOR AUTO] Adding: <file1>, <file2> — signals detected during planni
 - Extra files are **additive only** — they extend the plan, never replace core files.
 - Do not suggest downgrading. Only upward additions are offered.
 - Do not add a file when its signal did not fire, even if the user asks for "standard".
-  (If the user wants all 8 files explicitly, they should run `/team-flow <feature> standard`.)
+  (If the user wants all 8 files explicitly, they should run `/pathly flow <feature> standard`.)
 - Each file offered must show its triggering signal clearly — no silent additions.
 
 ## Health checks before skipping stages
@@ -339,7 +343,7 @@ Run these before jumping to the entry stage. Fail fast with a clear error.
 - Print: `[SKIPPED] Stage 0 (discovery) → entering at plan`
 
 **build:**
-- Check `plans/$FEATURE/` exists. If not: stop → `plans/$FEATURE/ not found. Run /team-flow $FEATURE first to create the plan.`
+- Check `plans/$FEATURE/` exists. If not: stop → `plans/$FEATURE/ not found. Run /pathly flow $FEATURE first to create the plan.`
 - If `rigor = lite`, check the 4 required plan files exist: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, CONVERSATION_PROMPTS.md.
 - If `rigor = standard` or `strict`, check all 8 plan files exist: USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, CONVERSATION_PROMPTS.md, HAPPY_FLOW.md, EDGE_CASES.md, ARCHITECTURE_PROPOSAL.md, FLOW_DIAGRAM.md. If any missing: stop → list the missing files.
 - If `rigor = strict`, also require STATE.json and EVENTS.jsonl.
@@ -349,7 +353,7 @@ Run these before jumping to the entry stage. Fail fast with a clear error.
 
 **test:**
 - Check `plans/$FEATURE/` exists with required files for the selected rigor (same as build).
-- Check PROGRESS.md — all conversations must be DONE. If any TODO: stop → `Not all conversations are complete. Run /team-flow $FEATURE build first.`
+- Check PROGRESS.md — all conversations must be DONE. If any TODO: stop → `Not all conversations are complete. Run /pathly flow $FEATURE build first.`
 - Print: `[SKIPPED] Discovery + plan + implementation → entering at test`
 
 ## Feedback file locations
@@ -437,7 +441,7 @@ Reply with 1, 2, 3, 4, or 5:
   ```
   Path to your PRD file? (e.g. docs/feature-prd.md)
   ```
-  Wait for path input. Then run `/prd-import [feature] [path] [rigor]`.
+  Wait for path input. Then run `/pathly prd-import [feature] [path] [rigor]`.
 
   After import, print:
   ```
@@ -494,7 +498,7 @@ Reply with 1, 2, 3, 4, or 5:
   Wait for user reply.
   - **A** → set `exploreContext = scout output`. Proceed to Stage 2 (Plan). Planner will use scout findings.
   - **B** → switch to `mode = nano`. Skip Stage 2. Jump to nano mode flow (builder + reviewer only).
-  - **C** → stop. Print: `Pipeline paused after explore. Resume with /team-flow [feature] build when ready.`
+  - **C** → stop. Print: `Pipeline paused after explore. Resume with /pathly flow [feature] build when ready.`
 
 ---
 
@@ -529,7 +533,7 @@ Reply with 1, 2, 3, 4, or 5:
 
   **Spawn** `architect`:
   ```
-  Run /storm for the feature: [feature name]
+  Run /pathly storm for the feature: [feature name]
   Context from PO discussion is in plans/[feature]/PO_NOTES.md — read it first.
   Explore the idea technically — layers, dependencies, design decisions.
   When the user is satisfied, they will type /stop plan to write STORM_SEED.md.
@@ -547,7 +551,7 @@ Reply with 1, 2, 3, 4, or 5:
 
   **Spawn** `planner`:
   ```
-  Run /plan [feature name] [rigor].
+  Run /pathly plan [feature name] [rigor].
   Context from PO discussion is in plans/[feature]/PO_NOTES.md — read it first.
   If plans/STORM_SEED.md exists, consume it as pre-filled answers.
   Ensure every story references which phase/conversation delivers it.
@@ -564,7 +568,7 @@ Reply with 1, 2, 3, 4, or 5:
 
 **Spawn** `architect`:
 ```
-Run /storm for the feature: [feature name]
+Run /pathly storm for the feature: [feature name]
 Explore the idea technically — layers, dependencies, design decisions.
 When the user is satisfied, they will type /stop plan to write STORM_SEED.md.
 Remind them of this at the start.
@@ -592,7 +596,7 @@ On 'no': stop.
 
 **Spawn** `planner`:
 ```
-Run /plan [feature name] [rigor].
+Run /pathly plan [feature name] [rigor].
 If plans/STORM_SEED.md exists, consume it as pre-filled answers.
 Ensure every story references which phase/conversation delivers it.
 Ensure every phase references which stories it fulfills.
@@ -628,7 +632,7 @@ While any conversation row has status TODO:
 
   **Spawn** `builder`:
   ```
-  Run /build [feature] in manual mode.
+  Run /pathly continue [feature] in manual mode.
   Execute conversation N only. Verify, update PROGRESS.md.
   If you hit requirement ambiguity (what should this do?): write plans/[feature]/feedback/IMPL_QUESTIONS.md
   If you hit a technical blocker (how is this possible?): write plans/[feature]/feedback/DESIGN_QUESTIONS.md
@@ -747,7 +751,7 @@ While any conversation row has status TODO:
 1. Read `plans/<feature>/PROGRESS.md` and check every conversation row in the "Conversation Breakdown" table.
 2. If any row has status other than `DONE`: stop and report:
    ```
-   Not all conversations are complete. Run /team-flow <feature> build first. Incomplete: Conv N
+   Not all conversations are complete. Run /pathly flow <feature> build first. Incomplete: Conv N
    ```
    (Replace `N` with the number(s) of the incomplete conversation(s).)
 3. When all conversation rows are `DONE`:
@@ -806,7 +810,7 @@ If autoFlow: record `HumanResponseEvent(value="auto-advance")` at this skipped p
 
 **Spawn** `quick`:
 ```
-Run /retro [feature].
+Run /pathly retro [feature].
 Ask the 3 retrospective questions and return the RETRO.md-ready summary.
 Do not write files; quick is read-only. The retro skill/orchestrator writes RETRO.md.
 ```
@@ -818,5 +822,5 @@ Pipeline complete. RETRO.md written to plans/[feature]/.
 Lessons appended to LESSONS_CANDIDATE.md (if any were extracted).
 Feature '[feature]' is DONE.
 
-To promote lessons to active memory: /lessons
+To promote lessons to active memory: /pathly lessons
 ```

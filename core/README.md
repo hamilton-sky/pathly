@@ -13,5 +13,35 @@ Adapters turn this core into tool-specific experiences:
 - CLI commands
 - future Cursor, Windsurf, BMAD, or generic prompt packs
 
-Current status: this is an additive scaffold. The existing `agents/` and
-`skills/` folders still power the working plugin while the core is filled in.
+Current status: this is an additive scaffold. The existing repo-root `agents/`
+and `skills/` folders still power the working plugin while the core is filled
+in.
+
+## Repository Boundaries
+
+Keep shared, host-neutral behavior in `core/`. Keep files that package, install,
+test, or execute Pathly in their own top-level folders.
+
+```text
+pathly/
+├── core/          # shared prompts, workflow contracts, agent specs, templates
+├── adapters/      # host-specific packaging for Codex, Claude Code, CLI, etc.
+├── skills/        # current live slash-command skill surface
+├── agents/        # current live role contracts
+├── pathly/        # Python CLI package
+├── orchestrator/  # filesystem state machine/runtime code
+├── scripts/       # install and setup helpers
+├── tests/         # automated quality gates
+├── docs/          # design, readiness, and review notes
+└── examples/      # sample Pathly project artifacts
+```
+
+The target direction is:
+
+- `core/` owns canonical behavior and reusable content.
+- `adapters/` wrap `core/` for each host tool.
+- `skills/` either remain thin wrappers around `core/` or become generated
+  adapter output once the adapter layer is mature.
+
+Do not move install scripts, tests, Python package files, or runtime code into
+`core/` unless `core/` is deliberately redesigned as a runtime package.
