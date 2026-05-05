@@ -115,10 +115,10 @@ to get started.
 
 ### Codex
 
-Pathly includes a Codex plugin manifest at `.codex-plugin/plugin.json`.
+Pathly includes a Codex plugin manifest at `adapters/codex/.codex-plugin/plugin.json`.
 Current Codex builds load local plugins through a marketplace root. Create a
-small local marketplace that points to your Pathly checkout, then add that
-marketplace to Codex.
+small local marketplace that points to the Codex adapter inside your Pathly
+checkout, then add that marketplace to Codex.
 
 For one machine, this is effectively global: once Codex has the marketplace
 registered, the Pathly plugin is available from any workspace on that machine.
@@ -147,7 +147,7 @@ New-Item -ItemType Junction -Path "$market\plugins\pathly" -Target (Get-Location
       "name": "pathly",
       "source": {
         "source": "local",
-        "path": "./plugins/pathly"
+        "path": "./plugins/pathly/adapters/codex"
       },
       "policy": {
         "installation": "AVAILABLE",

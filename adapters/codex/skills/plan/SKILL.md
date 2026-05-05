@@ -6,14 +6,14 @@ argument-hint: "[feature-name] [lite|standard|strict]"
 
 # plan
 
-This is a Codex adapter wrapper. The canonical workflow lives in `core/prompts/plan.md`.
+This is a Codex adapter wrapper. The canonical workflow lives in `../../core/prompts/plan.md`.
 
 ## Run
 
 # you are at adapters/codex/skills/plan/SKILL.md.
 
 0. User invokes this skill with natural language, such as `Pathly plan ...` or `Use Pathly plan ...`.
-1. Read `core/prompts/plan.md`.
+1. Read `../../core/prompts/plan.md`.
 2. Follow that prompt as the source of truth for this workflow.
 3. Use natural-language Codex guidance instead of plugin-defined slash commands.
 4. Do not add Claude-only model frontmatter to this Codex wrapper.

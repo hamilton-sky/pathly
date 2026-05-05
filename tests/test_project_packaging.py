@@ -15,20 +15,24 @@ CODEX_SKILL_ROOT = REPO_ROOT / "adapters" / "codex" / "skills"
 def test_plugin_manifests_parse_and_point_to_skills():
     """Claude and Codex manifests should stay valid as branding changes."""
     expected_skill_dirs = {
-        REPO_ROOT / ".claude-plugin" / "plugin.json": CLAUDE_SKILL_ROOT,
-        REPO_ROOT / ".codex-plugin" / "plugin.json": CODEX_SKILL_ROOT,
+        REPO_ROOT / ".claude-plugin" / "plugin.json": (REPO_ROOT, CLAUDE_SKILL_ROOT),
+        REPO_ROOT / ".codex-plugin" / "plugin.json": (REPO_ROOT, CODEX_SKILL_ROOT),
+        REPO_ROOT / "adapters" / "codex" / ".codex-plugin" / "plugin.json": (
+            REPO_ROOT / "adapters" / "codex",
+            CODEX_SKILL_ROOT,
+        ),
     }
 
-    for manifest_path, expected_skill_dir in expected_skill_dirs.items():
+    for manifest_path, (manifest_root, expected_skill_dir) in expected_skill_dirs.items():
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
         assert manifest["name"] == "pathly"
         assert manifest["version"]
-        assert (REPO_ROOT / manifest["skills"]).resolve() == expected_skill_dir.resolve()
+        assert (manifest_root / manifest["skills"]).resolve() == expected_skill_dir.resolve()
         assert expected_skill_dir.is_dir()
 
         if "agents" in manifest:
-            assert (REPO_ROOT / manifest["agents"]).resolve() == CLAUDE_AGENT_ROOT.resolve()
+            assert (manifest_root / manifest["agents"]).resolve() == CLAUDE_AGENT_ROOT.resolve()
             assert CLAUDE_AGENT_ROOT.is_dir()
 
 
@@ -183,7 +187,7 @@ def test_codex_adapter_skills_are_codex_safe_core_wrappers():
         core_prompt = REPO_ROOT / "core" / "prompts" / f"{skill_dir.name}.md"
 
         assert core_prompt.exists(), f"Missing core prompt for {skill_dir.name}"
-        assert f"core/prompts/{skill_dir.name}.md" in skill_text
+        assert f"../../core/prompts/{skill_dir.name}.md" in skill_text
         assert "model: haiku" not in skill_text
         assert "model: sonnet" not in skill_text
         assert "model: opus" not in skill_text
@@ -200,7 +204,7 @@ def test_codex_skills_match_adapter_wrapper_shape():
 
         assert f"# you are at adapters/codex/skills/{skill_name}/SKILL.md." in skill_text
         assert "0. User invokes this skill with natural language" in skill_text
-        assert f"Read `core/prompts/{skill_name}.md`" in skill_text
+        assert f"Read `../../core/prompts/{skill_name}.md`" in skill_text
         assert "plugin-defined slash commands" in skill_text
         assert "CLI fallback" in skill_text
         assert f"pathly/core/prompts/{skill_name}.md" not in skill_text

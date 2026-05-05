@@ -66,7 +66,8 @@ pathly init <feature>
 pathly run <feature>
 ```
 
-The live Codex plugin reads `adapters/codex/skills/`. These wrappers are
+The local marketplace points Codex at `adapters/codex`, whose plugin manifest
+loads `./skills/`. These wrappers are
 Codex-safe: they load the same canonical `core/prompts/*.md` workflows but do
 not include Claude-only model frontmatter such as `haiku`, `sonnet`, or `opus`.
 Core model intent should stay portable as `simple`, `normal`, or `advanced`;

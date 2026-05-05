@@ -16,7 +16,7 @@
     "software-development",
     "planning"
   ],
-  "skills": "./adapters/codex/skills/",
+  "skills": "./skills/",
   "interface": {
     "displayName": "Pathly",
     "shortDescription": "Tell it what you want. Pathly chooses the path.",

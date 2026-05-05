@@ -206,7 +206,7 @@ def cmd_install(args: argparse.Namespace) -> int:
         print("    \"plugins\": [")
         print("      {")
         print("        \"name\": \"pathly\",")
-        print("        \"source\": { \"source\": \"local\", \"path\": \"./plugins/pathly\" },")
+        print("        \"source\": { \"source\": \"local\", \"path\": \"./plugins/pathly/adapters/codex\" },")
         print("        \"policy\": { \"installation\": \"AVAILABLE\", \"authentication\": \"ON_INSTALL\" },")
         print("        \"category\": \"Developer Tools\"")
         print("      }")
