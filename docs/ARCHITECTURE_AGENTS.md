@@ -151,6 +151,31 @@ not merely discouraged by prompt text.
     skills: []
 ```
 
+### Role Consultation Policy
+
+Pathly should not grow a default stage for every role. The efficient default is:
+
+| Rigor | Default route | Optional consultation |
+|---|---|---|
+| `nano` | director -> builder -> reviewer | none unless builder hits a blocker |
+| `lite` | director -> planner -> builder -> reviewer -> tester | PO for unclear product scope; architect for technical risk |
+| `standard` | director -> planner -> builder -> reviewer -> tester | PO and architect when their risk signals are present |
+| `strict` | director -> planner -> architect -> builder -> reviewer -> tester | PO when user impact, compliance, or acceptance criteria are ambiguous |
+
+Consultation is targeted:
+
+- `po` answers what to build, who it serves, MVP scope, success criteria, and
+  product edge cases. It writes `PO_NOTES.md`; planner converts that into user
+  stories and acceptance criteria.
+- `architect` answers how to build safely: layers, contracts, migrations,
+  rollback, shared abstractions, and dependency direction.
+- `scout`, `quick`, and `web-researcher` are read-only sidecars for bounded
+  research. They do not own workflow decisions.
+
+Do not add a generic "consult any agent" skill as a normal workflow stage. It
+would make routing vague and increase token/latency costs. If a manual tool is
+needed, expose it as an advanced diagnostic helper that asks one named role one
+bounded question and writes no plan files unless explicitly requested.
 ### Sub-agent delegation
 
 Five agents can spawn read-only sub-agents before implementation begins.

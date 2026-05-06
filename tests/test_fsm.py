@@ -204,3 +204,16 @@ def test_eventlog_reconstruct_full_cycle(tmp_path):
     assert d1 == d2
     assert state1.current == FSMState.BUILDING
     assert state1.event_count == 3
+
+
+def test_state_json_write_is_atomic(tmp_path):
+    """STATE.json writes should leave only the final file after a successful write."""
+    log = EventLog(filepath=str(tmp_path / "events.jsonl"))
+    state = initial_state()
+
+    log.write_state_json(state)
+
+    state_path = tmp_path / "STATE.json"
+    assert state_path.exists()
+    assert not list(tmp_path.glob("STATE.*.tmp"))
+    assert '"current": "IDLE"' in state_path.read_text(encoding="utf-8")

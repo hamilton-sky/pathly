@@ -61,6 +61,25 @@ and Codex. The `pathly` CLI owns the stable local contract: install it once,
 run it from any project folder, and let the Claude/Codex adapters expose the
 same workflow in their native UI.
 
+## Release Status
+
+Pathly is a public beta candidate, not a production-ready release. The core
+architecture, CLI fallback, plugin manifests, and automated smoke tests are in
+place, but broad production claims should wait until clean-machine install
+checks, end-to-end agent smoke runs, hook hardening, and public walkthroughs are
+complete.
+
+Known limitations today:
+
+- End-to-end agent behavior still needs manual smoke validation in Claude Code
+  and Codex for each release.
+- Cursor, Windsurf, BMAD, and generic prompt adapters are planned but not yet
+  shipped.
+- Hooks are optional and need additional path-validation and observability tests
+  before they should be treated as hardened automation.
+- Public case studies are still needed so users can judge real-world latency,
+  token cost, and recovery behavior.
+
 **New in this version:**
 - **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
 - **`/pathly debug <symptom>`** — dedicated bug pipeline: scout traces, tester verifies before and after fix
@@ -513,6 +532,8 @@ tier rules, per-agent sub-agent lists, and ownership guarantees.
 | `prd-import` | `/pathly prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file into plan files |
 | `bmad-import` | `/pathly bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
 | `verify-state` | `/pathly verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
+| `meet` | `/pathly meet [feature]` | Consult one relevant role during an active feature flow; writes a read-only consult note and offers planner/architect promotion |
+| meet | /pathly meet [feature] | Consult one relevant role during an active feature flow; writes a read-only consult note and offers planner/architect promotion |
 | `debug` | `/pathly debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
 | `explore` | `/pathly explore <question>` | Investigation mode: answer codebase questions without building anything |
 | `help` | `/pathly help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |

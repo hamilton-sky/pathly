@@ -2,6 +2,7 @@
 
 import os
 import json
+import tempfile
 from typing import List, Optional
 from .events import Event, event_factory
 from .reducer import reconstruct
@@ -52,10 +53,22 @@ class EventLog:
         return reconstruct(events)
 
     def write_state_json(self, state: State) -> None:
-        """Write current state to STATE.json alongside EVENTS.jsonl."""
-        state_path = os.path.join(os.path.dirname(self.filepath), "STATE.json")
-        with open(state_path, "w") as f:
-            json.dump(state.to_dict(), f, indent=2)
+        """Atomically write current state to STATE.json alongside EVENTS.jsonl."""
+        directory = os.path.dirname(self.filepath) or "."
+        os.makedirs(directory, exist_ok=True)
+        state_path = os.path.join(directory, "STATE.json")
+        fd, tmp_path = tempfile.mkstemp(prefix="STATE.", suffix=".tmp", dir=directory)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(state.to_dict(), f, indent=2)
+                f.write("\n")
+            os.replace(tmp_path, state_path)
+        except Exception:
+            try:
+                os.remove(tmp_path)
+            except FileNotFoundError:
+                pass
+            raise
 
     def clear(self) -> None:
         """Clear the event log (for testing only)."""

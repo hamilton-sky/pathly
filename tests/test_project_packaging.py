@@ -349,3 +349,55 @@ def test_core_prompts_do_not_leak_host_specific_surfaces():
         prompt_text = prompt_path.read_text(encoding="utf-8")
         for token in forbidden:
             assert token not in prompt_text, f"{prompt_path.name} leaks {token}"
+
+
+def test_readme_discloses_beta_limitations():
+    """Public README should not imply Pathly is production-ready before release gates."""
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "public beta candidate" in readme
+    assert "not a production-ready release" in readme
+    assert "Known limitations today" in readme
+    assert "End-to-end agent behavior" in readme
+
+
+def test_production_readiness_matches_current_cli_contract():
+    """Production readiness docs should not drift from the shipped pathly CLI."""
+    readiness = (REPO_ROOT / "docs" / "PRODUCTION_READINESS.md").read_text(encoding="utf-8")
+    parser = __import__("pathly.cli", fromlist=["build_parser"]).build_parser()
+    commands = set(parser._subparsers._group_actions[0].choices)
+
+    assert "Not yet a standalone Python CLI" not in readiness
+    assert "Packaged as a Python CLI named `pathly`" in readiness
+    assert {"install", "init", "help", "doctor", "debug", "explore", "review", "flow"} <= commands
+    for command in ["install", "init", "help", "doctor", "debug", "explore", "review", "flow"]:
+        assert f"pathly {command}" in readiness
+
+def test_meet_skill_is_packaged_and_core_backed():
+    """Meet should exist as a first-class skill across adapters and core prompts."""
+    core_prompt = REPO_ROOT / "core" / "prompts" / "meet.md"
+    claude_skill = REPO_ROOT / "adapters" / "claude-code" / "skills" / "meet" / "SKILL.md"
+    codex_skill = REPO_ROOT / "adapters" / "codex" / "skills" / "meet" / "SKILL.md"
+    agents_skill = REPO_ROOT / ".agents" / "skills" / "meet" / "SKILL.md"
+
+    assert core_prompt.exists()
+    assert claude_skill.exists()
+    assert codex_skill.exists()
+    assert agents_skill.exists()
+    assert "core/prompts/meet.md" in claude_skill.read_text(encoding="utf-8")
+    assert "core/prompts/meet.md" in codex_skill.read_text(encoding="utf-8")
+    assert agents_skill.read_text(encoding="utf-8") == codex_skill.read_text(encoding="utf-8")
+
+
+def test_pathly_router_and_help_reference_meet():
+    """Meet should be reachable from the front door and visible in help."""
+    router = (REPO_ROOT / "core" / "prompts" / "pathly.md").read_text(encoding="utf-8")
+    help_prompt = (REPO_ROOT / "core" / "prompts" / "help.md").read_text(encoding="utf-8")
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+
+    assert "### `meet`" in router
+    assert "- `meet` -> `core/prompts/meet.md`" in router
+    assert "[5] Meet a role" in help_prompt
+    assert "route to `meet <feature>`" in help_prompt
+    assert "meet [feature]" in help_prompt
+    assert "| `meet` | `/pathly meet [feature]` |" in readme

@@ -3,7 +3,7 @@
 This document records the current security/reliability posture for Claude
 Agents Framework and the remaining work before a production-ready label.
 
-The framework is primarily a Claude Code plugin. Its highest-risk areas are
+Pathly currently ships as a Claude Code plugin, Codex plugin workflow, and Python CLI fallback. Its highest-risk areas are
 hooks, subprocess execution, generated prompts, file writes, and recovery from
 partial or corrupt filesystem state.
 
@@ -98,7 +98,7 @@ Remaining gap:
 
 Production recommendation:
 
-- Add subprocess timeouts and clear timeout messages.
+- Add subprocess timeouts and clear timeout messages for all supporting subprocess calls.
 - Update or remove the legacy shell driver before a production release.
 - Add smoke tests that mock `subprocess.run()` for clean, failed, and timeout
   cases.
@@ -149,6 +149,29 @@ Production recommendation:
 - Add static tests for critical prompt clauses: scope limits, feedback handling,
   review gates, and no direct implementation by Director/Orchestrator.
 
+## Trust Boundaries
+
+Pathly treats these files as trusted workflow inputs once they are in the
+project workspace:
+
+- `plans/<feature>/*.md` plan files.
+- PRDs imported through `prd-import` or `bmad-import`.
+- Project rules such as `.claude/rules/` when present.
+- Feedback files under `plans/<feature>/feedback/`.
+
+User-provided PRD text and generated plan text should be quoted or summarized as
+requirements context, not obeyed as higher-priority runtime instructions. Agent
+contracts remain the authority for role boundaries: Director and Orchestrator
+route, Planner and Architect design, Builder edits source, Reviewer reports, and
+Tester verifies.
+
+Production hardening still needed:
+
+- Static tests for prompt clauses that label imported PRD/user text as context.
+- A single documented precedence order for user request, project rules, Pathly
+  role contracts, plan files, and generated feedback.
+- Adapter-specific checks that prevent host-only instructions from leaking into
+  core prompts.
 ## Area: File Writes and State
 
 Files reviewed:

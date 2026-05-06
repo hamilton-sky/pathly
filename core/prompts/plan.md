@@ -48,6 +48,33 @@ If it does not exist: interview the user. Ask what it does, which layers it touc
 
 If `rigor = strict`, do not skip risk questions. Explicitly ask about security, data loss, migrations, compliance, production impact, and rollback expectations unless the user already answered them.
 
+## Planner Consultation Policy
+
+The planner owns the final plan files. It may consult other roles, but those
+consultations are optional inputs, not mandatory stages.
+
+Consult `po` before writing `USER_STORIES.md` only when product intent is
+unclear:
+
+- The target user or buyer is ambiguous.
+- MVP scope is too broad or mixes multiple user problems.
+- Acceptance criteria describe implementation instead of observable outcomes.
+- Success criteria, out-of-scope items, or product edge cases are missing.
+- A PRD exists but has gaps or conflicting requirements.
+
+If PO consultation is needed, request or read `plans/$FEATURE/PO_NOTES.md`, then
+turn those notes into user stories and acceptance criteria. Do not keep PO in
+the default lite path when the user already gave enough product context.
+
+Consult `architect` only when technical risk is material:
+
+- Cross-layer dependency direction is unclear.
+- Data migrations, auth, payments, security, compliance, or rollback are in scope.
+- The feature changes shared abstractions or public contracts.
+- The planner cannot produce implementation phases without design decisions.
+
+Do not add a generic "consult everyone" stage. Use targeted consultation so
+Pathly stays low-latency and low-token by default.
 ## Step 3: Research The Codebase
 
 1. Read project guidance and linked rule files for layer structure, dependency direction, naming conventions, and test commands.
@@ -139,6 +166,24 @@ Skip in `lite` unless the flow is unclear without a diagram.
 For standard and strict, read `core/templates/plan/FLOW_DIAGRAM.template.md` for the exact file structure.
 Use ASCII only. Show only layers touched. Include happy path and fallback. Label arrows with action name or config key. Max about 70 chars wide.
 
+## Task Decomposition Rules
+
+When turning stories into implementation work, each phase and conversation must
+show both its purpose and its dependency relationship to the larger feature.
+
+For each phase in `IMPLEMENTATION_PLAN.md`, include:
+
+- Purpose: why this phase exists in the user-facing feature.
+- Depends on: earlier phase/conversation, existing code path, or external setup.
+- Enables: what later phase or acceptance criterion this unlocks.
+- Verification: the smallest useful command or manual check for that phase.
+
+Keep decomposition small enough for builder reliability:
+
+- Lite: 1-2 conversations, 1-3 phases per conversation.
+- Standard/strict: up to 4 conversations, 3-6 phases per conversation.
+- If dependency chains exceed 4 conversations, split the feature into follow-up
+  plan folders instead of creating a giant plan.
 ## Conversation Splitting Rules
 
 1. Each conversation must leave the codebase runnable and end with a verify command.

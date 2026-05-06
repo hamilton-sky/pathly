@@ -51,6 +51,10 @@ Run team-flow build entry for the feature: `team-flow <feature> build`.
 
 Run the review workflow from `core/prompts/review.md`.
 
+### `meet`
+
+Run the meet workflow from `core/prompts/meet.md`.
+
 ### Direct skill routes
 
 If the first word is one of these root skill names, run that skill with the
@@ -61,6 +65,7 @@ remaining text as its arguments:
 - `build` -> `core/prompts/build.md`
 - `go` -> `core/prompts/go.md`
 - `lessons` -> `core/prompts/lessons.md`
+- `meet` -> `core/prompts/meet.md`
 - `plan` -> `core/prompts/plan.md`
 - `prd-import` -> `core/prompts/prd-import.md`
 - `retro` -> `core/prompts/retro.md`

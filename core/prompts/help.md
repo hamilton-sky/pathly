@@ -182,18 +182,19 @@ Read PROGRESS.md: X conversations done, Y remaining.
   [2] Run full pipeline         → build + review + test + retro
   [3] Run full pipeline (fast)  → no pause points
   [4] Review current code       -> review
-  [5] Change rigor              → see options
-  [6] See all commands
-
+  [5] Meet a role               -> meet <feature>
+  [6] Change rigor              ? see options
+  [7] See all commands
 Reply with 1–6:
-```
+Reply with 1?7:
 
 On '1': route to `team-flow <feature> build`
 On '2': route to `team-flow <feature> build`  (with pauses)
 On '3': route to `team-flow <feature> build fast`
 On '4': route to `review`
-On '5': print the "CHANGING RIGOR" section from Step 3
-On '6': print full command reference
+On '5': route to `meet <feature>`
+On '6': print the "CHANGING RIGOR" section from Step 3
+On '7': print full command reference
 
 ---
 
@@ -290,6 +291,7 @@ On '5': print full command reference
   pathly <what you want>                skip prompt, routes immediately
   help [feature]                        detect state -> show this menu
   doctor [feature]                      diagnose stuck FSM, orphan files, stale feedback
+  meet [feature]                        consult one relevant role, write a read-only consult note
 
 ───────────────────────────────────────────
   MAIN COMMAND

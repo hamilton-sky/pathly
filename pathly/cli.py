@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from orchestrator.constants import Mode
@@ -21,8 +23,43 @@ CORE_PLAN_FILES = {
 }
 
 
+FEATURE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$")
+PROMOTION_TARGET_RE = re.compile(
+    r"^## Promotion Target\s*(?:\r?\n)+([A-Za-z-]+)\s*$",
+    re.MULTILINE,
+)
+
+MEET_ALLOWED_ROLES = {
+    "planner": "requirements, stories, acceptance criteria, task breakdown",
+    "architect": "design, layers, contracts, migrations, rollback",
+    "reviewer": "review risks, contract violations, diff quality",
+    "tester": "verification strategy, acceptance coverage, likely gaps",
+    "po": "product scope, user value, success criteria, epic boundaries",
+    "scout": "read-only codebase investigation",
+}
+
+MEET_ROLE_SETS = {
+    "planning": ["planner", "po", "architect"],
+    "building": ["planner", "architect", "reviewer", "tester", "scout"],
+    "review feedback open": ["reviewer", "architect", "planner", "scout"],
+    "architecture feedback open": ["architect", "planner", "reviewer", "scout"],
+    "testing": ["tester", "planner", "architect", "reviewer", "scout"],
+    "done / retro complete": ["reviewer", "tester", "planner"],
+}
+
+READ_ONLY_TOOLS = "Read,Glob,Grep,Agent"
+PLAN_WRITE_TOOLS = "Read,Glob,Grep,Write,Edit,Agent"
+
 def _project_root(args: argparse.Namespace) -> Path:
     return Path(args.project_dir).expanduser().resolve()
+
+
+def _validate_feature_name(value: str) -> str:
+    if not FEATURE_NAME_RE.fullmatch(value) or ".." in value:
+        raise argparse.ArgumentTypeError(
+            "feature must be 1-80 chars: letters, numbers, dots, underscores, or hyphens; no path segments"
+        )
+    return value
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -42,6 +79,151 @@ def _feature_slug(value: str) -> str:
     slug = "".join(char.lower() if char.isalnum() else "-" for char in value)
     parts = [part for part in slug.split("-") if part]
     return "-".join(parts[:6]) or "demo"
+
+
+def _run_claude_text(prompt: str, *, cwd: Path, allowed_tools: str, timeout: int | None = None) -> str:
+    timeout = timeout or int(os.environ.get("CLAUDE_AGENT_TIMEOUT", "1800"))
+    result = subprocess.run(
+        ["claude", "-p", prompt, "--allowedTools", allowed_tools],
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+    )
+    if result.returncode != 0:
+        details = (result.stderr or result.stdout or "claude consultation failed").strip()
+        raise RuntimeError(details)
+    return result.stdout.strip()
+
+
+def _select_plan(root: Path, feature: str | None) -> Path | None:
+    if feature:
+        plan = root / "plans" / feature
+        return plan if plan.exists() else None
+    plans = _plan_dirs(root)
+    return plans[0] if plans else None
+
+
+def _infer_meet_state(plan: Path) -> str:
+    feedback = plan / "feedback"
+    if feedback.exists():
+        files = {path.name for path in feedback.iterdir() if path.is_file()}
+        if "ARCH_FEEDBACK.md" in files or "DESIGN_QUESTIONS.md" in files:
+            return "architecture feedback open"
+        if files:
+            return "review feedback open"
+    if (plan / "RETRO.md").exists():
+        return "done / retro complete"
+    done, todo, active = _progress_counts(plan)
+    if active or todo:
+        return "building"
+    if done:
+        return "testing"
+    return "planning"
+
+
+def _relevant_meet_roles(state: str) -> list[str]:
+    return list(MEET_ROLE_SETS.get(state, ["planner", "architect", "reviewer", "tester", "scout"]))
+
+
+def _prompt_choice(prompt: str, options: list[str]) -> str:
+    print(prompt)
+    while True:
+        answer = input().strip().lower()
+        if answer in options:
+            return answer
+        print(f"Reply with one of: {', '.join(options)}")
+
+
+def _print_meet_menu(feature: str, state: str, roles: list[str]) -> None:
+    _print_banner([f"meet - {feature}", f"State: {state}"])
+    print()
+    print("  Pick a role to consult:")
+    print()
+    for index, role in enumerate(roles, start=1):
+        print(f"  [{index}] {role:<12} -> {MEET_ALLOWED_ROLES[role]}")
+    print(f"  [{len(roles) + 1}] See all commands")
+    print()
+    print(f"Reply with 1-{len(roles) + 1}:")
+
+
+def _consult_note_path(plan: Path, role: str) -> Path:
+    consults = plan / "consults"
+    consults.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    return consults / f"{timestamp}-{role}.md"
+
+
+def _parse_promotion_target(answer: str) -> str:
+    match = PROMOTION_TARGET_RE.search(answer)
+    if not match:
+        return "none"
+    value = match.group(1).strip().lower()
+    if value not in {"none", "planner", "architect"}:
+        return "none"
+    return value
+
+
+def _meet_prompt(feature: str, role: str, question: str, note_path: Path) -> str:
+    role_brief = MEET_ALLOWED_ROLES[role]
+    return f"""You are acting as Pathly's {role} advisor for the active feature '{feature}'.
+
+This is a read-only consultation. You may read the project and spawn read-only subagents if needed, but you must not edit code, edit plan files, delete feedback files, or claim the workflow has advanced.
+
+Question: {question}
+
+Focus area: {role_brief}
+
+Answer in this exact markdown shape:
+# Meet Note - {role} - {feature}
+
+## Question
+{question}
+
+## Answer
+<direct answer>
+
+## Evidence
+- <file, pattern, or reason 1>
+- <file, pattern, or reason 2>
+
+## Recommendation
+<what the user should do next>
+
+## Promotion Target
+<none|planner|architect>
+
+Choose planner only if the answer should change stories, acceptance criteria, ordering, or task decomposition.
+Choose architect only if the answer should change design, contracts, layers, rollback, or integration shape.
+Choose none if the answer is advisory only.
+
+Do not wrap the answer in code fences. The note will be written to {note_path} by the CLI runtime."""
+
+
+def _promotion_prompt(feature: str, role: str, note_path: Path) -> str:
+    if role == "planner":
+        scope = (
+            f"Read {note_path}. Update only the plan files directly affected by the consult note in plans/{feature}/. "
+            "You may edit USER_STORIES.md, IMPLEMENTATION_PLAN.md, PROGRESS.md, and CONVERSATION_PROMPTS.md if warranted. "
+            "Do not edit source code. Report exactly what changed."
+        )
+    else:
+        scope = (
+            f"Read {note_path}. Update only architecture-related plan files directly affected by the consult note in plans/{feature}/. "
+            "You may edit ARCHITECTURE_PROPOSAL.md, FLOW_DIAGRAM.md, or IMPLEMENTATION_PLAN.md if warranted. "
+            "Do not edit source code. Report exactly what changed."
+        )
+    return scope
+
+
+def _return_route_for_state(feature: str, state: str) -> str:
+    if state == "testing":
+        return f"team-flow {feature} test"
+    if state in {"review feedback open", "architecture feedback open"}:
+        return f"team-flow {feature} build"
+    if state == "done / retro complete":
+        return f"help {feature}"
+    return f"team-flow {feature} build"
 
 
 def cmd_go(args: argparse.Namespace) -> int:
@@ -125,6 +307,103 @@ def cmd_review(args: argparse.Namespace) -> int:
     print()
     print("CLI fallback:")
     print("  Run git diff, inspect risks, and record findings before changing code.")
+    return 0
+
+
+def cmd_meet(args: argparse.Namespace) -> int:
+    root = _project_root(args)
+    plan = _select_plan(root, args.feature)
+    if plan is None:
+        print("meet requires an active feature plan. Start a feature first, then run meet again.")
+        return 1
+
+    if not shutil.which("claude"):
+        print("meet requires the claude CLI for read-only role consultation.")
+        return 1
+
+    feature = plan.name
+    state = _infer_meet_state(plan)
+    roles = _relevant_meet_roles(state)
+    role = args.role.lower() if args.role else None
+    if role and role not in roles:
+        print(f"Role '{role}' is not available for meet in state: {state}")
+        return 1
+
+    if role is None:
+        _print_meet_menu(feature, state, roles)
+        choice = _prompt_choice("", [str(i) for i in range(1, len(roles) + 2)])
+        if choice == str(len(roles) + 1):
+            print("Use `pathly help` to see the full command reference.")
+            return 0
+        role = roles[int(choice) - 1]
+
+    question = args.question.strip() if args.question else ""
+    if not question:
+        question = input(f"What is the one question you want to ask {role}? ").strip()
+    if not question:
+        print("meet requires a non-empty question.")
+        return 1
+
+    note_path = _consult_note_path(plan, role)
+    answer = _run_claude_text(
+        _meet_prompt(feature, role, question, note_path),
+        cwd=root,
+        allowed_tools=READ_ONLY_TOOLS,
+    )
+    note_path.write_text(answer + "\n", encoding="utf-8")
+    promotion_target = _parse_promotion_target(answer)
+
+    print(f"Meet note written: {note_path}")
+    print(f"Suggested promotion target: {promotion_target}")
+    print()
+    print("What do you want to do next?")
+    print()
+    print(f"[1] Return to {_return_route_for_state(feature, state)}")
+    print("[2] Promote to planner update")
+    print("[3] Promote to architecture update")
+    print("[4] Ask another meet question")
+    print("[5] See all commands")
+    print()
+
+    next_choice = args.next
+    if next_choice is None:
+        next_choice = _prompt_choice("Reply with 1-5:", ["1", "2", "3", "4", "5"])
+    else:
+        next_choice = next_choice.lower()
+
+    if next_choice in {"1", "return"}:
+        print(f"Return route: {_return_route_for_state(feature, state)}")
+        return 0
+
+    if next_choice in {"2", "planner"}:
+        result = _run_claude_text(
+            _promotion_prompt(feature, "planner", note_path),
+            cwd=root,
+            allowed_tools=PLAN_WRITE_TOOLS,
+        )
+        print(result)
+        return 0
+
+    if next_choice in {"3", "architect"}:
+        result = _run_claude_text(
+            _promotion_prompt(feature, "architect", note_path),
+            cwd=root,
+            allowed_tools=PLAN_WRITE_TOOLS,
+        )
+        print(result)
+        return 0
+
+    if next_choice in {"4", "another"}:
+        follow_up = argparse.Namespace(
+            project_dir=str(root),
+            feature=feature,
+            role=None,
+            question=None,
+            next=None,
+        )
+        return cmd_meet(follow_up)
+
+    print("Use `pathly help` to see the full command reference.")
     return 0
 
 
@@ -329,10 +608,11 @@ def _print_plan_done_menu(feature: str, rigor: str, done: int, remaining: int) -
     print("  [2] Run full pipeline         -> build + review + test + retro")
     print("  [3] Run full pipeline (fast)  -> no pause points")
     print("  [4] Review current code       -> review")
-    print("  [5] Change rigor              -> see options")
-    print("  [6] See all commands")
+    print("  [5] Meet a role               -> meet <feature>")
+    print("  [6] Change rigor              -> see options")
+    print("  [7] See all commands")
     print()
-    print("Reply with 1-6:")
+    print("Reply with 1-7:")
 
 
 def _print_feedback_menu(feature: str, rigor: str, plan: Path) -> None:
@@ -479,28 +759,28 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     run = subparsers.add_parser("run", help="Run the Pathly team-flow driver.")
-    run.add_argument("feature", help="Feature name under plans/<feature>.")
+    run.add_argument("feature", type=_validate_feature_name, help="Feature name under plans/<feature>.")
     run.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")
     run.add_argument("--fast", action="store_true", help="Skip human pause points.")
     run.add_argument("--recover", action="store_true", help="Log reconstructed state before running.")
     run.set_defaults(func=cmd_run)
 
     flow = subparsers.add_parser("flow", help="Alias for run using Pathly workflow language.")
-    flow.add_argument("feature", help="Feature name under plans/<feature>.")
+    flow.add_argument("feature", type=_validate_feature_name, help="Feature name under plans/<feature>.")
     flow.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")
     flow.add_argument("--fast", action="store_true", help="Skip human pause points.")
     flow.add_argument("--recover", action="store_true", help="Log reconstructed state before running.")
     flow.set_defaults(func=cmd_run)
 
     team = subparsers.add_parser("team-flow", help="Alias for run.")
-    team.add_argument("feature", help="Feature name under plans/<feature>.")
+    team.add_argument("feature", type=_validate_feature_name, help="Feature name under plans/<feature>.")
     team.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")
     team.add_argument("--fast", action="store_true", help="Skip human pause points.")
     team.add_argument("--recover", action="store_true", help="Log reconstructed state before running.")
     team.set_defaults(func=cmd_run)
 
     init = subparsers.add_parser("init", help="Create starter plan files in a project.")
-    init.add_argument("feature", nargs="?", default="demo", help="Feature name to initialize.")
+    init.add_argument("feature", nargs="?", default="demo", type=_validate_feature_name, help="Feature name to initialize.")
     init.add_argument("--force", action="store_true", help="Overwrite starter files if they exist.")
     init.set_defaults(func=cmd_init)
 
@@ -509,8 +789,20 @@ def build_parser() -> argparse.ArgumentParser:
     go.set_defaults(func=cmd_go)
 
     help_cmd = subparsers.add_parser("help", help="Show project status and suggested next actions.")
-    help_cmd.add_argument("feature", nargs="?", help="Optional feature name under plans/<feature>.")
+    help_cmd.add_argument("feature", nargs="?", type=_validate_feature_name, help="Optional feature name under plans/<feature>.")
     help_cmd.set_defaults(func=cmd_help)
+
+    meet = subparsers.add_parser("meet", help="Consult one relevant read-only role during an active feature flow.")
+    meet.add_argument("feature", nargs="?", type=_validate_feature_name, help="Optional feature name under plans/<feature>.")
+    meet.add_argument("--role", choices=sorted(MEET_ALLOWED_ROLES), help="Specific role to consult.")
+    meet.add_argument("--question", help="Bounded question to ask the consulted role.")
+    meet.add_argument(
+        "--next",
+        dest="next",
+        choices=["return", "planner", "architect", "another", "commands", "1", "2", "3", "4", "5"],
+        help="Optional follow-up action after the consult note is written.",
+    )
+    meet.set_defaults(func=cmd_meet)
 
     explore = subparsers.add_parser("explore", help="Expose the Pathly exploration workflow.")
     explore.add_argument("topic", nargs="*", help="Question or topic to explore.")

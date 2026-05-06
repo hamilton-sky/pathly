@@ -1,6 +1,8 @@
-"""Smoke tests for the public Pathly CLI."""
+﻿"""Smoke tests for the public Pathly CLI."""
 
 from pathlib import Path
+
+import pytest
 
 from pathly import cli
 from scripts import team_flow
@@ -167,3 +169,126 @@ def test_run_uses_current_project_as_team_flow_root(tmp_path, monkeypatch):
         "root": Path(tmp_path).resolve(),
         "ran": True,
     }
+
+
+def test_init_rejects_path_traversal_feature_name(tmp_path, capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["--project-dir", str(tmp_path), "init", "..\\escape"])
+
+    assert exc_info.value.code != 0
+    assert not (tmp_path.parent / "escape").exists()
+    assert "no path segments" in capsys.readouterr().err
+
+
+def test_flow_rejects_path_separator_before_driver_runs(tmp_path, monkeypatch, capsys):
+    def fail_driver(*args, **kwargs):
+        raise AssertionError("driver should not run for invalid feature names")
+
+    monkeypatch.setattr(team_flow, "Driver", fail_driver)
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["--project-dir", str(tmp_path), "flow", "bad/name"])
+
+    assert exc_info.value.code != 0
+    assert "no path segments" in capsys.readouterr().err
+
+
+def test_help_plan_menu_exposes_meet(tmp_path, capsys):
+    cli.main(["--project-dir", str(tmp_path), "init", "checkout-flow"])
+    progress = tmp_path / "plans" / "checkout-flow" / "PROGRESS.md"
+    progress.write_text(
+    progress.write_text(
+        "# Progress\n\n| Conversation | Status |\n|---|---|\n| 1 | DONE |\n| 2 | TODO |\n",
+        encoding="utf-8",
+    )
+    )
+    capsys.readouterr()
+
+    result = cli.main(["--project-dir", str(tmp_path), "help"])
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "[5] Meet a role" in output
+    assert "Reply with 1-7:" in output
+
+
+def test_meet_writes_consult_note(tmp_path, monkeypatch, capsys):
+    cli.main(["--project-dir", str(tmp_path), "init", "checkout-flow"])
+
+    def fake_run(prompt, *, cwd, allowed_tools, timeout=None):
+        assert allowed_tools == cli.READ_ONLY_TOOLS
+        assert cwd == Path(tmp_path).resolve()
+        return """# Meet Note - planner - checkout-flow
+
+## Question
+What should conversation 2 verify?
+
+## Answer
+Verify the saved filter is restored on reload.
+
+## Evidence
+- plans/checkout-flow/PROGRESS.md
+
+## Recommendation
+Keep the verification in the second conversation.
+
+## Promotion Target
+planner"""
+
+    monkeypatch.setattr(cli, "_run_claude_text", fake_run)
+    monkeypatch.setattr(cli.shutil, "which", lambda name: "claude" if name == "claude" else None)
+
+    result = cli.main([
+        "--project-dir", str(tmp_path), "meet", "checkout-flow",
+        "--role", "planner",
+        "--question", "What should conversation 2 verify?",
+        "--next", "return",
+    ])
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "Suggested promotion target: planner" in output
+    consults = list((tmp_path / "plans" / "checkout-flow" / "consults").glob("*-planner.md"))
+    assert len(consults) == 1
+    assert "Verify the saved filter is restored on reload." in consults[0].read_text(encoding="utf-8")
+
+
+def test_meet_planner_promotion_uses_plan_write_tools(tmp_path, monkeypatch, capsys):
+    cli.main(["--project-dir", str(tmp_path), "init", "checkout-flow"])
+    calls = []
+
+    def fake_run(prompt, *, cwd, allowed_tools, timeout=None):
+        calls.append(allowed_tools)
+        if allowed_tools == cli.READ_ONLY_TOOLS:
+            return """# Meet Note - architect - checkout-flow
+
+## Question
+Should this need architecture notes?
+
+## Answer
+Yes, because it changes a shared flow.
+
+## Evidence
+- plans/checkout-flow/IMPLEMENTATION_PLAN.md
+
+## Recommendation
+Add architecture notes before build resumes.
+
+## Promotion Target
+architect"""
+        return "Updated ARCHITECTURE_PROPOSAL.md with shared-flow notes."
+
+    monkeypatch.setattr(cli, "_run_claude_text", fake_run)
+    monkeypatch.setattr(cli.shutil, "which", lambda name: "claude" if name == "claude" else None)
+
+    result = cli.main([
+        "--project-dir", str(tmp_path), "meet", "checkout-flow",
+        "--role", "architect",
+        "--question", "Should this need architecture notes?",
+        "--next", "architect",
+    ])
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert "Updated ARCHITECTURE_PROPOSAL.md with shared-flow notes." in output
+    assert calls == [cli.READ_ONLY_TOOLS, cli.PLAN_WRITE_TOOLS]
