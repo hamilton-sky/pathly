@@ -187,7 +187,7 @@ def test_codex_adapter_skills_are_codex_safe_core_wrappers():
         core_prompt = REPO_ROOT / "core" / "prompts" / f"{skill_dir.name}.md"
 
         assert core_prompt.exists(), f"Missing core prompt for {skill_dir.name}"
-        assert f"../../core/prompts/{skill_dir.name}.md" in skill_text
+        assert f"core/prompts/{skill_dir.name}.md" in skill_text
         assert "model: haiku" not in skill_text
         assert "model: sonnet" not in skill_text
         assert "model: opus" not in skill_text
@@ -204,7 +204,7 @@ def test_codex_skills_match_adapter_wrapper_shape():
 
         assert f"# you are at adapters/codex/skills/{skill_name}/SKILL.md." in skill_text
         assert "0. User invokes this skill with natural language" in skill_text
-        assert f"Read `../../core/prompts/{skill_name}.md`" in skill_text
+        assert f"Read `core/prompts/{skill_name}.md`" in skill_text
         assert "plugin-defined slash commands" in skill_text
         assert "CLI fallback" in skill_text
         assert f"pathly/core/prompts/{skill_name}.md" not in skill_text
@@ -220,6 +220,18 @@ def test_codex_director_and_team_flow_do_not_fall_back_to_cli():
 
         assert "CLI fallback" in skill_text
         assert "unless the user explicitly asks" in normalized
+
+
+def test_codex_help_requires_core_numbered_menu():
+    """Pathly help should not collapse into the terse CLI help output."""
+    help_skill = (CODEX_SKILL_ROOT / "help" / "SKILL.md").read_text(encoding="utf-8")
+    pathly_skill = (CODEX_SKILL_ROOT / "pathly" / "SKILL.md").read_text(encoding="utf-8")
+
+    assert "numbered interactive menu" in help_skill
+    assert "See all commands" in help_skill
+    assert "Plans:" in help_skill
+    assert "Next:" in help_skill
+    assert "numbered menu from `core/prompts/help.md`" in pathly_skill
 
 
 def test_core_help_menu_is_pathly_native_and_offers_storm():

@@ -6,14 +6,14 @@ argument-hint: "[help|doctor|debug|explore|flow|review|continue|plan|build|archi
 
 # path
 
-This is a Codex adapter wrapper. The canonical workflow lives in `../../core/prompts/path.md`.
+This is a Codex adapter wrapper. The canonical workflow lives in `core/prompts/path.md`.
 
 ## Run
 
 # you are at adapters/codex/skills/path/SKILL.md.
 
 0. User invokes this skill with natural language, such as `Pathly help` or `Use Pathly path ...`.
-1. Read `../../core/prompts/path.md`.
+1. Read `core/prompts/path.md`.
 2. Follow that prompt as the source of truth for this workflow.
 3. Use natural-language Codex guidance instead of plugin-defined slash commands.
 4. Do not add Claude-only model frontmatter to this Codex wrapper.

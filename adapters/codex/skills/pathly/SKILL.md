@@ -1,12 +1,12 @@
 ---
 name: pathly
-description: Codex-safe Pathly entry point. Route natural-language Pathly requests such as "Pathly help", "Pathly doctor", "Pathly add password reset", "Use Pathly to debug...", or "Use Pathly flow..." to the right Pathly workflow without relying on Codex slash commands.
+description: Codex-safe Pathly entry point. Route natural-language Pathly requests such as "Pathly help", "Use Pathly help", "Pathly doctor", "Pathly add password reset", "Use Pathly to debug...", or "Use Pathly flow..." to the right Pathly workflow without relying on Codex slash commands or CLI help fallback.
 argument-hint: "[help|doctor|debug|explore|flow|review|continue|plan|build|archive|lessons|verify-state|plain English request]"
 ---
 
 # Pathly for Codex
 
-This is the Codex adapter wrapper for the tool-agnostic `../../core/prompts/pathly.md`
+This is the Codex adapter wrapper for the tool-agnostic `core/prompts/pathly.md`
 entry point.
 
 ## Run
@@ -14,16 +14,19 @@ entry point.
 # you are at adapters/codex/skills/pathly/SKILL.md.
 
 0. User invokes this skill with natural language, such as `Pathly help`, `Pathly add password reset`, or `Use Pathly to debug checkout fails`.
-1. Read `../../core/prompts/pathly.md`.
+1. Read `core/prompts/pathly.md`.
 2. Follow that prompt as the source of truth for this workflow.
 3. Use natural-language Codex guidance instead of plugin-defined slash commands.
 4. Do not add Claude-only model frontmatter in Codex wrappers.
 5. Do not satisfy Pathly routes by running the `pathly` CLI unless the user
    explicitly asks for the CLI fallback. Prefer the corresponding
-   `../../core/prompts/*.md` workflow.
+   `core/prompts/*.md` workflow.
 6. Treat route strings in core prompts as workflow identifiers. For example,
    `team-flow checkout-flow build` means continue the team-flow behavior for
    that feature in Codex; it does not mean execute a shell command.
+7. For `help`, render the numbered menu from `core/prompts/help.md`; do not
+   respond with a CLI-style `Plans:` / `Next:` summary unless the user asks for
+   the CLI fallback.
 
 Codex users should invoke this skill with natural language. Short forms should
 work when Codex recognizes the Pathly skill:
