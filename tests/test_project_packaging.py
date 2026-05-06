@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CLAUDE_SKILL_ROOT = REPO_ROOT / "adapters" / "claude-code" / "skills"
 CLAUDE_AGENT_ROOT = REPO_ROOT / "adapters" / "claude-code" / "agents"
 CODEX_SKILL_ROOT = REPO_ROOT / "adapters" / "codex" / "skills"
+AGENTS_SKILL_ROOT = REPO_ROOT / ".agents" / "skills"
 
 
 def test_plugin_manifests_parse_and_point_to_skills():
@@ -34,6 +35,34 @@ def test_plugin_manifests_parse_and_point_to_skills():
         if "agents" in manifest:
             assert (manifest_root / manifest["agents"]).resolve() == CLAUDE_AGENT_ROOT.resolve()
             assert CLAUDE_AGENT_ROOT.is_dir()
+
+
+def test_public_marketplace_manifests_parse():
+    """Published marketplace catalogs should expose Pathly from the repo root."""
+    claude_marketplace = json.loads(
+        (REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+    )
+    codex_marketplace = json.loads(
+        (REPO_ROOT / ".agents" / "plugins" / "marketplace.json").read_text(encoding="utf-8")
+    )
+
+    assert claude_marketplace["name"] == "pathly"
+    assert claude_marketplace["owner"]["name"] == "hamilton"
+    assert claude_marketplace["plugins"][0]["name"] == "pathly"
+    assert claude_marketplace["plugins"][0]["source"] == "./"
+    assert claude_marketplace["plugins"][0]["version"] == "2.0.0"
+
+    assert codex_marketplace["name"] == "pathly"
+    assert codex_marketplace["interface"]["displayName"] == "Pathly"
+    assert codex_marketplace["plugins"][0]["name"] == "pathly"
+    assert codex_marketplace["plugins"][0]["source"] == {
+        "source": "local",
+        "path": "./",
+    }
+    assert codex_marketplace["plugins"][0]["policy"] == {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL",
+    }
 
 
 def test_python_distribution_is_pathly():
@@ -191,6 +220,23 @@ def test_codex_adapter_skills_are_codex_safe_core_wrappers():
         assert "model: haiku" not in skill_text
         assert "model: sonnet" not in skill_text
         assert "model: opus" not in skill_text
+
+
+def test_agents_skills_mirror_codex_safe_wrappers():
+    """Direct agent skill discovery should expose the same Codex-safe wrappers."""
+    assert AGENTS_SKILL_ROOT.is_dir()
+
+    codex_skill_names = {path.name for path in CODEX_SKILL_ROOT.iterdir() if path.is_dir()}
+    agents_skill_names = {path.name for path in AGENTS_SKILL_ROOT.iterdir() if path.is_dir()}
+
+    assert agents_skill_names == codex_skill_names
+
+    for skill_name in codex_skill_names:
+        codex_skill = CODEX_SKILL_ROOT / skill_name / "SKILL.md"
+        agents_skill = AGENTS_SKILL_ROOT / skill_name / "SKILL.md"
+
+        assert agents_skill.exists()
+        assert agents_skill.read_text(encoding="utf-8") == codex_skill.read_text(encoding="utf-8")
 
 
 def test_codex_skills_match_adapter_wrapper_shape():

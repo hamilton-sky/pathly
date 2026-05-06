@@ -52,8 +52,8 @@ Before publishing broadly:
 - Check GitHub repository name availability.
 - Check PyPI package name availability.
 - Check npm package name availability if a Node-based CLI is planned.
-- Keep uninstall cleanup for the legacy installed Claude plugin directory
-  `claude-agents-framework` until existing installs have had time to migrate.
+- Keep uninstall cleanup scoped to the current installed Claude plugin directory
+  `pathly`.
 
 ## Codex Readiness
 

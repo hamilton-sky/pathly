@@ -16,7 +16,6 @@ param([switch]$Uninstall)
 
 $ClaudeDir = "$env:USERPROFILE\.claude"
 $PluginName = "pathly"
-$LegacyPluginName = "claude-agents-framework"
 $ScriptDir = $PSScriptRoot
 $ClaudeSkillSource = Join-Path $ScriptDir "adapters\claude-code\skills"
 $ClaudeAgentSource = Join-Path $ScriptDir "adapters\claude-code\agents"
@@ -41,8 +40,6 @@ if ($Uninstall) {
     }
     $pluginDir = "$ClaudeDir\plugins\$PluginName"
     if (Test-Path $pluginDir) { Remove-Item -Recurse -Force $pluginDir }
-    $legacyPluginDir = "$ClaudeDir\plugins\$LegacyPluginName"
-    if (Test-Path $legacyPluginDir) { Remove-Item -Recurse -Force $legacyPluginDir }
     Write-Host ""
     Write-Host "Uninstalled. Run '.\scripts\setup-hook.ps1 -Remove' to remove the hook."
     Write-Host ""

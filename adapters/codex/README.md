@@ -45,11 +45,24 @@ machine.
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
 python -m pip install -e .
+pathly install codex --apply
+codex plugin marketplace add C:\tmp\pathly-marketplace
+```
 
+Restart Codex after adding or changing the local marketplace. If the plugin was
+enabled but not selected in an existing thread, start a fresh thread after the
+restart.
+
+Manual PowerShell equivalent:
+
+```powershell
 $market = "C:\tmp\pathly-marketplace"
+$plugin = "$market\plugins\pathly"
 New-Item -ItemType Directory -Path "$market\.agents\plugins" -Force
-New-Item -ItemType Directory -Path "$market\plugins" -Force
-New-Item -ItemType Junction -Path "$market\plugins\pathly" -Target (Get-Location)
+New-Item -ItemType Directory -Path "$plugin" -Force
+New-Item -ItemType Junction -Path "$plugin\.codex-plugin" -Target ".\adapters\codex\.codex-plugin"
+New-Item -ItemType Junction -Path "$plugin\skills" -Target ".\adapters\codex\skills"
+New-Item -ItemType Junction -Path "$plugin\core" -Target ".\core"
 
 # Write marketplace.json as shown in the root README, then:
 codex plugin marketplace add $market
@@ -73,6 +86,15 @@ not include Claude-only model frontmatter such as `haiku`, `sonnet`, or `opus`.
 Core model intent should stay portable as `simple`, `normal`, or `advanced`;
 Codex wrappers can map those tiers to Codex-native models only when that is
 explicitly supported.
+
+## Direct Agent Skill Discovery
+
+Pathly also exposes `.agents/skills/` at the repository root for tools that scan
+direct skill folders instead of loading a Codex marketplace plugin. That
+directory mirrors `adapters/codex/skills/` exactly and is verified by tests.
+
+Do not edit `.agents/skills/` directly. Change the wrapper under
+`adapters/codex/skills/`, refresh the mirror, and run packaging tests.
 
 Claude Code keeps its own model-specific wrappers under
 `adapters/claude-code/skills/` for the Claude plugin package.

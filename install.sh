@@ -17,7 +17,6 @@ set -euo pipefail
 
 CLAUDE_DIR="$HOME/.claude"
 PLUGIN_NAME="pathly"
-LEGACY_PLUGIN_NAME="claude-agents-framework"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CLAUDE_SKILL_SOURCE="$SCRIPT_DIR/adapters/claude-code/skills"
 CLAUDE_AGENT_SOURCE="$SCRIPT_DIR/adapters/claude-code/agents"
@@ -42,7 +41,6 @@ if [ "$UNINSTALL" = "--uninstall" ]; then
         echo "  - $agent_name"
     done
     rm -rf "$CLAUDE_DIR/plugins/$PLUGIN_NAME"
-    rm -rf "$CLAUDE_DIR/plugins/$LEGACY_PLUGIN_NAME"
     echo ""
     echo "Uninstalled. Run 'bash scripts/setup-hook.sh --remove' to remove the hook."
     echo "Note: skills and agents in ~/.claude/ must be removed manually if desired."

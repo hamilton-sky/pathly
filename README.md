@@ -78,6 +78,22 @@ same workflow in their native UI.
 
 ### Claude Code
 
+Public marketplace install:
+
+```text
+/plugin marketplace add hamilton-sky/pathly
+/plugin install pathly@pathly
+/reload-plugins
+```
+
+Then open any project in Claude Code and run:
+
+```text
+/pathly <what you want>
+```
+
+Local development install:
+
 ```bash
 # macOS / Linux
 git clone https://github.com/hamilton-sky/pathly
@@ -115,9 +131,36 @@ to get started.
 
 ### Codex
 
+Public marketplace metadata is committed at `.agents/plugins/marketplace.json`.
+If your Codex build supports GitHub marketplace shorthands, users can add the
+public repository directly:
+
+```powershell
+codex plugin marketplace add hamilton-sky/pathly
+```
+
+For local testing or Codex builds that require an explicit path, clone the repo
+and add the cloned directory:
+
+```powershell
+git clone https://github.com/hamilton-sky/pathly
+codex plugin marketplace add C:\path\to\pathly
+```
+
+Restart Codex after adding or changing a marketplace, then invoke Pathly with
+explicit natural language:
+
+```text
+Use Pathly help
+Use Pathly doctor on this project
+Use Pathly to add password reset
+```
+
+Local development install:
+
 Pathly includes a Codex plugin manifest at `adapters/codex/.codex-plugin/plugin.json`.
-Current Codex builds load local plugins through a marketplace root. Create a
-small local marketplace that points to the Codex adapter inside your Pathly
+Current Codex builds load local plugins through a marketplace root. Let Pathly
+create a small local marketplace that points to the Codex adapter inside your
 checkout, then add that marketplace to Codex.
 
 For one machine, this is effectively global: once Codex has the marketplace
@@ -131,7 +174,16 @@ Example Windows setup after cloning:
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
 python -m pip install -e .
+pathly install codex --apply
+codex plugin marketplace add C:\tmp\pathly-marketplace
+```
 
+Restart Codex after adding or changing the local marketplace. If you need to
+repair the marketplace later, rerun `pathly install codex --apply`.
+
+Manual PowerShell setup:
+
+```powershell
 $market = "C:\tmp\pathly-marketplace"
 $plugin = "$market\plugins\pathly"
 New-Item -ItemType Directory -Path "$market\.agents\plugins" -Force
@@ -174,6 +226,7 @@ If a friend clones the repo, their next steps are:
 cd pathly
 python -m pip install -e .
 pathly install codex       # prints the Codex marketplace setup
+pathly install codex --apply
 codex plugin marketplace add C:\tmp\pathly-marketplace
 ```
 
@@ -210,6 +263,21 @@ commands for its own UI. Codex support currently exposes the skill workflow
 layer through plugin skills and the `pathly` CLI fallback. Claude-style custom
 agent files remain available as role contracts, but full multi-tool adapter
 packaging is tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
+
+Pathly also ships `.agents/skills/` as a direct skill-discovery compatibility
+layer. Those files mirror `adapters/codex/skills/` exactly, so tools that scan
+`.agents/skills/<name>/SKILL.md` can use the same Codex-safe wrappers without a
+Codex marketplace install. Do not edit `.agents/skills/` directly; update the
+Codex adapter wrappers and refresh the mirror.
+
+Supported surfaces:
+
+```text
+Claude Code:  /pathly <request> or /path <request>
+Codex:        Use Pathly <request>
+Direct skill: .agents/skills/pathly/SKILL.md
+CLI fallback: pathly --project-dir <project> help
+```
 
 ### Pathly CLI
 
