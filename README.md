@@ -533,7 +533,6 @@ tier rules, per-agent sub-agent lists, and ownership guarantees.
 | `bmad-import` | `/pathly bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
 | `verify-state` | `/pathly verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
 | `meet` | `/pathly meet [feature]` | Consult one relevant role during an active feature flow; writes a read-only consult note and offers planner/architect promotion |
-| meet | /pathly meet [feature] | Consult one relevant role during an active feature flow; writes a read-only consult note and offers planner/architect promotion |
 | `debug` | `/pathly debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
 | `explore` | `/pathly explore <question>` | Investigation mode: answer codebase questions without building anything |
 | `help` | `/pathly help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
