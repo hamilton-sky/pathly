@@ -94,6 +94,8 @@ def test_install_codex_prints_complete_marketplace_setup(capsys):
     output = capsys.readouterr().out
     assert "pathly-local" in output
     assert "marketplace.json" in output
+    assert "$plugin\\skills" in output
+    assert '"path": "./plugins/pathly"' in output
     assert "codex plugin marketplace add $market" in output
     assert "globally on this machine" in output
 

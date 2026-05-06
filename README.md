@@ -133,9 +133,12 @@ cd pathly
 python -m pip install -e .
 
 $market = "C:\tmp\pathly-marketplace"
+$plugin = "$market\plugins\pathly"
 New-Item -ItemType Directory -Path "$market\.agents\plugins" -Force
-New-Item -ItemType Directory -Path "$market\plugins" -Force
-New-Item -ItemType Junction -Path "$market\plugins\pathly" -Target (Get-Location)
+New-Item -ItemType Directory -Path "$plugin" -Force
+New-Item -ItemType Junction -Path "$plugin\.codex-plugin" -Target ".\adapters\codex\.codex-plugin"
+New-Item -ItemType Junction -Path "$plugin\skills" -Target ".\adapters\codex\skills"
+New-Item -ItemType Junction -Path "$plugin\core" -Target ".\core"
 @'
 {
   "name": "pathly-local",
@@ -147,7 +150,7 @@ New-Item -ItemType Junction -Path "$market\plugins\pathly" -Target (Get-Location
       "name": "pathly",
       "source": {
         "source": "local",
-        "path": "./plugins/pathly/adapters/codex"
+        "path": "./plugins/pathly"
       },
       "policy": {
         "installation": "AVAILABLE",
