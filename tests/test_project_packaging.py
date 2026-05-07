@@ -96,6 +96,10 @@ def test_claude_install_paths_use_pathly_plugin_dir():
     assert '$PluginName = "pathly"' in install_ps1
     assert "plugins/pathly" in setup_hook_sh
     assert "plugins\\pathly" in setup_hook_ps1
+    assert "classify_feedback.py" in setup_hook_sh
+    assert "inject_feedback_ttl.py" in setup_hook_sh
+    assert "classify_feedback.py" in setup_hook_ps1
+    assert "inject_feedback_ttl.py" in setup_hook_ps1
 
 
 def test_readme_slash_commands_map_to_skills():

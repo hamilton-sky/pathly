@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup-hook.sh — Register the classify_feedback hook in ~/.claude/settings.json
+# setup-hook.sh — Register Pathly feedback hooks in ~/.claude/settings.json
 # This is the ONLY thing that touches ~/.claude/ after plugin install.
 # Run once after installing the plugin.
 #
@@ -10,9 +10,11 @@ set -euo pipefail
 
 SETTINGS="$HOME/.claude/settings.json"
 PLUGIN_DIR="$HOME/.claude/plugins/pathly"
-HOOK_CMD="python $PLUGIN_DIR/hooks/classify_feedback.py"
+CLASSIFY_HOOK_CMD="python $PLUGIN_DIR/hooks/classify_feedback.py"
+TTL_HOOK_CMD="python $PLUGIN_DIR/hooks/inject_feedback_ttl.py"
 
 # Ensure settings.json exists
+mkdir -p "$(dirname "$SETTINGS")"
 if [ ! -f "$SETTINGS" ]; then
   echo '{}' > "$SETTINGS"
 fi
@@ -23,7 +25,10 @@ python3 - <<PYEOF
 import json, sys
 
 settings_file = "$SETTINGS"
-hook_cmd = "$HOOK_CMD"
+hook_cmds = [
+    "$CLASSIFY_HOOK_CMD",
+    "$TTL_HOOK_CMD",
+]
 action = "$ACTION"
 
 with open(settings_file) as f:
@@ -34,10 +39,17 @@ with open(settings_file) as f:
 
 hooks = settings.setdefault("hooks", {}).setdefault("PostToolUse", [])
 
+def hook_command(h):
+    commands = [
+        hh.get("command", "")
+        for hh in h.get("hooks", [])
+    ]
+    return commands[0] if commands else ""
+
 def is_our_hook(h):
     return h.get("matcher") == "Write" and any(
-        "classify_feedback.py" in hh.get("command", "")
-        for hh in h.get("hooks", [])
+        script in hook_command(h)
+        for script in ("classify_feedback.py", "inject_feedback_ttl.py")
     )
 
 if action == "--remove":
@@ -51,15 +63,22 @@ if action == "--remove":
     else:
         print("Hook was not registered — nothing to remove")
 else:
-    if any(is_our_hook(h) for h in hooks):
-        print("Hook already registered in settings.json — skipped")
-    else:
+    existing = {hook_command(h) for h in hooks if h.get("matcher") == "Write"}
+    added = []
+    for hook_cmd in hook_cmds:
+        if hook_cmd in existing:
+            continue
         hooks.append({
             "matcher": "Write",
             "hooks": [{"type": "command", "command": hook_cmd}]
         })
+        added.append(hook_cmd)
+    if added:
         with open(settings_file, "w") as f:
             json.dump(settings, f, indent=2)
-        print("Hook registered in settings.json")
-        print(f"Command: {hook_cmd}")
+        print("Hooks registered in settings.json")
+        for hook_cmd in added:
+            print(f"Command: {hook_cmd}")
+    else:
+        print("Hooks already registered in settings.json — skipped")
 PYEOF

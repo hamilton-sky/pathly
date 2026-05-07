@@ -81,6 +81,7 @@ echo "Installing hooks..."
 mkdir -p "$CLAUDE_DIR/plugins/$PLUGIN_NAME/hooks"
 cp "$SCRIPT_DIR/hooks/"*.py "$CLAUDE_DIR/plugins/$PLUGIN_NAME/hooks/"
 echo "  + classify_feedback.py"
+echo "  + inject_feedback_ttl.py"
 
 echo ""
 echo "Done. Installed to $CLAUDE_DIR"

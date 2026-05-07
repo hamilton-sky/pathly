@@ -61,7 +61,7 @@ def test_help_shows_plan_done_menu_when_progress_has_remaining_work(tmp_path, ca
     assert "checkout-flow - Plan ready" in output
     assert "Conv: 1 done . 1 remaining" in output
     assert "[1] Continue building" in output
-    assert "Reply with 1-6:" in output
+    assert "Reply with 1-7:" in output
 
 
 def test_go_suggests_flow_command(tmp_path, capsys):
@@ -197,10 +197,8 @@ def test_help_plan_menu_exposes_meet(tmp_path, capsys):
     cli.main(["--project-dir", str(tmp_path), "init", "checkout-flow"])
     progress = tmp_path / "plans" / "checkout-flow" / "PROGRESS.md"
     progress.write_text(
-    progress.write_text(
         "# Progress\n\n| Conversation | Status |\n|---|---|\n| 1 | DONE |\n| 2 | TODO |\n",
         encoding="utf-8",
-    )
     )
     capsys.readouterr()
 
