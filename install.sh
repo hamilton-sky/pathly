@@ -8,10 +8,10 @@
 # What it installs:
 #   adapters/claude-code/skills/ → ~/.claude/skills/   (slash commands)
 #   adapters/claude-code/agents/ → ~/.claude/agents/   (sub-agents)
-#   hooks/    → ~/.claude/plugins/pathly/hooks/
 #
 # After install, register the feedback hook (optional):
-#   bash scripts/setup-hook.sh
+#   python -m pip install -e .
+#   pathly hooks install claude
 
 set -euo pipefail
 
@@ -42,7 +42,7 @@ if [ "$UNINSTALL" = "--uninstall" ]; then
     done
     rm -rf "$CLAUDE_DIR/plugins/$PLUGIN_NAME"
     echo ""
-    echo "Uninstalled. Run 'bash scripts/setup-hook.sh --remove' to remove the hook."
+    echo "Uninstalled. Remove Pathly entries from ~/.claude/settings.json if desired."
     echo "Note: skills and agents in ~/.claude/ must be removed manually if desired."
     echo ""
     exit 0
@@ -75,17 +75,10 @@ mkdir -p "$CLAUDE_DIR/plugins/$PLUGIN_NAME/templates"
 cp -r "$CORE_TEMPLATE_SOURCE/"* "$CLAUDE_DIR/plugins/$PLUGIN_NAME/templates/"
 echo "  + templates/plan/"
 
-# Hooks runtime
-echo ""
-echo "Installing hooks..."
-mkdir -p "$CLAUDE_DIR/plugins/$PLUGIN_NAME/hooks"
-cp "$SCRIPT_DIR/hooks/"*.py "$CLAUDE_DIR/plugins/$PLUGIN_NAME/hooks/"
-echo "  + classify_feedback.py"
-echo "  + inject_feedback_ttl.py"
-
 echo ""
 echo "Done. Installed to $CLAUDE_DIR"
 echo ""
 echo "Next step — register the feedback hook (optional):"
-echo "  bash scripts/setup-hook.sh"
+echo "  python -m pip install -e ."
+echo "  pathly hooks install claude"
 echo ""

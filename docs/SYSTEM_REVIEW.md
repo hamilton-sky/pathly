@@ -158,7 +158,7 @@ ttl_hours: 24
 **תוצאה:** "deleted = resolved" הופך מאמינות-במשמעת ל-invariant נאכף.
 
 **יישום (2026-05-04):**
-- `hooks/inject_feedback_ttl.py` — PostToolUse hook שמזריק frontmatter לכל feedback file שנכתב ל-`plans/*/feedback/`
+- `pathly/hooks/inject_feedback_ttl.py` — PostToolUse hook שמזריק frontmatter לכל feedback file שנכתב ל-`plans/*/feedback/`
 - `docs/FEEDBACK_PROTOCOL.md` — תיעוד מלא של הפורמט ומשמעות כל שדה
 - `skills/verify-state/SKILL.md` — הוסיפו Check A1 (orphan + TTL) לפני Check A2 (git-based fallback)
 
@@ -176,7 +176,7 @@ missing newline) כ-`[AUTO_FIX]` ולכלול patch קצר ב-`REVIEW_FAILURES.m
 **יישום (2026-05-04):**
 - `agents/reviewer.md` — נוסף קטע "[AUTO_FIX]" עם קריטריונים ברורים לאילו ממצאים עומדים בסף (unused import, trailing newline, typo בstring) ואילו לא (כל שינוי שמשפיע על runtime)
 - `docs/FEEDBACK_PROTOCOL.md` — תיעוד פורמט ה-patch ב-REVIEW_FAILURES.md + כללי הbuilder לטיפול בו
-- `scripts/team_flow.py` — `p_fix_review` עודכן עם Step 1 (AUTO_FIX batch) לפני Step 2 (regular violations)
+- `pathly/team_flow/manager.py` — `p_fix_review` עודכן עם Step 1 (AUTO_FIX batch) לפני Step 2 (regular violations)
 
 ### 3.3 Cost meter ב-RETRO.md [ערך בינוני-גבוה, עלות בינונית] ✅ DONE
 
@@ -198,7 +198,7 @@ Cost: $4.20
 
 **יישום (2026-05-04):**
 - `orchestrator/events.py` — `AgentDoneEvent` קיבל שדות `model`, `tokens_in`, `tokens_out`, `cost_usd` (ברירת מחדל 0)
-- `scripts/team_flow.py` — `run_claude` מוסיף `--output-format json` ומחזיר `(returncode, usage)`. `_run_agent` מעביר usage ל-`AgentDoneEvent`. נוסף `import json`.
+- `pathly/team_flow/manager.py` — `run_claude` מחזיר `(returncode, usage)`. `_run_agent` מעביר usage ל-`AgentDoneEvent`.
 - `skills/retro/SKILL.md` — Step 3 קורא `EVENTS.jsonl`, מחשב cost per agent, כותב Cost Summary table ב-`RETRO.md` (רק אם יש נתונים אמיתיים)
 
 ### 3.4 Rigor escalator במקום בחירה מראש [ערך בינוני, עלות בינונית] ✅ DONE
@@ -349,7 +349,7 @@ INVESTIGATING → REPRODUCING → ROOT_CAUSE_FOUND → FIXING → VERIFYING → 
 - FSM drift (STATE=BUILDING אבל אין conversation in_progress) → עצירה + הפנייה ל-`/help --doctor`
 
 **יישום (2026-05-04):**
-- `scripts/team_flow.py` — `_startup_verify()`, `_load_event_ids()`, `_check_feedback_ttl()` — נקראים מ-`run()` אחרי `_pre_flight()`
+- `pathly/team_flow/manager.py` — `_startup_verify()` נקרא מ-`run()` אחרי `_pre_flight()`
 - `skills/team-flow/SKILL.md` — סעיף "Startup recovery" הורחב עם טבלת התנהגות לפי מצב ומצב-פעולה (normal vs fast)
 - `docs/ARCHITECTURE_AGENTS.md` — "Startup Check" נוסף לתרשים pipeline לפני Stage 1
 - `README.md` — נוסף לרשימת "New in this version"

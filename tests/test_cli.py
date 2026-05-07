@@ -14,9 +14,9 @@ from pathly.cli.installers import codex as codex_installer
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_retained_cli_bridge_runs_as_direct_script():
+def test_cli_package_runs_as_module():
     result = subprocess.run(
-        [sys.executable, "pathly/cli-2.py", "--help"],
+        [sys.executable, "-m", "pathly.cli", "--help"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -95,10 +95,11 @@ def test_flow_alias_uses_team_flow_root(tmp_path, monkeypatch):
     seen = {}
 
     class FakeDriver:
-        def __init__(self, feature, mode, entry):
+        def __init__(self, feature, mode, entry, runner):
             seen["feature"] = feature
             seen["mode"] = mode
             seen["entry"] = entry
+            seen["runner"] = runner
             seen["root"] = team_flow.REPO_ROOT
 
         def run(self):
@@ -113,6 +114,7 @@ def test_flow_alias_uses_team_flow_root(tmp_path, monkeypatch):
         "feature": "checkout-flow",
         "mode": "interactive",
         "entry": "test",
+        "runner": None,
         "root": Path(tmp_path).resolve(),
         "ran": True,
     }
@@ -166,10 +168,11 @@ def test_run_uses_current_project_as_team_flow_root(tmp_path, monkeypatch):
     seen = {}
 
     class FakeDriver:
-        def __init__(self, feature, mode, entry):
+        def __init__(self, feature, mode, entry, runner):
             seen["feature"] = feature
             seen["mode"] = mode
             seen["entry"] = entry
+            seen["runner"] = runner
             seen["root"] = team_flow.REPO_ROOT
 
         def run(self):
@@ -184,7 +187,37 @@ def test_run_uses_current_project_as_team_flow_root(tmp_path, monkeypatch):
         "feature": "checkout-flow",
         "mode": "fast",
         "entry": "build",
+        "runner": None,
         "root": Path(tmp_path).resolve(),
+        "ran": True,
+    }
+
+
+def test_flow_passes_runner_selection_to_driver(tmp_path, monkeypatch):
+    seen = {}
+
+    class FakeDriver:
+        def __init__(self, feature, mode, entry, runner):
+            seen["feature"] = feature
+            seen["mode"] = mode
+            seen["entry"] = entry
+            seen["runner"] = runner
+
+        def run(self):
+            seen["ran"] = True
+
+    monkeypatch.setattr(team_flow, "Driver", FakeDriver)
+
+    result = cli.main([
+        "--project-dir", str(tmp_path), "flow", "checkout-flow", "--entry", "build", "--runner", "codex",
+    ])
+
+    assert result == 0
+    assert seen == {
+        "feature": "checkout-flow",
+        "mode": "interactive",
+        "entry": "build",
+        "runner": "codex",
         "ran": True,
     }
 

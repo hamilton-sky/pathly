@@ -9,6 +9,7 @@ import pytest
 from orchestrator.constants import FeedbackFile, FSMState, Mode
 from orchestrator.state import State
 from pathly import team_flow
+from pathly.runners import ClaudeRunner, CodexRunner
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -21,9 +22,9 @@ CORE_PLAN_FILES = {
 }
 
 
-def test_retained_team_flow_bridge_runs_as_direct_script():
+def test_team_flow_package_runs_as_module():
     result = subprocess.run(
-        [sys.executable, "pathly/team_flow.py", "--help"],
+        [sys.executable, "-m", "pathly.team_flow", "--help"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -87,6 +88,44 @@ def test_test_entry_accepts_complete_lite_plan(tmp_path, monkeypatch):
     driver.skip_to_entry()
 
     assert driver.state.current == FSMState.TESTING
+
+
+def test_runner_selection_defaults_to_claude_and_honors_env(tmp_path, monkeypatch):
+    monkeypatch.delenv("PATHLY_RUNNER", raising=False)
+    driver = make_driver(tmp_path, monkeypatch)
+
+    assert isinstance(driver.runner, ClaudeRunner)
+
+    monkeypatch.setenv("PATHLY_RUNNER", "auto")
+    monkeypatch.setattr(ClaudeRunner, "is_available", lambda self: True)
+    driver = make_driver(tmp_path, monkeypatch)
+
+    assert isinstance(driver.runner, ClaudeRunner)
+
+    monkeypatch.setenv("PATHLY_RUNNER", "codex")
+    driver = make_driver(tmp_path, monkeypatch)
+
+    assert isinstance(driver.runner, CodexRunner)
+
+    driver = team_flow.Driver(
+        feature="demo",
+        mode=Mode.INTERACTIVE,
+        entry="build",
+        repo_root=tmp_path,
+        runner="claude",
+    )
+
+    assert isinstance(driver.runner, ClaudeRunner)
+
+
+def test_runner_auto_falls_back_to_codex_when_claude_is_unavailable(tmp_path, monkeypatch):
+    monkeypatch.setenv("PATHLY_RUNNER", "auto")
+    monkeypatch.setattr(ClaudeRunner, "is_available", lambda self: False)
+    monkeypatch.setattr(CodexRunner, "is_available", lambda self: True)
+
+    driver = make_driver(tmp_path, monkeypatch)
+
+    assert isinstance(driver.runner, CodexRunner)
 
 
 def test_feedback_file_create_and_delete_blocks_then_resumes(tmp_path, monkeypatch):

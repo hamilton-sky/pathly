@@ -120,7 +120,8 @@ cd pathly
 bash install.sh
 
 # Optional: register the auto-classification hook
-bash scripts/setup-hook.sh
+python -m pip install -e .
+pathly hooks install claude
 ```
 
 ```powershell
@@ -130,7 +131,8 @@ cd pathly
 .\install.ps1
 
 # Optional: register the auto-classification hook
-.\scripts\setup-hook.ps1
+python -m pip install -e .
+pathly hooks install claude
 ```
 
 **To uninstall:**
@@ -665,14 +667,11 @@ Then continue normally with `/pathly continue hotel-search` or `/pathly flow hot
 ├── agents/                    ← 11 behavioral contracts (.md files)
 ├── skills/                    ← installed Claude Code lifecycle skills
 └── plugins/pathly/
-    ├── hooks/
-    │   ├── classify_feedback.py    ← tags IMPL_QUESTIONS.md on write, splits [ARCH] questions
-    │   └── inject_feedback_ttl.py  ← injects TTL frontmatter into every feedback file on write
     └── templates/pathly plan/             ← plan file templates used by /pathly plan, /pathly prd-import, /pathly bmad-import
         └── *.template.md
 ```
 
-Run `bash scripts/setup-hook.sh` (or `.\scripts\setup-hook.ps1`) after install to register the hooks in `settings.json`.
+Run `pathly hooks install claude` after installing the Python package to register the optional feedback hooks in `settings.json`. The hook command uses `python -m pathly.hooks`.
 
 ---
 

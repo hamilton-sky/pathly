@@ -7,10 +7,10 @@
 # What it installs:
 #   adapters\claude-code\skills\ -> %USERPROFILE%\.claude\skills\ (slash commands)
 #   adapters\claude-code\agents\ -> %USERPROFILE%\.claude\agents\ (sub-agents)
-#   hooks\    -> %USERPROFILE%\.claude\plugins\pathly\hooks\
 #
 # After install, register the feedback hook (optional):
-#   .\scripts\setup-hook.ps1
+#   python -m pip install -e .
+#   pathly hooks install claude
 
 param([switch]$Uninstall)
 
@@ -41,7 +41,7 @@ if ($Uninstall) {
     $pluginDir = "$ClaudeDir\plugins\$PluginName"
     if (Test-Path $pluginDir) { Remove-Item -Recurse -Force $pluginDir }
     Write-Host ""
-    Write-Host "Uninstalled. Run '.\scripts\setup-hook.ps1 -Remove' to remove the hook."
+    Write-Host "Uninstalled. Remove Pathly entries from ~/.claude/settings.json if desired."
     Write-Host ""
     exit 0
 }
@@ -73,19 +73,10 @@ New-Item -ItemType Directory -Force -Path $templatesDir | Out-Null
 Copy-Item -Recurse -Force "$CoreTemplateSource\*" $templatesDir
 Write-Host "  + templates\plan\"
 
-# Hooks runtime
-Write-Host ""
-Write-Host "Installing hooks..."
-$hooksDir = "$ClaudeDir\plugins\$PluginName\hooks"
-New-Item -ItemType Directory -Force -Path $hooksDir | Out-Null
-Get-ChildItem "$ScriptDir\hooks" -Filter "*.py" | ForEach-Object {
-    Copy-Item -Force $_.FullName "$hooksDir\$($_.Name)"
-    Write-Host "  + $($_.Name)"
-}
-
 Write-Host ""
 Write-Host "Done. Installed to $ClaudeDir"
 Write-Host ""
 Write-Host "Next step -- register the feedback hook (optional):"
-Write-Host "  .\scripts\setup-hook.ps1"
+Write-Host "  python -m pip install -e ."
+Write-Host "  pathly hooks install claude"
 Write-Host ""

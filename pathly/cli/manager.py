@@ -15,12 +15,14 @@ from .constants import MEET_ALLOWED_ROLES
 from .context import ProjectContext
 from .help_command import HelpCommand
 from .helpers import feature_slug, validate_feature_name
+from .hooks_command import HooksCommand
 from .installers.codex import CodexInstaller
 from .meet_command import MeetCommand
 from .menus import MenuPrinter
 from orchestrator.constants import Mode
 from .plans import PlanRepository
 from pathly import team_flow
+from pathly.hooks.contracts import HookEvent
 
 
 class CliManager:
@@ -54,6 +56,8 @@ class CliManager:
             return HelpCommand(plans, menu).run(args.feature)
         if args.command == "meet":
             return MeetCommand(plans, menu, self.agent).run(args)
+        if args.command == "hooks":
+            return HooksCommand().run(args)
         if args.command == "explore":
             return self.run_simple_agent_route(ctx.root, "explore", args.topic, "Question")
         if args.command == "debug":
@@ -71,7 +75,12 @@ class CliManager:
         team_flow.REPO_ROOT = root
 
         mode = Mode.FAST if args.fast else Mode.INTERACTIVE
-        driver = team_flow.Driver(feature=args.feature, mode=mode, entry=args.entry)
+        driver = team_flow.Driver(
+            feature=args.feature,
+            mode=mode,
+            entry=args.entry,
+            runner=args.runner,
+        )
         if args.recover:
             driver.log(f"Recovered state: {driver.state.current}")
         driver.run()
@@ -198,6 +207,18 @@ class CliManager:
             help="Optional follow-up action after the consult note is written.",
         )
 
+        hooks = subparsers.add_parser("hooks", help="Run or configure portable Pathly hooks.")
+        hook_actions = hooks.add_subparsers(dest="hooks_action", required=True)
+        hook_run = hook_actions.add_parser("run", help="Run a hook event from a JSON payload.")
+        hook_run.add_argument("event", choices=[event.value for event in HookEvent])
+        hook_run.add_argument("--payload", required=True, help="JSON payload string, fixture path, or '-' for stdin.")
+
+        hook_config = hook_actions.add_parser("print-config", help="Print host hook configuration.")
+        hook_config.add_argument("host", choices=["claude", "codex", "cloud"])
+
+        hook_install = hook_actions.add_parser("install", help="Install host hook configuration.")
+        hook_install.add_argument("host", choices=["claude"])
+
         explore = subparsers.add_parser("explore", help="Expose the Pathly exploration workflow.")
         explore.add_argument("topic", nargs="*", help="Question or topic to explore.")
 
@@ -232,6 +253,12 @@ class CliManager:
         command.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")
         command.add_argument("--fast", action="store_true", help="Skip human pause points.")
         command.add_argument("--recover", action="store_true", help="Log reconstructed state before running.")
+        command.add_argument(
+            "--runner",
+            choices=team_flow.RUNNER_CHOICES,
+            default=None,
+            help=f"Agent runner to use (default: {team_flow.RUNNER_ENV_VAR} or claude).",
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:

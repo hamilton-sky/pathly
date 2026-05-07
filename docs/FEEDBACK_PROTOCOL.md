@@ -256,6 +256,6 @@ builder  ──► IMPL_QUESTIONS.md   ──► planner   ──► clarifies r
 
 If you have both types, write both files. If classification is genuinely unclear, use `[UNSURE]` and write to both — forced misclassification wastes more time than writing twice. Mixed files without tags will be routed incorrectly.
 
-**Auto-classification hook:** The framework installs a `PostToolUse` hook (`~/.claude/plugins/pathly/hooks/classify_feedback.py`) that fires whenever `IMPL_QUESTIONS.md` is written. It reads each question, calls Haiku to classify, rewrites the file with tags, and auto-splits `[ARCH]` questions into `DESIGN_QUESTIONS.md`. If questions are already tagged the hook exits immediately. If `ANTHROPIC_API_KEY` is not set it exits silently — the pipeline continues unaffected.
+**Auto-classification hook:** The framework can install a `PostToolUse` hook with `pathly hooks install claude`. It runs `python -m pathly.hooks post-tool-use` whenever relevant files are written. For `IMPL_QUESTIONS.md`, it reads each question, calls Haiku to classify, rewrites the file with tags, and auto-splits `[ARCH]` questions into `DESIGN_QUESTIONS.md`. If questions are already tagged the hook exits immediately. If `ANTHROPIC_API_KEY` is not set it exits silently — the pipeline continues unaffected.
 
 No other escalation paths exist. Agents do not communicate outside these defined channels.

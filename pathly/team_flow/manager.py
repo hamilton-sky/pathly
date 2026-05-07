@@ -7,6 +7,7 @@ access, logging, and configuration out to focused collaborators.
 from __future__ import annotations
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -14,7 +15,6 @@ from pathlib import Path
 from .config import DriverConfig, MAX_RETRIES
 from .filesystem import TeamFlowFiles
 from .flow_logging import DriverLogger
-from orchestrator.agent_runner import AgentRunner
 from orchestrator.constants import Agent, FeedbackFile, FSMState, Mode
 from orchestrator.eventlog import EventLog
 from orchestrator.events import (
@@ -31,14 +31,24 @@ from orchestrator.events import (
 from orchestrator.feedback import highest_priority_feedback
 from orchestrator.reducer import reduce
 from orchestrator.state import State
+from pathly.runners import ClaudeRunner, CodexRunner, Runner
 from .prompts import PromptFactory
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+RUNNER_ENV_VAR = "PATHLY_RUNNER"
+RUNNER_CHOICES = ("claude", "codex", "auto")
 
 
 class TeamFlowDriver:
-    def __init__(self, feature: str, mode: str, entry: str, repo_root: Path | None = None):
+    def __init__(
+        self,
+        feature: str,
+        mode: str,
+        entry: str,
+        repo_root: Path | None = None,
+        runner: str | Runner | None = None,
+    ):
         self.config = DriverConfig(
             repo_root=(repo_root or REPO_ROOT),
             feature=feature,
@@ -57,11 +67,7 @@ class TeamFlowDriver:
         self.prompts = PromptFactory(feature)
         self.eventlog = EventLog(feature=feature, base_path=str(self.config.repo_root / "plans"))
         self.state = self.eventlog.reconstruct_state()
-        self.agent_runner = AgentRunner(
-            repo_root=self.config.repo_root,
-            log=self.log,
-            on_timeout=self._handle_agent_timeout,
-        )
+        self.runner = self._select_runner(runner)
 
     @property
     def log_file(self) -> Path:
@@ -81,7 +87,42 @@ class TeamFlowDriver:
         return self.state
 
     def run_claude(self, prompt: str) -> tuple[int, dict]:
-        return self.agent_runner.run(prompt)
+        result = self.runner.run(prompt)
+        return result.return_code, result.usage
+
+    def _select_runner(self, requested: str | Runner | None) -> Runner:
+        if requested and not isinstance(requested, str):
+            return requested
+
+        selected = (requested or os.environ.get(RUNNER_ENV_VAR) or "claude").lower()
+        if selected not in RUNNER_CHOICES:
+            raise ValueError(f"Unsupported runner '{selected}'. Choose one of: {', '.join(RUNNER_CHOICES)}")
+
+        if selected == "auto":
+            claude = ClaudeRunner(
+                repo_root=self.config.repo_root,
+                log=self.log,
+                on_timeout=self._handle_agent_timeout,
+            )
+            if claude.is_available():
+                return claude
+            return CodexRunner(
+                repo_root=self.config.repo_root,
+                log=self.log,
+                on_timeout=self._handle_agent_timeout,
+            )
+
+        if selected == "claude":
+            return ClaudeRunner(
+                repo_root=self.config.repo_root,
+                log=self.log,
+                on_timeout=self._handle_agent_timeout,
+            )
+        return CodexRunner(
+            repo_root=self.config.repo_root,
+            log=self.log,
+            on_timeout=self._handle_agent_timeout,
+        )
 
     def _handle_agent_timeout(self, timeout: int) -> None:
         self.emit(SystemEvent(action="TIMEOUT", metadata={"timeout_seconds": timeout}))
@@ -289,10 +330,8 @@ class TeamFlowDriver:
                 sys.exit(0)
 
     def _pre_flight(self) -> bool:
-        try:
-            subprocess.run(["claude", "--version"], capture_output=True, check=True)
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            print("Error: 'claude' CLI not found. Install Claude Code first.")
+        if not self.runner.is_available():
+            print(f"Error: '{self.runner.name}' CLI not found. Install {self.runner.name} first.")
             return False
         return True
 
@@ -426,13 +465,19 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Reconstruct state from EVENTS.jsonl and resume (default behavior)",
     )
+    parser.add_argument(
+        "--runner",
+        choices=RUNNER_CHOICES,
+        default=None,
+        help=f"Agent runner to use (default: {RUNNER_ENV_VAR} or claude)",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> None:
     args = build_parser().parse_args(argv)
     mode = Mode.FAST if args.fast else Mode.INTERACTIVE
-    driver = TeamFlowDriver(feature=args.feature, mode=mode, entry=args.entry)
+    driver = TeamFlowDriver(feature=args.feature, mode=mode, entry=args.entry, runner=args.runner)
     if args.recover:
         driver.log(f"Recovered state: {driver.state.current}")
     driver.run()

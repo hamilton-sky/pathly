@@ -76,8 +76,36 @@ def test_python_distribution_is_pathly():
     assert pyproject["tool"]["setuptools"]["packages"]["find"]["include"] == [
         "orchestrator*",
         "pathly*",
-        "scripts*",
     ]
+    assert "scripts*" not in pyproject["tool"]["setuptools"]["packages"]["find"]["include"]
+
+
+def test_distribution_declares_runtime_assets_for_build_artifacts():
+    """Built artifacts should carry core prompts/templates and adapter wrappers."""
+    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    data_files = pyproject["tool"]["setuptools"]["data-files"]
+
+    required_targets = {
+        "pathly/core/prompts": "core/prompts/*.md",
+        "pathly/core/agents": "core/agents/*.md",
+        "pathly/core/templates/plan": "core/templates/plan/*.template.md",
+        "pathly/adapters/codex/.codex-plugin": "adapters/codex/.codex-plugin/plugin.json",
+        "pathly/adapters/codex/skills/pathly": "adapters/codex/skills/pathly/SKILL.md",
+        "pathly/adapters/claude-code/.claude-plugin": "adapters/claude-code/.claude-plugin/plugin.json",
+        "pathly/adapters/claude-code/agents": "adapters/claude-code/agents/*.md",
+        "pathly/adapters/claude-code/skills/pathly": "adapters/claude-code/skills/pathly/SKILL.md",
+    }
+
+    for install_dir, source in required_targets.items():
+        assert source in data_files[install_dir]
+
+    declared_sources = {
+        source
+        for sources in data_files.values()
+        for source in sources
+    }
+    assert not any(source.startswith("scripts/") for source in declared_sources)
+    assert not any(source.startswith("ho" + "oks/") for source in declared_sources)
 
 
 def test_orchestrator_stays_top_level_runtime_package():
@@ -91,17 +119,13 @@ def test_claude_install_paths_use_pathly_plugin_dir():
     """Installers should install runtime plugin files under the Pathly name."""
     install_sh = (REPO_ROOT / "install.sh").read_text(encoding="utf-8")
     install_ps1 = (REPO_ROOT / "install.ps1").read_text(encoding="utf-8")
-    setup_hook_sh = (REPO_ROOT / "scripts" / "setup-hook.sh").read_text(encoding="utf-8")
-    setup_hook_ps1 = (REPO_ROOT / "scripts" / "setup-hook.ps1").read_text(encoding="utf-8")
 
     assert 'PLUGIN_NAME="pathly"' in install_sh
     assert '$PluginName = "pathly"' in install_ps1
-    assert "plugins/pathly" in setup_hook_sh
-    assert "plugins\\pathly" in setup_hook_ps1
-    assert "classify_feedback.py" in setup_hook_sh
-    assert "inject_feedback_ttl.py" in setup_hook_sh
-    assert "classify_feedback.py" in setup_hook_ps1
-    assert "inject_feedback_ttl.py" in setup_hook_ps1
+    assert "pathly hooks install claude" in install_sh
+    assert "pathly hooks install claude" in install_ps1
+    assert "scripts/setup" + "-hook.sh" not in install_sh
+    assert "scripts\\setup" + "-hook.ps1" not in install_ps1
 
 
 def test_readme_slash_commands_map_to_skills():

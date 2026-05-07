@@ -1,39 +1,16 @@
-"""Agent subprocess runner for Pathly workflow drivers."""
+"""Compatibility bridge for the Claude runner."""
 
 from __future__ import annotations
 
-import json
-import os
-import subprocess
-import sys
 from collections.abc import Callable
 from pathlib import Path
 
-
-ALLOWED_TOOLS = "Edit,Write,Read,Glob,Grep,Bash,Skill,TodoWrite,WebSearch,WebFetch,Agent"
-DEFAULT_TIMEOUT_SECONDS = 1800
-TIMEOUT_ENV_VAR = "CLAUDE_AGENT_TIMEOUT"
-
-
-def parse_usage(stdout: str) -> dict:
-    """Extract token and cost fields from claude JSON output."""
-    if not stdout:
-        return {}
-    try:
-        data = json.loads(stdout)
-        usage = data.get("usage", {})
-        return {
-            "model": data.get("model", ""),
-            "tokens_in": usage.get("input_tokens", 0),
-            "tokens_out": usage.get("output_tokens", 0),
-            "cost_usd": data.get("cost_usd", 0.0),
-        }
-    except (json.JSONDecodeError, AttributeError):
-        return {}
+from pathly.runners.claude import ALLOWED_TOOLS, TIMEOUT_ENV_VAR, ClaudeRunner, parse_usage
+from pathly.runners.base import DEFAULT_TIMEOUT_SECONDS
 
 
 class AgentRunner:
-    """Run Claude agents and parse their usage payloads."""
+    """Run Claude agents and return the legacy ``(returncode, usage)`` tuple."""
 
     def __init__(
         self,
@@ -41,45 +18,17 @@ class AgentRunner:
         log: Callable[[str], None] | None = None,
         on_timeout: Callable[[int], None] | None = None,
         allowed_tools: str = ALLOWED_TOOLS,
-        run_command: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+        run_command: Callable | None = None,
     ):
-        self.repo_root = Path(repo_root)
-        self.log = log
-        self.on_timeout = on_timeout
-        self.allowed_tools = allowed_tools
-        self.run_command = run_command
+        self.runner = ClaudeRunner(
+            repo_root=Path(repo_root),
+            log=log,
+            on_timeout=on_timeout,
+            allowed_tools=allowed_tools,
+            **({"run_command": run_command} if run_command else {}),
+        )
 
     def run(self, prompt: str) -> tuple[int, dict]:
         """Run claude agent. Returns (returncode, usage) where usage may be empty."""
-        timeout = int(os.environ.get(TIMEOUT_ENV_VAR, str(DEFAULT_TIMEOUT_SECONDS)))
-        if self.log:
-            self.log(">>> Spawning claude agent...")
-        try:
-            result = self.run_command(
-                [
-                    "claude",
-                    "-p",
-                    prompt,
-                    "--allowedTools",
-                    self.allowed_tools,
-                    "--output-format",
-                    "json",
-                ],
-                cwd=str(self.repo_root),
-                capture_output=True,
-                text=True,
-                timeout=timeout,
-            )
-        except subprocess.TimeoutExpired:
-            if self.log:
-                self.log(f"[ERROR] Agent timed out after {timeout}s.")
-            if self.on_timeout:
-                self.on_timeout(timeout)
-            return 1, {}
-
-        usage = parse_usage(result.stdout)
-        if result.stdout:
-            print(result.stdout, end="")
-        if result.stderr:
-            print(result.stderr, end="", file=sys.stderr)
-        return result.returncode, usage
+        result = self.runner.run(prompt)
+        return result.return_code, result.usage

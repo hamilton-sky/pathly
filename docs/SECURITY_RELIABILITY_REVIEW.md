@@ -21,10 +21,9 @@ security pass over generated prompts and trusted/untrusted file boundaries.
 
 Files reviewed:
 
-- `hooks/classify_feedback.py`
-- `hooks/inject_feedback_ttl.py`
-- `scripts/setup-hook.sh`
-- `scripts/setup-hook.ps1`
+- `pathly/hooks/classify_feedback.py`
+- `pathly/hooks/inject_feedback_ttl.py`
+- `pathly/cli/hooks_command.py`
 
 Risk:
 
@@ -68,8 +67,8 @@ Production recommendation:
 
 Files reviewed:
 
-- `scripts/team_flow.py`
-- `scripts/team-flow-auto.sh`
+- `pathly/team_flow/manager.py`
+- `pathly/runners/`
 - skill docs that instruct `git diff`, `git status`, and verification commands
 
 Risk:
@@ -84,22 +83,23 @@ Mitigation today:
 - Python subprocess calls use argument lists rather than shell string
   interpolation.
 - The main Python driver runs from the repository root.
-- The reviewer prompt in `scripts/team_flow.py` now reviews working-tree changes
+- The reviewer prompt in `pathly/team_flow/manager.py` reviews working-tree changes
   with `git diff HEAD -- . ':(exclude)plans/'`.
 - Pre-flight checks stop when `claude` is unavailable.
 
 Remaining gap:
 
 - `subprocess.run()` calls do not set timeouts.
-- The legacy `scripts/team-flow-auto.sh` still contains `git diff HEAD~1 HEAD`
-  prompts and should be updated or deprecated.
+- The legacy shell driver has been removed; runner subprocess policy now lives
+  behind the Python runner interface.
 - Failure handling varies by stage; some warnings proceed while other failures
   stop.
 
 Production recommendation:
 
 - Add subprocess timeouts and clear timeout messages for all supporting subprocess calls.
-- Update or remove the legacy shell driver before a production release.
+- Keep runner timeout and failure policy covered by focused tests before a
+  production release.
 - Add smoke tests that mock `subprocess.run()` for clean, failed, and timeout
   cases.
 - Define a single policy for when subprocess failure blocks the pipeline versus
@@ -179,7 +179,7 @@ Files reviewed:
 - `orchestrator/eventlog.py`
 - `orchestrator/reducer.py`
 - `orchestrator/state.py`
-- `scripts/team_flow.py`
+- `pathly/team_flow/manager.py`
 - feedback-file protocol docs
 
 Risk:
@@ -217,7 +217,7 @@ Production recommendation:
 
 Files reviewed:
 
-- `scripts/team_flow.py`
+- `pathly/team_flow/manager.py`
 - `skills/team-flow/SKILL.md`
 - `docs/ORCHESTRATOR_FSM.md`
 - `docs/FEEDBACK_PROTOCOL.md`

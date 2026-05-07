@@ -400,7 +400,7 @@ See `docs/FEEDBACK_PROTOCOL.md` for formats and `docs/ORCHESTRATOR_FSM.md` for s
 
 ### TTL frontmatter (orphan detection)
 
-Every feedback file gets a YAML frontmatter block injected by `hooks/inject_feedback_ttl.py`:
+Every feedback file gets a YAML frontmatter block injected by `python -m pathly.hooks post-tool-use`:
 
 ```yaml
 ---
@@ -765,7 +765,7 @@ The rest of the pipeline is identical.
 │   ├── lessons/SKILL.md
 │   ├── archive/SKILL.md
 │   └── prd-import/SKILL.md
-├── hooks/
+├── pathly/hooks/
 │   └── classify_feedback.py    ← PostToolUse/Write — auto-tags IMPL_QUESTIONS.md
 └── templates/plan/
     ├── USER_STORIES.template.md
@@ -780,5 +780,5 @@ The rest of the pipeline is identical.
 .claude/  (project-local — defined per project, not documented here)
 ├── rules/    ← project-specific conventions
 ├── skills/   ← project-specific tools
-└── hooks/    ← project-specific guards
+└── host hooks    ← project-specific guards
 ```
