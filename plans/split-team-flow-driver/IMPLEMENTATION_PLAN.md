@@ -11,6 +11,7 @@ Pathly skill prompts. This plan starts after the current test suite is green.
 ### Phase 1: Extract agent runner
 **Layer:** Runtime orchestration
 **Delivers stories:** S1.1
+**Depends on:** Baseline `pytest -q` is green before starting.
 **Files:**
 - `orchestrator/agent_runner.py` - new focused runner for Claude subprocess calls.
 - `scripts/team_flow.py` - keep `Driver.run_claude(...)` as a thin wrapper.
@@ -29,6 +30,7 @@ Pathly skill prompts. This plan starts after the current test suite is green.
 ### Phase 2: Extract feedback protocol helpers
 **Layer:** Runtime orchestration / file protocol
 **Delivers stories:** S1.2
+**Depends on:** Phase 1 is complete and runner extraction tests pass.
 **Files:**
 - `orchestrator/feedback.py` - new helpers for feedback file scanning, priority selection, and TTL parsing if needed.
 - `scripts/team_flow.py` - delegate feedback scanning and priority logic.
@@ -47,6 +49,7 @@ Pathly skill prompts. This plan starts after the current test suite is green.
 ### Phase 3: Slim the driver around collaborators
 **Layer:** Runtime orchestration
 **Delivers stories:** S1.3
+**Depends on:** Phases 1 and 2 are complete, so the driver can delegate to both extracted collaborators.
 **Files:**
 - `scripts/team_flow.py` - simplify `Driver` by using `AgentRunner` and feedback helpers consistently.
 - `tests/test_team_flow_smoke.py` - update or extend smoke tests only where needed.

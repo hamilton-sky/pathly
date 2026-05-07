@@ -8,6 +8,7 @@ with `pytest -q` passing.
 ## Conversation 1: Extract agent runner (Phase 1)
 
 **Stories delivered:** S1.1
+**Depends on:** Baseline `pytest -q` is green before starting.
 
 **Prompt to use:**
 ```text
@@ -39,6 +40,7 @@ After done, update `plans/split-team-flow-driver/PROGRESS.md` Conv 1 to DONE.
 ## Conversation 2: Extract feedback helpers (Phase 2)
 
 **Stories delivered:** S1.2
+**Depends on:** Conversation 1 is DONE and runner extraction tests pass.
 
 **Prompt to use:**
 ```text
@@ -70,6 +72,7 @@ After done, update `plans/split-team-flow-driver/PROGRESS.md` Conv 2 to DONE.
 ## Conversation 3: Slim Driver around collaborators (Phase 3)
 
 **Stories delivered:** S1.3
+**Depends on:** Conversations 1 and 2 are DONE, so both extracted collaborators exist.
 
 **Prompt to use:**
 ```text

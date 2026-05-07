@@ -14,7 +14,6 @@ Usage:
 """
 
 import sys
-import os
 import subprocess
 import json
 import argparse
@@ -34,19 +33,10 @@ from orchestrator.events import (
 from orchestrator.reducer import reduce
 from orchestrator.eventlog import EventLog
 from orchestrator.constants import FSMState, Agent, FeedbackFile, Mode, Events
+from orchestrator.agent_runner import AgentRunner
+from orchestrator.feedback import highest_priority_feedback, open_feedback_files
 
-ALLOWED_TOOLS = "Edit,Write,Read,Glob,Grep,Bash,Skill,TodoWrite,WebSearch,WebFetch,Agent"
 MAX_RETRIES = 2
-
-# Feedback files in priority order (highest first)
-FEEDBACK_PRIORITY = [
-    FeedbackFile.HUMAN_QUESTIONS,
-    FeedbackFile.ARCH_FEEDBACK,
-    FeedbackFile.DESIGN_QUESTIONS,
-    FeedbackFile.IMPL_QUESTIONS,
-    FeedbackFile.REVIEW_FAILURES,
-    FeedbackFile.TEST_FAILURES,
-]
 
 
 class Driver:
@@ -65,6 +55,11 @@ class Driver:
 
         self.eventlog = EventLog(feature=feature, base_path=str(REPO_ROOT / "plans"))
         self.state = self.eventlog.reconstruct_state()
+        self.agent_runner = AgentRunner(
+            repo_root=REPO_ROOT,
+            log=self.log,
+            on_timeout=self._handle_agent_timeout,
+        )
 
     # ── Logging ───────────────────────────────────────────────────────────────
 
@@ -102,51 +97,21 @@ class Driver:
 
     def run_claude(self, prompt: str) -> tuple[int, dict]:
         """Run claude agent. Returns (returncode, usage) where usage may be empty."""
-        timeout = int(os.environ.get("CLAUDE_AGENT_TIMEOUT", "1800"))
-        self.log(">>> Spawning claude agent...")
-        try:
-            result = subprocess.run(
-                ["claude", "-p", prompt, "--allowedTools", ALLOWED_TOOLS,
-                 "--output-format", "json"],
-                cwd=str(REPO_ROOT),
-                capture_output=True, text=True,
-                timeout=timeout,
-            )
-        except subprocess.TimeoutExpired:
-            self.log(f"[ERROR] Agent timed out after {timeout}s.")
-            from orchestrator.events import SystemEvent
-            self.emit(SystemEvent(action="TIMEOUT", metadata={"timeout_seconds": timeout}))
-            return 1, {}
-        usage = self._parse_usage(result.stdout)
-        # Echo stdout so agent output is still visible in the log
-        if result.stdout:
-            print(result.stdout, end="")
-        if result.stderr:
-            print(result.stderr, end="", file=sys.stderr)
-        return result.returncode, usage
+        return self.agent_runner.run(prompt)
 
     def _parse_usage(self, stdout: str) -> dict:
         """Extract token/cost fields from claude --output-format json stdout."""
-        if not stdout:
-            return {}
-        try:
-            data = json.loads(stdout)
-            usage = data.get("usage", {})
-            return {
-                "model":      data.get("model", ""),
-                "tokens_in":  usage.get("input_tokens", 0),
-                "tokens_out": usage.get("output_tokens", 0),
-                "cost_usd":   data.get("cost_usd", 0.0),
-            }
-        except (json.JSONDecodeError, AttributeError):
-            return {}
+        from orchestrator.agent_runner import parse_usage
+
+        return parse_usage(stdout)
+
+    def _handle_agent_timeout(self, timeout: int):
+        self.emit(SystemEvent(action="TIMEOUT", metadata={"timeout_seconds": timeout}))
 
     # ── Filesystem helpers ────────────────────────────────────────────────────
 
     def get_feedback_files(self) -> set:
-        if not self.feedback_dir.exists():
-            return set()
-        return {f.name for f in self.feedback_dir.iterdir() if f.suffix == ".md"}
+        return open_feedback_files(self.feedback_dir)
 
     def check_feedback_changes(self, before: set, after: set):
         for f in after - before:
@@ -583,8 +548,7 @@ class Driver:
 
     def _handle_feedback(self):
         open_files = self.get_feedback_files()
-        active = next((f for f in FEEDBACK_PRIORITY
-                       if f in open_files and f != FeedbackFile.HUMAN_QUESTIONS), None)
+        active = highest_priority_feedback(open_files, include_human=False)
 
         if not active:
             self.log("BLOCKED_ON_FEEDBACK but no feedback files on disk. Recovering...")
