@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from menus import MenuPrinter
-from plans import PlanRepository
+from .menus import MenuPrinter
+from .plans import PlanRepository
 
 
 class HelpCommand:

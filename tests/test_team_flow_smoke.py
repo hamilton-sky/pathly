@@ -1,11 +1,17 @@
 """Smoke tests for the Python team-flow driver."""
 
+import subprocess
+import sys
+from pathlib import Path
+
 import pytest
 
 from orchestrator.constants import FeedbackFile, FSMState, Mode
 from orchestrator.state import State
-from scripts import team_flow
+from pathly import team_flow
 
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 CORE_PLAN_FILES = {
     "USER_STORIES.md": "# User Stories\n",
@@ -15,9 +21,20 @@ CORE_PLAN_FILES = {
 }
 
 
+def test_retained_team_flow_bridge_runs_as_direct_script():
+    result = subprocess.run(
+        [sys.executable, "pathly/team_flow.py", "--help"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "FSM-driven pipeline driver" in result.stdout
+
+
 def make_driver(tmp_path, monkeypatch, feature="demo", entry="build"):
-    monkeypatch.setattr(team_flow, "REPO_ROOT", tmp_path)
-    return team_flow.Driver(feature=feature, mode=Mode.INTERACTIVE, entry=entry)
+    return team_flow.Driver(feature=feature, mode=Mode.INTERACTIVE, entry=entry, repo_root=tmp_path)
 
 
 def write_plan(root, feature="demo", files=None):

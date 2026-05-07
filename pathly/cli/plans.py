@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from constants import CORE_PLAN_FILES, STANDARD_PLAN_FILES
+from .constants import CORE_PLAN_FILES, STANDARD_PLAN_FILES
 
 
 class PlanRepository:

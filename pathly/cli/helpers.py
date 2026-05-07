@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from constants import FEATURE_NAME_RE
+from .constants import FEATURE_NAME_RE
 
 
 def validate_feature_name(value: str) -> str:

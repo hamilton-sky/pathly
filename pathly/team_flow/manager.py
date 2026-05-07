@@ -11,9 +11,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from config import DriverConfig, MAX_RETRIES
-from filesystem import TeamFlowFiles
-from flow_logging import DriverLogger
+from .config import DriverConfig, MAX_RETRIES
+from .filesystem import TeamFlowFiles
+from .flow_logging import DriverLogger
 from orchestrator.agent_runner import AgentRunner
 from orchestrator.constants import Agent, FeedbackFile, FSMState, Mode
 from orchestrator.eventlog import EventLog
@@ -31,7 +31,7 @@ from orchestrator.events import (
 from orchestrator.feedback import highest_priority_feedback
 from orchestrator.reducer import reduce
 from orchestrator.state import State
-from prompts import PromptFactory
+from .prompts import PromptFactory
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]

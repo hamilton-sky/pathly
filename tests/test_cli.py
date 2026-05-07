@@ -1,11 +1,29 @@
 ﻿"""Smoke tests for the public Pathly CLI."""
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 
-from pathly import cli
-from scripts import team_flow
+from pathly import cli, team_flow
+from pathly.cli import constants, meet_command
+from pathly.cli.installers import codex as codex_installer
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_retained_cli_bridge_runs_as_direct_script():
+    result = subprocess.run(
+        [sys.executable, "pathly/cli-2.py", "--help"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Pathly: guided agent workflows" in result.stdout
 
 
 def test_init_creates_core_plan_files(tmp_path):
@@ -130,7 +148,7 @@ def test_install_codex_apply_creates_marketplace(tmp_path, capsys, monkeypatch):
         path.mkdir()
         (path / ".target").write_text(str(target), encoding="utf-8")
 
-    monkeypatch.setattr(cli, "_replace_link_or_empty_dir", fake_link)
+    monkeypatch.setattr(codex_installer, "replace_link_or_empty_dir", fake_link)
 
     result = cli.main(["install", "codex", "--apply", "--market", str(tmp_path)])
 
@@ -214,7 +232,7 @@ def test_meet_writes_consult_note(tmp_path, monkeypatch, capsys):
     cli.main(["--project-dir", str(tmp_path), "init", "checkout-flow"])
 
     def fake_run(prompt, *, cwd, allowed_tools, timeout=None):
-        assert allowed_tools == cli.READ_ONLY_TOOLS
+        assert allowed_tools == constants.READ_ONLY_TOOLS
         assert cwd == Path(tmp_path).resolve()
         return """# Meet Note - planner - checkout-flow
 
@@ -233,8 +251,8 @@ Keep the verification in the second conversation.
 ## Promotion Target
 planner"""
 
-    monkeypatch.setattr(cli, "_run_claude_text", fake_run)
-    monkeypatch.setattr(cli.shutil, "which", lambda name: "claude" if name == "claude" else None)
+    monkeypatch.setattr(cli.manager.ClaudeTextAgent, "run", lambda self, *args, **kwargs: fake_run(*args, **kwargs))
+    monkeypatch.setattr(meet_command.shutil, "which", lambda name: "claude" if name == "claude" else None)
 
     result = cli.main([
         "--project-dir", str(tmp_path), "meet", "checkout-flow",
@@ -257,7 +275,7 @@ def test_meet_planner_promotion_uses_plan_write_tools(tmp_path, monkeypatch, cap
 
     def fake_run(prompt, *, cwd, allowed_tools, timeout=None):
         calls.append(allowed_tools)
-        if allowed_tools == cli.READ_ONLY_TOOLS:
+        if allowed_tools == constants.READ_ONLY_TOOLS:
             return """# Meet Note - architect - checkout-flow
 
 ## Question
@@ -276,8 +294,8 @@ Add architecture notes before build resumes.
 architect"""
         return "Updated ARCHITECTURE_PROPOSAL.md with shared-flow notes."
 
-    monkeypatch.setattr(cli, "_run_claude_text", fake_run)
-    monkeypatch.setattr(cli.shutil, "which", lambda name: "claude" if name == "claude" else None)
+    monkeypatch.setattr(cli.manager.ClaudeTextAgent, "run", lambda self, *args, **kwargs: fake_run(*args, **kwargs))
+    monkeypatch.setattr(meet_command.shutil, "which", lambda name: "claude" if name == "claude" else None)
 
     result = cli.main([
         "--project-dir", str(tmp_path), "meet", "checkout-flow",
@@ -289,4 +307,4 @@ architect"""
     assert result == 0
     output = capsys.readouterr().out
     assert "Updated ARCHITECTURE_PROPOSAL.md with shared-flow notes." in output
-    assert calls == [cli.READ_ONLY_TOOLS, cli.PLAN_WRITE_TOOLS]
+    assert calls == [constants.READ_ONLY_TOOLS, constants.PLAN_WRITE_TOOLS]

@@ -10,17 +10,17 @@ import argparse
 import shutil
 from pathlib import Path
 
-from agents import ClaudeTextAgent, TextAgent
-from constants import MEET_ALLOWED_ROLES
-from context import ProjectContext
-from help_command import HelpCommand
-from helpers import feature_slug, validate_feature_name
-from installers.codex import CodexInstaller
-from meet_command import MeetCommand
-from menus import MenuPrinter
+from .agents import ClaudeTextAgent, TextAgent
+from .constants import MEET_ALLOWED_ROLES
+from .context import ProjectContext
+from .help_command import HelpCommand
+from .helpers import feature_slug, validate_feature_name
+from .installers.codex import CodexInstaller
+from .meet_command import MeetCommand
+from .menus import MenuPrinter
 from orchestrator.constants import Mode
-from plans import PlanRepository
-from scripts import team_flow
+from .plans import PlanRepository
+from pathly import team_flow
 
 
 class CliManager:

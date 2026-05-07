@@ -9,7 +9,7 @@ from pathlib import Path
 
 from orchestrator.feedback import open_feedback_files
 
-from config import DriverConfig
+from .config import DriverConfig
 
 
 class TeamFlowFiles:

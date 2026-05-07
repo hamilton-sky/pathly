@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from constants import MEET_ALLOWED_ROLES
+from .constants import MEET_ALLOWED_ROLES
 
 
 class MenuPrinter:
