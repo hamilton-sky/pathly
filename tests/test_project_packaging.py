@@ -9,6 +9,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CLAUDE_SKILL_ROOT = REPO_ROOT / "adapters" / "claude-code" / "skills"
 CLAUDE_AGENT_ROOT = REPO_ROOT / "adapters" / "claude-code" / "agents"
+CLAUDE_PLUGIN_MANIFEST = (
+    REPO_ROOT / "adapters" / "claude-code" / ".claude-plugin" / "plugin.json"
+)
+CLAUDE_MARKETPLACE = (
+    REPO_ROOT / "adapters" / "claude-code" / ".claude-plugin" / "marketplace.json"
+)
+CODEX_MANIFEST_ROOT = REPO_ROOT / "adapters" / "codex"
+CODEX_PLUGIN_MANIFEST = CODEX_MANIFEST_ROOT / ".codex-plugin" / "plugin.json"
 CODEX_SKILL_ROOT = REPO_ROOT / "adapters" / "codex" / "skills"
 AGENTS_SKILL_ROOT = REPO_ROOT / ".agents" / "skills"
 
@@ -16,12 +24,8 @@ AGENTS_SKILL_ROOT = REPO_ROOT / ".agents" / "skills"
 def test_plugin_manifests_parse_and_point_to_skills():
     """Claude and Codex manifests should stay valid as branding changes."""
     expected_skill_dirs = {
-        REPO_ROOT / ".claude-plugin" / "plugin.json": (REPO_ROOT, CLAUDE_SKILL_ROOT),
-        REPO_ROOT / ".codex-plugin" / "plugin.json": (REPO_ROOT, CODEX_SKILL_ROOT),
-        REPO_ROOT / "adapters" / "codex" / ".codex-plugin" / "plugin.json": (
-            REPO_ROOT / "adapters" / "codex",
-            CODEX_SKILL_ROOT,
-        ),
+        CLAUDE_PLUGIN_MANIFEST: (REPO_ROOT, CLAUDE_SKILL_ROOT),
+        CODEX_PLUGIN_MANIFEST: (CODEX_MANIFEST_ROOT, CODEX_SKILL_ROOT),
     }
 
     for manifest_path, (manifest_root, expected_skill_dir) in expected_skill_dirs.items():
@@ -39,9 +43,7 @@ def test_plugin_manifests_parse_and_point_to_skills():
 
 def test_public_marketplace_manifests_parse():
     """Published marketplace catalogs should expose Pathly from the repo root."""
-    claude_marketplace = json.loads(
-        (REPO_ROOT / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
-    )
+    claude_marketplace = json.loads(CLAUDE_MARKETPLACE.read_text(encoding="utf-8"))
     codex_marketplace = json.loads(
         (REPO_ROOT / ".agents" / "plugins" / "marketplace.json").read_text(encoding="utf-8")
     )
@@ -183,7 +185,7 @@ def test_core_prompts_reference_core_templates():
 
 def test_codex_manifest_uses_natural_language_skill_prompts():
     """Codex examples should not promise plugin-defined slash commands."""
-    manifest = json.loads((REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+    manifest = json.loads(CODEX_PLUGIN_MANIFEST.read_text(encoding="utf-8"))
 
     prompts = manifest["interface"]["defaultPrompt"]
     assert prompts
@@ -205,8 +207,8 @@ def test_codex_adapter_does_not_document_pathly_slash_command():
 
 def test_codex_adapter_skills_are_codex_safe_core_wrappers():
     """Codex wrappers should use core prompts without Claude-only model labels."""
-    manifest = json.loads((REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
-    codex_skill_root = (REPO_ROOT / manifest["skills"]).resolve()
+    manifest = json.loads(CODEX_PLUGIN_MANIFEST.read_text(encoding="utf-8"))
+    codex_skill_root = (CODEX_MANIFEST_ROOT / manifest["skills"]).resolve()
     claude_skill_names = {path.name for path in CLAUDE_SKILL_ROOT.iterdir() if path.is_dir()}
     codex_skill_names = {path.name for path in codex_skill_root.iterdir() if path.is_dir()}
 
@@ -305,7 +307,7 @@ def test_director_routes_to_workflow_ids_not_shell_commands():
 
 def test_codex_manifest_has_no_placeholder_paths():
     """Published Codex metadata should not reference non-existent TODO resources."""
-    manifest_text = (REPO_ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8")
+    manifest_text = CODEX_PLUGIN_MANIFEST.read_text(encoding="utf-8")
     manifest = json.loads(manifest_text)
 
     assert "[TODO:" not in manifest_text
