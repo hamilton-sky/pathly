@@ -82,3 +82,7 @@
 | `pathly/hooks/` | Portable hook behavior callable by CLI or runtime |
 | `core/` | Installed instruction assets: prompts, agents, templates |
 | `adapters/` | Installed host adapter assets and plugin metadata |
+| `tests/` | Repo-level tests, not runtime package contents |
+| `.agents/plugins/` | Marketplace metadata for plugin discovery |
+| `.agents/skills/` | Direct skill-discovery mirror if compatibility still requires it |
+| generated `plugins/` folders | Local marketplace install artifacts, not canonical source |

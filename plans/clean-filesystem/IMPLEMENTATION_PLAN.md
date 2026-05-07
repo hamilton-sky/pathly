@@ -22,6 +22,40 @@ core/ + adapters/   ->   pathly/ + orchestrator/ -> pathly command
                          pathly/hooks/
 ```
 
+## Target Repository Shape
+
+```text
+C:\Users\Yafit\pathly\
+  core\
+    prompts\
+    agents\
+    templates\
+  adapters\
+    codex\
+      .codex-plugin\
+      skills\
+    claude-code\
+      plugin metadata
+      skills\
+  pathly\
+    cli\
+    team_flow\
+    runners\
+    hooks\
+  orchestrator\
+  tests\
+  .agents\
+    plugins\
+      marketplace.json
+    skills\
+```
+
+`adapters/` is the canonical source for host plugin wrappers. Local marketplace
+folders under paths such as `C:\tmp\pathly-marketplace\plugins\pathly\` are
+generated install artifacts. `tests/` stays at repo root. Legacy `scripts/`
+behavior must be either migrated into a named runtime package or deleted after
+verification; do not create `pathly/scripts/` as a new catch-all.
+
 ## Phases
 
 ### Phase 1: Stabilize package entrypoints
@@ -120,6 +154,10 @@ without breaking active workflows.
 **Details:**
 - Run searches before deleting each class of file.
 - Keep `examples/` at repo root.
+- Keep `tests/` at repo root; do not move tests into the runtime package.
+- Move runtime behavior from `scripts/` into `pathly/cli/`, `pathly/hooks/`,
+  `pathly/team_flow/`, or `pathly/runners/` based on responsibility.
+- Keep dev-only helper scripts outside the runtime package if any remain.
 - If `.agents/skills/` remains committed for compatibility, add a test that
   verifies it mirrors `adapters/codex/skills/` exactly.
 - Do not delete anything whose replacement verification fails.
@@ -158,6 +196,11 @@ runtime packages, prompts, templates, adapters, and plugin metadata present.
 - Keep `orchestrator/` as the deterministic FSM core package for this plan.
 - Treat `pathly/` as the only primary runtime package.
 - Keep `core/` and `adapters/` as installed assets, not runtime packages.
+- Keep plugin source folders under `adapters/`; marketplace `plugins/` folders
+  are generated install artifacts.
+- Keep `tests/` at repo root.
+- Do not introduce `pathly/scripts/`; migrate behavior to responsibility-based
+  runtime modules or leave dev-only helpers outside the package.
 - Preserve Claude behavior while adding Codex as a selectable runner.
 - Treat Codex native hooks as unavailable unless a documented hook surface is
   introduced later.

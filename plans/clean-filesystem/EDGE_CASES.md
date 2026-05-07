@@ -69,6 +69,25 @@
   generate it during install/package tests.
 - **Handled in:** Phase 4 / Conv 4
 
+### EC-4.3: Cleanup becomes a blind move into `pathly/scripts/`
+- **Trigger:** Legacy root scripts are moved wholesale into a new runtime
+  `scripts` package.
+- **Current behavior:** Ambiguous runtime, hook, and helper behavior remains
+  mixed together under a new path.
+- **Expected behavior:** Move runtime behavior into responsibility-based modules
+  such as `pathly/cli/`, `pathly/hooks/`, `pathly/team_flow/`, or
+  `pathly/runners/`; keep dev-only helpers outside the runtime package or delete
+  obsolete scripts after verification.
+- **Handled in:** Phase 4 / Conv 4
+
+### EC-4.4: Tests are moved into the runtime package
+- **Trigger:** Cleanup moves `tests/` to `pathly/tests/`.
+- **Current behavior:** Test code risks being treated as runtime package
+  contents.
+- **Expected behavior:** Keep tests at repo root and adjust imports to canonical
+  runtime modules.
+- **Handled in:** Phase 4 / Conv 4
+
 ## Packaging
 
 ### EC-5.1: Wheel omits core prompts or adapters
@@ -89,6 +108,10 @@
 ## Known Limitations
 
 - This plan does not move `orchestrator/` under `pathly/orchestrator/`.
+- This plan does not move tests under `pathly/tests/`.
+- This plan does not create `pathly/scripts/`.
+- This plan treats marketplace `plugins/` folders as generated install artifacts,
+  not canonical source folders.
 - This plan does not claim native Codex hook registration exists.
 - Optional install gates may require local tools such as `pipx`, `python -m build`,
   or Codex CLI to be installed.

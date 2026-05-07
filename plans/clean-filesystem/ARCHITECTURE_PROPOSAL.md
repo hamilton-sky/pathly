@@ -15,6 +15,51 @@ installed assets, `pathly/runners/` for host execution, and `pathly/hooks/` for
 portable hook behavior. Delete legacy files only after tests and searches prove
 the replacements are active.
 
+## Target Filesystem Shape
+
+```text
+C:\Users\Yafit\pathly\
+  core\
+    prompts\
+    agents\
+    templates\
+
+  adapters\
+    codex\
+      .codex-plugin\
+      skills\
+    claude-code\
+      .claude-plugin\ or plugin metadata
+      skills\
+
+  pathly\
+    cli\
+    team_flow\
+    runners\
+    hooks\
+
+  orchestrator\
+    deterministic FSM core for this plan
+
+  tests\
+    repo-level tests
+
+  .agents\
+    plugins\
+      marketplace.json
+    skills\
+      direct skill-discovery mirror, if still needed
+```
+
+Plugin source folders live under `adapters/`. Generated or machine-local
+marketplace folders such as `C:\tmp\pathly-marketplace\plugins\pathly\` are
+installation artifacts, not canonical source folders.
+
+Tests remain at repo root in `tests/`. Runtime behavior from legacy `scripts/`
+must move into the appropriate package module (`pathly/cli/`, `pathly/hooks/`,
+`pathly/team_flow/`, or `pathly/runners/`) instead of creating a new
+`pathly/scripts/` catch-all.
+
 ## Runtime Breakdown
 
 ```text
@@ -45,8 +90,8 @@ pathly/hooks/
 - **Options considered:** Move under `pathly/`, keep as a package, delete during
   cleanup.
 - **Chosen:** Keep as a package for this plan.
-- **Rationale:** The cleanup doc explicitly scopes a later move under
-  `pathly/orchestrator/` as a separate migration.
+- **Rationale:** Moving it under `pathly/orchestrator/` is a separate migration
+  and should not be combined with filesystem cleanup.
 
 ### Decision 2: Treat `core/` and `adapters/` as assets
 - **Options considered:** Convert to runtime packages, package as data, leave
@@ -76,6 +121,15 @@ pathly/hooks/
 - **Chosen:** Generate during install if possible; otherwise keep only with
   exact-mirror verification.
 - **Rationale:** A committed mirror without a test creates drift risk.
+
+### Decision 6: Keep tests repo-level and avoid `pathly/scripts/`
+- **Options considered:** Move tests under `pathly/tests/`, move scripts under
+  `pathly/scripts/`, or keep clear repo/package boundaries.
+- **Chosen:** Keep tests at repo root. Migrate script behavior into named runtime
+  modules or delete obsolete scripts after verification.
+- **Rationale:** Repo-level tests avoid packaging confusion. A generic
+  `pathly/scripts/` package would preserve the current ambiguity under a new
+  directory name.
 
 ## Public Commands
 

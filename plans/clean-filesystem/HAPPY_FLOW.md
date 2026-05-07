@@ -50,6 +50,12 @@ Pathly has one canonical runtime shape, host-neutral runner selection, portable
 hooks, no unverified legacy bridge files, and packaging tests that protect core
 prompts, templates, adapters, plugin metadata, and runtime packages.
 
+The cleaned repository shape keeps source and install artifacts distinct:
+plugin wrapper sources live under `adapters/`, local marketplace `plugins/`
+folders remain generated artifacts, `tests/` remains repo-level, and legacy
+`scripts/` behavior is migrated into named runtime modules rather than moved to
+`pathly/scripts/`.
+
 ## Success Indicators
 
 - [ ] `python -m pathly.cli --help` passes.

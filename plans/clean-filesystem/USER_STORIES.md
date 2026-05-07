@@ -13,6 +13,25 @@ core prompts, adapters, and templates reliably; the FSM should call a
 host-neutral runner; hooks should be portable; and legacy files should be
 deleted only after replacements and packaging checks pass.
 
+## Target Shape
+
+Pathly should converge on this repository layout:
+
+```text
+core/                 canonical prompts, agents, and templates
+adapters/             Claude Code and Codex plugin wrappers
+pathly/               Python runtime packages
+pathly/runners/       Claude/Codex execution layer
+pathly/hooks/         portable hook behavior
+orchestrator/         deterministic FSM core for this plan
+tests/                repo-level tests
+.agents/plugins/      marketplace metadata
+.agents/skills/       direct skill-discovery mirror, if still needed
+```
+
+The plan intentionally does not move `orchestrator/` under `pathly/`, does not
+move tests into `pathly/tests/`, and does not create `pathly/scripts/`.
+
 ## Stories
 
 ### Story 1.1: Runtime entrypoints are canonical
@@ -46,6 +65,7 @@ installs contain the files Pathly needs outside the source checkout.
   otherwise verified in built artifacts.
 - [ ] `adapters/` plugin metadata and skill files are included as package data
   or otherwise verified in built artifacts.
+- [ ] Tests remain repo-level under `tests/`.
 - [ ] `python -m build` completes successfully.
 
 **Edge Cases:**
@@ -106,6 +126,8 @@ Pathly workflows.
 - [ ] No runtime imports depend on `scripts/`.
 - [ ] Candidate names such as `cli-2` are absent from runtime paths.
 - [ ] Root `hooks/` is absent after `pathly/hooks/` is packaged and tested.
+- [ ] Runtime behavior formerly in `scripts/` lives in responsibility-based
+  modules, not in a new `pathly/scripts/` package.
 - [ ] `.agents/skills/` is either generated or exact-mirror verified against
   `adapters/codex/skills/`.
 - [ ] `pytest -q` passes after cleanup.

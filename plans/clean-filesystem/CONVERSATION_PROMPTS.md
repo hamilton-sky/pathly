@@ -160,6 +160,12 @@ Scope:
   `scripts/team_flow.py`, `scripts/team-flow-auto.sh`,
   `scripts/setup-hook.sh`, `scripts/setup-hook.ps1`, `scripts/__init__.py`,
   and root `hooks/`.
+- Do not move `tests/` into `pathly/tests/`; keep repo-level tests under
+  `tests/`.
+- Do not create `pathly/scripts/`. Migrate runtime behavior from `scripts/`
+  into responsibility-based modules such as `pathly/cli/`, `pathly/hooks/`,
+  `pathly/team_flow/`, or `pathly/runners/`; keep dev-only helpers outside the
+  runtime package if any remain.
 - Decide whether `.agents/skills/` is generated or committed for compatibility.
   If committed, add an exact-mirror verification against `adapters/codex/skills/`.
 - Keep `examples/` at repo root.
