@@ -1,9 +1,0 @@
-{"type": "COMMAND", "timestamp": "2026-05-07T13:10:54.696324+00:00", "metadata": {"feature": "clean-filesystem", "rigor": "standard", "mode": "fast"}, "value": "team-flow clean-filesystem build fast"}
-{"type": "STATE_TRANSITION", "timestamp": "2026-05-07T13:10:54.697745+00:00", "metadata": {}, "from_state": "STORMING", "to_state": "BUILDING"}
-{"type": "AGENT_DONE", "timestamp": "2026-05-07T13:19:09.920677+00:00", "metadata": {}, "agent": "builder", "model": "codex-builder", "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0}
-{"type": "FILE_CREATED", "timestamp": "2026-05-07T13:21:43.471066+00:00", "metadata": {}, "file": "REVIEW_FAILURES.md"}
-{"type": "SYSTEM_EVENT", "timestamp": "2026-05-07T13:21:43.471077+00:00", "metadata": {"retry_key": "conv-1:REVIEW_FAILURES.md"}, "action": "RETRY", "reason": ""}
-{"type": "FILE_DELETED", "timestamp": "2026-05-07T13:24:21.388630+00:00", "metadata": {}, "file": "REVIEW_FAILURES.md"}
-{"type": "STATE_TRANSITION", "timestamp": "2026-05-07T13:24:21.388640+00:00", "metadata": {}, "from_state": "BLOCKED_ON_FEEDBACK", "to_state": "REVIEWING"}
-{"type": "AGENT_DONE", "timestamp": "2026-05-07T13:29:21.612703+00:00", "metadata": {}, "agent": "reviewer", "model": "codex-reviewer", "tokens_in": 0, "tokens_out": 0, "cost_usd": 0.0}
-{"type": "HUMAN_RESPONSE", "timestamp": "2026-05-07T13:29:21.612711+00:00", "metadata": {}, "value": "auto-advance"}
