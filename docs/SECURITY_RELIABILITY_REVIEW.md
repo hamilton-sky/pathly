@@ -1,7 +1,7 @@
 # Security and Reliability Review
 
-This document records the current security/reliability posture for Claude
-Agents Framework and the remaining work before a production-ready label.
+This document records the current security/reliability posture for Pathly and
+the remaining work before a production-ready label.
 
 Pathly currently ships as a Claude Code plugin, Codex plugin workflow, and Python CLI fallback. Its highest-risk areas are
 hooks, subprocess execution, generated prompts, file writes, and recovery from
@@ -23,6 +23,7 @@ Files reviewed:
 
 - `pathly/hooks/classify_feedback.py`
 - `pathly/hooks/inject_feedback_ttl.py`
+- `pathly/hooks/__main__.py`
 - `pathly/cli/hooks_command.py`
 
 Risk:
@@ -109,12 +110,14 @@ Production recommendation:
 
 Files reviewed:
 
-- `skills/team-flow/SKILL.md`
-- `skills/go/SKILL.md`
-- `skills/plan/SKILL.md`
-- `skills/prd-import/SKILL.md`
-- `skills/bmad-import/SKILL.md`
-- `agents/director.md`
+- `core/prompts/team-flow.md`
+- `core/prompts/go.md`
+- `core/prompts/plan.md`
+- `core/prompts/prd-import.md`
+- `core/prompts/bmad-import.md`
+- `core/agents/director.md`
+- adapter wrappers under `adapters/claude-code/skills/` and
+  `adapters/codex/skills/`
 
 Risk:
 
@@ -134,8 +137,8 @@ Mitigation today:
 
 Remaining gap:
 
-- The trust model for `.claude/rules/`, PRDs, plans, and generated prompts is not
-  documented in one place.
+- The trust model for project rules, PRDs, plans, and generated prompts is not
+  documented in one place for every host adapter.
 - There are no tests that verify prompt templates contain required safety
   boundaries.
 - Generated prompts may repeat user-provided text without explicitly labeling it
@@ -200,15 +203,19 @@ Mitigation today:
 
 Remaining gap:
 
-- Writes are not atomic.
+- `STATE.json` writes are atomic, but event-log appends and other generated
+  files still need a broader failure-policy review.
 - Event log corruption handling is limited.
-- Feature names are not centrally validated before being used in paths.
+- Feature names are validated by the CLI, but every non-CLI entry point should
+  keep equivalent path traversal protections.
 - Safe-delete decisions rely on metadata quality.
 
 Production recommendation:
 
-- Add atomic write for `STATE.json` and other generated JSON files.
-- Validate feature names for path traversal and unsupported characters.
+- Keep atomic writes for `STATE.json` and extend the policy to any generated
+  JSON files that are rewritten.
+- Keep feature-name validation covered by tests and mirror it in adapter paths
+  that create plan directories.
 - Add tests for corrupt `EVENTS.jsonl`, missing `STATE.json`, stale feedback,
   and path traversal attempts.
 - Keep safe-delete operations visible in logs and reversible where possible.
@@ -218,7 +225,7 @@ Production recommendation:
 Files reviewed:
 
 - `pathly/team_flow/manager.py`
-- `skills/team-flow/SKILL.md`
+- `core/prompts/team-flow.md`
 - `docs/ORCHESTRATOR_FSM.md`
 - `docs/FEEDBACK_PROTOCOL.md`
 
@@ -246,8 +253,9 @@ Production recommendation:
 
 - Add smoke tests for lite flow, nano flow, build entry, test entry, feedback
   handling, and zero-diff stall handling.
-- Add a release checklist requiring one manual smoke run through `/go` and one
-  direct `/team-flow` run.
+- Add a release checklist requiring one manual smoke run through `/pathly ...`
+  in Claude Code, one `Use Pathly ...` run in Codex, and one direct
+  `pathly flow ...` CLI run.
 
 ## Production Readiness Checklist
 
@@ -263,7 +271,7 @@ Required before production-ready:
   - zero-diff stall handling
 - Hook unit tests for path validation and failure modes.
 - Subprocess timeout policy implemented.
-- Legacy shell driver updated or deprecated.
+- Legacy shell driver references removed or clearly marked historical.
 - Trust-boundary documentation for PRDs, plans, `.claude/rules/`, and generated
   prompts.
 - Release/versioning policy with changelog and compatibility notes.
@@ -272,4 +280,4 @@ Recommended before public beta:
 
 - Keep hooks optional and documented.
 - Add a quick manual smoke-test guide.
-- Verify README installation flow on a clean Claude Code setup.
+- Verify README installation flow on clean Claude Code and Codex setups.

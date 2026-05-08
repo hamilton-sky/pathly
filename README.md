@@ -386,7 +386,8 @@ because strict mode requires human approval gates.
 ## Supported Versions
 
 - Claude Code plugin support is available today.
-- Codex plugin support is available through `.codex-plugin/plugin.json`.
+- Codex plugin support is available through
+  `adapters/codex/.codex-plugin/plugin.json`.
 - Cursor, Windsurf, BMAD, and generic prompt adapters are planned in
   [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
 - Python 3.11+ is required for local development and tests.

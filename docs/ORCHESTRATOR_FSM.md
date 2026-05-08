@@ -95,7 +95,8 @@ Retry keys should include the current conversation and feedback file, for exampl
 
 ## Rigor Modes
 
-`standard` is the default and preserves the current workflow.
+`lite` is the default in the current Pathly workflow. The rigor escalator can
+add targeted files when planning discovers risk.
 
 | Rigor | Use for | Required plan files | Gates |
 |---|---|---|---|
@@ -103,7 +104,8 @@ Retry keys should include the current conversation and feedback file, for exampl
 | `standard` | normal product features | all 8 plan files | build + review per conversation, test, retro |
 | `strict` | auth, payments, data loss, migrations, regulated work | all 8 plan files plus mandatory `STATE.json` and `EVENTS.jsonl` | all standard gates plus mandatory human approvals and audit logs |
 
-`lite` reduces plan surface area but keeps the files needed by `/build`.
+`lite` reduces plan surface area but keeps the files needed by the build
+workflow.
 
 `standard` is the current pipeline: storm can be skipped, human pauses are default, feedback routing is enforced, and `STATE.json` / `EVENTS.jsonl` are written when runtime support exists.
 
@@ -147,7 +149,7 @@ Only one agent may be active at a time.
 ## Core Transitions
 
 ```text
-IDLE + COMMAND("/team-flow <feature>")
+IDLE + COMMAND("team-flow <feature>")
 -> STORMING                          // default; orchestrator overrides via STATE_TRANSITION
 -> spawn(architect)
 
@@ -274,7 +276,7 @@ BLOCKED_ON_FEEDBACK + AGENT_DONE(builder) + NO_DIFF_DETECTED
 
 ## Recovery
 
-`orchestrator --recover <feature>` must reconstruct state by reading:
+Recovery reconstructs state by reading:
 
 - `plans/<feature>/feedback/*.md`
 - `plans/<feature>/PROGRESS.md`

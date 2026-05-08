@@ -1,784 +1,155 @@
-# Claude Skills Architecture
+# Pathly Architecture And Agents
 
-A role-based agent system where **files are the protocol** between roles,
-**behavioral contracts** define how each agent thinks, **human checkpoints**
-keep you in control at every stage transition, and **feedback loops** route
-issues back to the right agent automatically.
+Pathly is a local agent workflow framework built around files, role contracts,
+and a deterministic filesystem state machine.
 
----
+## Repository Layers
 
-## Philosophy
-
-Four principles drive this architecture:
-
-1. **Agent = role, not persona.** An agent is a behavioral contract — it defines HOW
-   something thinks, not a character it pretends to be. `architect` thinks in layers
-   and trade-offs. `planner` thinks in user value. `builder` stays in scope and verifies.
-   The role is stable; it does not change with the project.
-
-2. **Files are the contract between roles.** Roles do not call each other directly.
-   Each role writes a file when its job is done; the next role reads that file as input.
-   State lives on disk — not in memory, not in conversation context. Any role can stop
-   and resume because the file is always there.
-
-3. **Human checkpoints are the point.** The pipeline pauses at every stage transition
-   and waits for explicit acknowledgement. This is not a limitation — it is the design.
-   Checkpoints are where wrong assumptions get caught cheaply, before expensive work begins.
-
-4. **Feedback loops, not a linear chain.** When a reviewer finds an architectural flaw,
-   it does not just report to chat — it writes a feedback file that routes back to the
-   architect. When a builder hits a technical blocker, it asks the architect, not the planner.
-   The right problem goes to the right role automatically.
-
----
-
-## Two Scopes
-
-```
-~/.claude/
-══════════════════════════════
-agents/        ← roles (any project)
-skills/        ← lifecycle abilities
-orchestrator/  ← FSM runtime (state, events, reducer, eventlog)
-templates/     ← plan file templates
-ARCHITECTURE.md        ← this file
-FEEDBACK_PROTOCOL.md   ← feedback file formats
-ORCHESTRATOR_FSM.md    ← deterministic workflow state machine
+```text
+core/             host-neutral prompts, agent contracts, and templates
+adapters/         Claude Code, Codex, and CLI packaging surfaces
+.agents/          Codex marketplace metadata and direct skill mirror
+pathly/           Python package, CLI, hooks, runners, and team-flow driver
+orchestrator/     top-level Python FSM runtime package
+plans/            feature plans and runtime state in a target project
+docs/             design, release, and review documentation
+tests/            automated checks for CLI, packaging, hooks, runners, FSM
 ```
 
-**Global** (`~/.claude/`) — available in every project on this machine.
-Agents and lifecycle skills belong here. They are generic; they read the project's
-CLAUDE.md to understand local conventions.
+`core/` is content, not runtime code. The Python import contract keeps
+`orchestrator` as a top-level package and `pathly` as the installable package
+that exposes the `pathly` console command.
 
----
+## Adapter Surfaces
 
-## The 11 Agents
-
-Each agent is a `.md` file in `~/.claude/agents/` with a frontmatter block:
-`name`, `role`, `model`, `skills`, `description`, and `tools`. The `tools:`
-list is runtime-enforced: tools outside that list are blocked by the framework,
-not merely discouraged by prompt text.
-
-| Agent | Enforced tools | Hard boundary |
+| Host | User surface | Source files |
 |---|---|---|
-| `director` | Read, Glob, Grep, Agent | Reads and routes; does not write |
-| `architect` | Read, Glob, Grep, Write, Edit, Agent | Writes/edits design docs; no Bash |
-| `po` | Read, Write | Reads PRDs and writes `PO_NOTES.md` only |
-| `planner` | Read, Glob, Grep, Write, Edit, Agent | Writes/edits plan files; no Bash or direct web tools |
-| `builder` | Read, Glob, Grep, Edit, Write, Bash, Agent, TodoWrite | Full implementation access; no web tools |
-| `reviewer` | Read, Glob, Grep, Write, Agent | Writes feedback and spawns scouts; no source edits or Bash |
-| `tester` | Read, Glob, Grep, Bash, Write, Agent | Runs tests and writes test feedback; no source edits |
-| `quick` | Read, Glob, Grep | Local lookup only; no writes or spawning |
-| `orchestrator` | Read, Glob, Grep, Write, Edit, Bash, Agent | Manages FSM state and spawns agents; no web |
-| `scout` | Read, Glob, Grep | Read-only local investigation; no writes, spawn, or web |
-| `web-researcher` | WebSearch, WebFetch | Web-only research; cannot touch local files |
+| Claude Code | `/pathly ...`, `/path ...` | `adapters/claude-code/skills/` |
+| Codex | `Use Pathly ...` natural-language plugin skills | `adapters/codex/skills/` |
+| Direct skill discovery | `.agents/skills/<skill>/SKILL.md` | mirror of `adapters/codex/skills/` |
+| Terminal | `pathly ...` | `pathly/cli/` |
 
-```
-~/.claude/agents/
-│
-├─ director.md       role: director       model: sonnet
-│   "What workflow should run for this request?"
-│   Reads project state, classifies intent, chooses rigor and entry point.
-│   skills: [go, team-flow, build, review, retro]
-│
-├─ architect.md      role: architect      model: opus
-│   "How should this be built technically?"
-│   Thinks in layers, dependency directions, design trade-offs.
-│   Sub-agents: scout (codebase), web-researcher (external docs)
-│   Resolves: ARCH_FEEDBACK.md, DESIGN_QUESTIONS.md
-│   skills: [storm]
-│
-├─ po.md             role: po             model: opus
-│   "What exactly needs to be built, and why?"
-│   Product Owner advisor — probes scope, challenges assumptions, surfaces gaps.
-│   Validates PRDs before architecture begins.
-│   skills: []
-│
-├─ planner.md        role: product-owner  model: sonnet
-│   "What needs to be built, for whom, verified how?"
-│   Writes user stories, acceptance criteria, conversation decomposition.
-│   Sub-agents: web-researcher (domain research, similar products, standards)
-│   Resolves: IMPL_QUESTIONS.md
-│   skills: [storm, plan]
-│
-├─ builder.md        role: executor       model: sonnet
-│   "Build exactly what was planned. No more, no less."
-│   Reads before editing. Verifies before reporting done.
-│   Sub-agents: quick (inline atomic lookup), scout (cross-file pattern investigation)
-│   Writes: IMPL_QUESTIONS.md ([REQ] — requirement ambiguity → planner)
-│           DESIGN_QUESTIONS.md ([ARCH] — technical blocker → architect)
-│           both files if [UNSURE] — correct owner discards
-│   Resolves: REVIEW_FAILURES.md, TEST_FAILURES.md
-│   skills: [build]
-│
-├─ tester.md         role: tester         model: sonnet
-│   "Does the code match the acceptance criteria?"
-│   Maps each criterion to a test. Reports bugs, never fixes them.
-│   Sub-agents: scout (find test files and patterns)
-│   Writes: TEST_FAILURES.md
-│   skills: [test]
-│
-├─ quick.md          role: analyst        model: haiku
-│   "Fast answer. 2 tool calls max."
-│   Direct, no preamble, returns value or path immediately.
-│   skills: [retro]
-│
-├─ reviewer.md       role: reviewer       model: sonnet
-│   "Find what's wrong before it ships."
-│   Adversarial. Writes feedback files but cannot edit source or run Bash.
-│   Sub-agents: scout (find similar patterns to validate consistency)
-│   Writes: ARCH_FEEDBACK.md (structural violations)
-│           REVIEW_FAILURES.md (implementation violations)
-│   skills: [review, security-review]
-│
-├─ orchestrator.md   role: orchestrator   model: haiku
-│   "Recover state. Process one event. Emit one next action."
-│   Enforces the filesystem FSM in ORCHESTRATOR_FSM.md.
-│   skills: [team-flow]
-│
-├─ scout.md          role: analyst        model: haiku
-│   "Read across files to answer one structural question."
-│   Spawned by builder, reviewer, tester, architect — never spawns further agents.
-│   Read-only: no file writes, no feedback files, no state changes.
-│   Budget: 5–15 tool calls (Glob, Grep, Read).
-│   skills: []
-│
-└─ web-researcher.md role: analyst        model: haiku
-    "Find external design patterns, library docs, and domain knowledge."
-    Spawned by architect and planner — never spawns further agents.
-    Read-only: no file writes, no feedback files, no state changes.
-    Budget: 5–10 tool calls (WebSearch, WebFetch). Every fact must be cited.
-    skills: []
-```
+Current Codex builds do not expose Pathly as `/pathly`. Use natural-language
+skill prompts in Codex docs.
 
-### Role Consultation Policy
+## Agent Roles
 
-Pathly should not grow a default stage for every role. The efficient default is:
+Pathly defines eleven role contracts in `core/agents/`. Claude Code packages
+host-specific wrappers in `adapters/claude-code/agents/`.
 
-| Rigor | Default route | Optional consultation |
+| Agent | Responsibility | Boundary |
 |---|---|---|
-| `nano` | director -> builder -> reviewer | none unless builder hits a blocker |
-| `lite` | director -> planner -> builder -> reviewer -> tester | PO for unclear product scope; architect for technical risk |
-| `standard` | director -> planner -> builder -> reviewer -> tester | PO and architect when their risk signals are present |
-| `strict` | director -> planner -> architect -> builder -> reviewer -> tester | PO when user impact, compliance, or acceptance criteria are ambiguous |
+| `director` | Classify intent and route to the lightest safe workflow. | Reads and routes; no source edits. |
+| `po` | Clarify product intent, user value, MVP scope, and success criteria. | Optional/on-demand; writes product notes only. |
+| `architect` | Resolve design, layer, contract, migration, and rollback questions. | Design docs and architecture feedback, not implementation. |
+| `planner` | Write stories, acceptance criteria, task order, and plan files. | Plan files only; consults PO or architect when uncertainty is real. |
+| `builder` | Implement the next scoped conversation and verify it. | Source edits allowed; does not silently change scope or architecture. |
+| `reviewer` | Find contract, behavior, and diff-quality problems. | Writes findings; does not fix source. |
+| `tester` | Map acceptance criteria to verification and report failures. | Runs/verifies tests; does not fix source. |
+| `orchestrator` | Recover state and emit the next action. | FSM and routing only. |
+| `quick` | Atomic lookup or short summary. | Read-only, small budget. |
+| `scout` | Read-only codebase investigation. | No writes or workflow decisions. |
+| `web-researcher` | External research with citations. | Web-only context; no local edits. |
 
-Consultation is targeted:
+## Consultation Policy
 
-- `po` answers what to build, who it serves, MVP scope, success criteria, and
-  product edge cases. It writes `PO_NOTES.md`; planner converts that into user
-  stories and acceptance criteria.
-- `architect` answers how to build safely: layers, contracts, migrations,
-  rollback, shared abstractions, and dependency direction.
-- `scout`, `quick`, and `web-researcher` are read-only sidecars for bounded
-  research. They do not own workflow decisions.
+The default pipeline stays lean:
 
-Do not add a generic "consult any agent" skill as a normal workflow stage. It
-would make routing vague and increase token/latency costs. If a manual tool is
-needed, expose it as an advanced diagnostic helper that asks one named role one
-bounded question and writes no plan files unless explicitly requested.
-### Sub-agent delegation
+- `po` is optional and on-demand.
+- `architect` is on-demand unless rigor or risk requires design review.
+- Builder-side consultation must be a bounded question with a concrete output.
+- `meet` is a separate read-only consultation workflow.
+- `director` is not a default `meet` target.
 
-Five agents can spawn read-only sub-agents before implementation begins.
-Sub-agents are terminal — they cannot spawn further agents.
-Maximum 4 sub-agents per conversation (across all tiers).
+`meet` writes notes under `plans/<feature>/consults/`. Promotion to planner or
+architect updates is a follow-up action, not something the consulted role does
+directly.
 
-```
-Tier 0 — self       ← agent reads its own context (CLAUDE.md, rules/) — always free
-Tier 1 — quick      ← atomic factual lookup, ≤2 tool calls, builder only
-Tier 2 — scout      ← cross-file pattern investigation (builder, architect, reviewer, tester)
-Tier 3 — web-researcher ← external docs, standards, design patterns (architect, planner only)
-```
+## Workflow Files
 
-Scout and web-researcher are advisory — builder remains the sole implementation owner.
+`pathly init <feature>` and the planning workflows create the four core files:
 
-### Model tier reasoning
-
-```
-opus    ← architect      deep reasoning, architecture judgment
-opus    ← po             requirements depth, assumption challenging
-sonnet  ← director       intent classification, risk/rigor judgment
-sonnet  ← planner        balanced, requirements thinking
-sonnet  ← builder        code execution, following instructions
-sonnet  ← tester         careful verification, gap analysis
-sonnet  ← reviewer       adversarial analysis, rule checking
-haiku   ← quick          fast lookups, no reasoning needed
-haiku   ← orchestrator   deterministic FSM transitions, no deep reasoning needed
-haiku   ← scout          read-only codebase lookup, pattern summary
-haiku   ← web-researcher read-only web lookup, cited summary
+```text
+plans/<feature>/
+|-- USER_STORIES.md
+|-- IMPLEMENTATION_PLAN.md
+|-- PROGRESS.md
+`-- CONVERSATION_PROMPTS.md
 ```
 
----
+Standard, strict, or escalator-selected planning adds:
 
-## Skills by Scope
-
-Skills are `.md` files in a `<skill-name>/SKILL.md` structure with frontmatter:
-`name`, `description`, `argument-hint` — then step-by-step instructions in the body.
-
-### Global lifecycle skills (`~/.claude/skills/`)
-
-```
-team-flow      ← full pipeline: discovery→plan→[build+review]×N→test→retro
-                 rigor: lite (default+escalator), standard, strict
-                 rigor escalator: checks signals after planning, offers per-file additions
-debug          ← bug pipeline: scout traces → tester verifies repro → builder fixes
-                 → tester verifies fix → reviewer (narrow scope). Max 2 retries.
-explore        ← investigation mode: scout answers a codebase question, no building.
-                 Can graduate to /team-flow with CONCLUSIONS.md as storm context.
-storm          ← architect explores idea with ASCII diagrams → STORM_SEED.md
-plan           ← 4 core files always; planner adds escalator-selected extras
-build          ← read PROGRESS.md → implement next TODO conversation → verify
-review         ← adversarial check; trivial findings tagged [AUTO_FIX] with inline patch
-retro          ← ask 3 questions → write RETRO.md (with cost summary from EVENTS.jsonl)
-                 → append to LESSONS_CANDIDATE.md
-lessons        ← promote repeated patterns from LESSONS_CANDIDATE.md → LESSONS.md
-archive        ← move completed plan to plans/.archive/ (requires RETRO.md + all DONE)
-prd-import     ← read any PRD file → translate ACs + edge cases → plan files
-verify-state   ← orphan detection (TTL frontmatter), PROGRESS drift, dead code references
-help           ← state menu; --doctor mode diagnoses FSM issues and offers one action each
+```text
+HAPPY_FLOW.md
+EDGE_CASES.md
+ARCHITECTURE_PROPOSAL.md
+FLOW_DIAGRAM.md
 ```
 
-### Project-local skills (`.claude/skills/`)
+Runtime workflows may also create:
 
-Defined per-project — not documented here. See the project's own `.claude/` folder.
-
----
-
-## BMAD Integration
-
-The `bmad-import` skill bridges BMAD discovery output into this pipeline.
-BMAD handles the discovery and requirements phase; this framework handles the build.
-
-```
-BMAD Phase (external — any tool)
-  Analyst interviews user
-  PM writes PRD → docs/<feature>-prd.md
-
-Bridge — one command:
-  /bmad-import <feature> docs/<feature>-prd.md
-    reads PRD
-    translates: ACs → verify commands
-                edge cases → workflow conversation scopes
-                out-of-scope → Do NOT lists in every prompt
-    generates: plans/<feature>/ (4 files in lite, 8 in standard/strict)
-
-Agent Pipeline (this framework)
-  /team-flow <feature>    ← or /build <feature> per conversation
+```text
+STATE.json
+EVENTS.jsonl
+feedback/
+consults/
+RETRO.md
+LESSONS_CANDIDATE.md
 ```
 
-**The handoff is one file.** BMAD writes a PRD. `bmad-import` reads it. The
-agent pipeline runs from there. No shared infrastructure, no coupling.
+## Feedback Protocol
 
-### Global vs. project-local scope
+Known feedback files live under `plans/<feature>/feedback/`.
 
-```
-~/.claude/                    Global — available in every project
-  agents/                     11 behavioral contracts
-  skills/                     lifecycle skills (including archive + prd-import + verify-state)
-  templates/plan/             8 plan file templates
-
-your-project/                 Local — teaches agents YOUR rules
-  CLAUDE.md                   Architecture overview, run commands, conventions
-  .claude/rules/              Project conventions (naming, layer rules, patterns)
-  .claude/skills/             Project-specific tools (custom validators, generators)
-```
-
-Agents read `CLAUDE.md` + `.claude/rules/` during the plan step to learn the
-project's conventions. The same agents work in any project — only the rules files change.
-
----
-
-## The Feature Pipeline
-
-Start any feature with one command:
-
-```
-/team-flow <feature-name>            ← lite rigor + escalator (default)
-/team-flow <feature-name> lite       ← 4 core files only, lighter gates
-/team-flow <feature-name> standard   ← full 8-file pipeline
-/team-flow <feature-name> strict     ← mandatory approvals + audit-grade gates
-/team-flow <feature-name> fast       ← runs to completion, no pauses; escalator applies automatically
-/team-flow <feature-name> build      ← skip discovery+plan, resume build
-/team-flow <feature-name> test       ← skip to test stage only
-/team-flow <feature-name> build fast ← resume build, no pauses
-```
-
-For non-waterfall work:
-```
-/debug <symptom>      ← dedicated bug pipeline; tester runs before + after fix
-/explore <question>   ← codebase investigation; can graduate to /team-flow
-```
-
-For recovery:
-```
-/help --doctor [feature]   ← diagnose FSM issues, orphan files, stale state
-/verify-state [feature]    ← full consistency report (read-only)
-```
-
-### Pipeline with feedback loops
-
-```
-You: /team-flow payment-flow
-              │
-              ▼
-   ┌────────────────────┐
-   │  Startup Check     │  before any agent spawns:
-   │                    │  • orphan/expired feedback files? → ask to delete (fast: auto)
-   │                    │  • FSM drift? → stop, suggest /help --doctor
-   └─────────┬──────────┘
-              │  clean
-              ▼
-   ┌────────────────────┐
-   │  Stage 1 — Storm   │  architect (opus) explores idea technically
-   │                    │  → writes STORM_SEED.md on /stop plan
-   └─────────┬──────────┘
-         PAUSE ← "Ready to plan? yes / no"
-              │
-              ▼
-   ┌────────────────────┐
-   │  Stage 2 — Plan    │  planner (sonnet) runs /plan
-   │                    │  reads STORM_SEED.md if present
-   │                    │  → writes 4 core plan files always
-   └─────────┬──────────┘
-         PAUSE ← "Review plan. go / stop"
-              │
-              ▼
-   ┌────────────────────┐
-   │  Rigor Escalator   │  checks signals (cross-layer deps, keywords, conv count)
-   │  (before build 1)  │  → offers targeted extra files per signal detected
-   │                    │  → fast mode: applies all recommended files automatically
-   └─────────┬──────────┘
-         (skipped if no signals, or if rigor was explicit)
-              │
-              ▼
-   ┌──────────────────────────────────────────────┐
-   │  Stage 3 — Implement + Review Loop           │
-   │                                              │
-   │  ┌─────────┐                                 │
-   │  │ builder │── [REQ] IMPL_QUESTIONS.md ──► planner │
-   │  │(sonnet) │── [ARCH] DESIGN_QUESTIONS.md ─► arch. │
-   │  │         │── [UNSURE] → both files               │
-   │  └────┬────┘                                 │
-   │       │ code written                         │
-   │       ▼                                      │
-   │  ┌──────────┐                                │
-   │  │ reviewer │── ARCH_FEEDBACK.md ──► arch.   │
-   │  │ (sonnet) │── REVIEW_FAILURES.md ─► build. │
-   │  └────┬─────┘                                │
-   │       │ PASS                                 │
-   │  PAUSE ← "Commit. continue / stop"           │
-   │  (repeats for each TODO conversation)        │
-   └─────────────────────┬────────────────────────┘
-                         │ all conversations DONE
-                         ▼
-   ┌──────────────────────────────────────────────┐
-   │  Stage 4 — Test + Fix Loop                   │
-   │                                              │
-   │  ┌────────┐                                  │
-   │  │ tester │── TEST_FAILURES.md ──► builder   │
-   │  │(sonnet)│                                  │
-   │  └────┬───┘                                  │
-   │       │ all criteria PASS                    │
-   │  PAUSE ← "done / fix"                        │
-   └─────────────────────┬────────────────────────┘
-                         │
-                         ▼
-   ┌────────────────────┐
-   │  Stage 5 — Retro   │  quick (haiku) summarizes /retro inputs
-   │                    │  → retro skill/orchestrator writes RETRO.md with cost summary
-   │                    │    (reads EVENTS.jsonl for per-agent token/cost data)
-   └────────────────────┘
-```
-
----
-
-## Feedback File Protocol
-
-Feedback files live in `plans/<feature>/feedback/`.
-**A file existing = issue open. No file = resolved.**
-The orchestrator FSM checks after every event. Never advances past open feedback.
-See `docs/FEEDBACK_PROTOCOL.md` for formats and `docs/ORCHESTRATOR_FSM.md` for states.
-
-### TTL frontmatter (orphan detection)
-
-Every feedback file gets a YAML frontmatter block injected by `python -m pathly.hooks post-tool-use`:
-
-```yaml
----
-created_at: 2026-05-04T08:12:00Z
-created_by_event: <last-event-id-from-EVENTS.jsonl>
-ttl_hours: 24
----
-```
-
-`/verify-state` and `/help --doctor` flag files where:
-- `created_by_event` is not in the current `EVENTS.jsonl` → orphan from a previous run
-- `created_at + ttl_hours` has elapsed → stale
-
-Both cases are safe to delete. The pipeline never auto-deletes feedback files — only agents
-resolve them by deleting after fixing the underlying issue.
-
-### The 6 feedback files
-
-| File | Written by | Resolved by | When |
-|---|---|---|---|
-| `ARCH_FEEDBACK.md` | reviewer | architect | structural/architectural violation found |
-| `REVIEW_FAILURES.md` | reviewer | builder | implementation-level bug; may include `[AUTO_FIX]` patches |
-| `IMPL_QUESTIONS.md` | builder `[REQ]` | planner | requirement is ambiguous ("what should this do?") |
-| `DESIGN_QUESTIONS.md` | builder `[ARCH]` | architect | technical blocker ("how is this possible?") |
-| `TEST_FAILURES.md` | tester | builder | acceptance criterion FAIL or NOT COVERED |
-| `HUMAN_QUESTIONS.md` | orchestrator `[STALL]`/`[RIGOR]` / any agent `[BLOCKED]` | user | zero-diff loop, rigor escalation, or unresolvable question |
-
-### `[AUTO_FIX]` in REVIEW_FAILURES.md
-
-Reviewer may tag unambiguously mechanical findings as `[AUTO_FIX]` with an inline patch
-(conflict-marker style). Builder applies all `[AUTO_FIX]` patches in batch first, then
-handles remaining regular violations. Principle "reviewer never fixes" is preserved —
-the patch is a report, not an edit.
-
-### Inline quick queries (builder shortcut)
-
-Before writing `IMPL_QUESTIONS.md`, builder may use the **quick** agent inline for atomic
-factual questions (≤ 2 tool calls, no file writes, no state). If quick cannot answer in
-2 tool calls, the question goes to a feedback file as normal.
-
-### Escalation paths
-
-```
-reviewer ──► ARCH_FEEDBACK.md    ──► architect  (redesign → builder re-implements)
-         └─► REVIEW_FAILURES.md  ──► builder    ([AUTO_FIX] batch + regular fixes)
-
-builder  ──► quick (inline)       ──► atomic lookup (≤2 tool calls, no files)
-         ──► IMPL_QUESTIONS.md   ──► planner    ([REQ] — clarify → builder continues)
-         └─► DESIGN_QUESTIONS.md ──► architect  ([ARCH] — resolve → builder continues)
-         (both files if [UNSURE] — correct owner discards)
-
-tester   ──► TEST_FAILURES.md    ──► builder    (fix → tester re-checks)
-```
-
-### Resolution rules
-
-- Agent that resolves the issue **deletes the feedback file** when done.
-- **Max 2 retry cycles per conversation and feedback file.** If exceeded: stop and surface to user.
-- **Zero-diff escalation.** If builder resolves `REVIEW_FAILURES.md` but `git diff` shows no code changes, orchestrator immediately writes `HUMAN_QUESTIONS.md [STALL]` — pipeline blocks without consuming a retry cycle.
-- **ARCH_FEEDBACK blocks all further building.** Must be resolved by architect first.
-- Feedback is blocking — pipeline never advances past an open feedback file.
-
----
-
-## Full Agent Communication Map
-
-```
-         ┌─────────────────────────────┐
-         │         architect           │
-         │          (opus)             │
-         │ ◄── ARCH_FEEDBACK.md        │  ← from reviewer
-         │ ◄── DESIGN_QUESTIONS.md     │  ← from builder
-         │  ──► ARCHITECTURE_PROPOSAL  │  → read by planner + builder
-         └──────────────┬──────────────┘
-                        │
-         ┌──────────────▼──────────────┐
-         │          planner            │
-         │         (sonnet)            │
-         │ ◄── IMPL_QUESTIONS.md       │  ← from builder
-         │  ──► plans/<feature>/       │  → read by builder
-         └──────────────┬──────────────┘
-                        │
-         ┌──────────────▼──────────────┐
-         │          builder            │◄──── REVIEW_FAILURES.md (from reviewer)
-         │         (sonnet)            │◄──── TEST_FAILURES.md   (from tester)
-         │  ──► IMPL_QUESTIONS.md      │  → to planner
-         │  ──► DESIGN_QUESTIONS.md    │  → to architect
-         │  ──► code + PROGRESS.md     │  → read by reviewer + tester
-         └──────────────┬──────────────┘
-                        │
-         ┌──────────────▼──────────────┐
-         │         reviewer            │
-         │         (sonnet)            │
-         │  ──► ARCH_FEEDBACK.md       │  → to architect
-         │  ──► REVIEW_FAILURES.md     │  → to builder
-         └──────────────┬──────────────┘
-                        │ PASS
-         ┌──────────────▼──────────────┐
-         │          tester             │
-         │         (sonnet)            │
-         │  ──► TEST_FAILURES.md       │  → to builder
-         └──────────────┬──────────────┘
-                        │ PASS
-         ┌──────────────▼──────────────┐
-         │           quick             │
-         │          (haiku)            │
-         │  ──► RETRO.md               │  → seed for next storm
-         └─────────────────────────────┘
-```
-
----
-
-## File-Based Handoff Protocol (Forward Flow)
-
-```
-ROLE              WRITES                         READS
-──────────────    ───────────────────────────    ──────────────────────────
-architect         STORM_SEED.md                  —
-(storm)                    │
-                            ▼
-planner           plans/<feature>/               STORM_SEED.md (then deletes)
-(plan)              ├─ USER_STORIES.md
-                    ├─ IMPLEMENTATION_PLAN.md
-                    ├─ PROGRESS.md
-                    ├─ CONVERSATION_PROMPTS.md
-                    ├─ HAPPY_FLOW.md              (standard/strict)
-                    ├─ EDGE_CASES.md              (standard/strict)
-                    ├─ ARCHITECTURE_PROPOSAL.md   (standard/strict)
-                    └─ FLOW_DIAGRAM.md            (standard/strict)
-                            │
-                            ▼
-builder           PROGRESS.md (TODO→DONE/conv)   CONVERSATION_PROMPTS.md
-(build)           feedback/*.md if blocked        PROGRESS.md
-                            │
-                            ▼
-reviewer          feedback/ARCH_FEEDBACK.md       changed files (git diff)
-(review)          feedback/REVIEW_FAILURES.md     .claude/rules/*.md
-                            │ PASS
-                            ▼
-tester            feedback/TEST_FAILURES.md       USER_STORIES.md
-(test)                      │ PASS               (acceptance criteria)
-                            ▼
-quick             retro summary                   PROGRESS.md
-(retro)             "Seed for Next Storm"         CONVERSATION_PROMPTS.md
-                  LESSONS_CANDIDATE.md (append)
-                            │
-                            ▼
-(optional)        LESSONS.md                      LESSONS_CANDIDATE.md
-/lessons            promoted active lessons       plans/.archive/*/RETRO.md
-                    max 12, planner reads this
-                            │
-                            ▼
-user              plans/.archive/<feature>/        plans/<feature>/
-(archive)           plan files + RETRO.md           moved, not deleted
-                    recoverable via git             plans/ stays clean
-                            │
-                            ▼
-architect         [next session — new feature]    RETRO.md (from archive)
-(storm)
-planner           applies LESSONS.md injections   LESSONS.md
-(plan)
-```
-
----
-
-## Plan File Traceability
-
-The 8 files in `plans/<feature>/` cross-reference each other — full traceability
-from user story to the conversation that implements it.
-
-```
-USER_STORIES.md          IMPLEMENTATION_PLAN.md     CONVERSATION_PROMPTS.md
-─────────────────        ──────────────────────     ───────────────────────
-Story S1.1               Phase 1                    Conversation 1
-  Acceptance Criteria      Delivers stories: S1.1     Stories delivered: S1.1
-  Edge Cases               Files: ...                 Prompt: ...
-  Delivered by:            Verify: ...
-    Phase 1 → Conv 1
-
-                          PROGRESS.md
-                          ─────────────────────────────────────
-                          Story Status table   S1.1: TODO → DONE
-                          Conversation table   Conv 1: TODO → DONE
-                          Phase Detail table   Phase 1: TODO → DONE
-```
-
----
-
-## Worked Examples
-
-### Example 1 — With a PRD (import first)
-
-**Scenario:** Build a user search feature. You already have a requirements doc.
-
-```
-Step 1 — PRD exists at:
-  docs/user-search-prd.md
-    User Stories: S1 (search by name), S2 (filter by role)
-    ACs: search input, results list, empty state message
-    Edge cases: no results, special characters in query
-    Out of scope: bulk operations, export
-
-Step 2 — Import it:
-  /prd-import user-search docs/user-search-prd.md
-
-  prd-import reads the PRD and translates:
-    AC "search input exists"      → verify: grep "search_input" src/user/search.py
-    AC "results list renders"     → verify: pytest tests/test_user_search.py -k results
-    Edge case "no results"        → Conversation 2: handle empty results state
-    Out of scope "bulk ops"       → Do NOT: in every conversation prompt
-
-  Output: plans/user-search/ (8 files, ready for building)
-
-Step 3 — Build:
-  /team-flow user-search
-
-  architect reads plans/ + CLAUDE.md + .claude/rules/
-    → designs the implementation structure for user search
-  builder Conversation 1:
-    → src/user/search.py (search logic)
-    → tests/test_user_search.py
-  builder Conversation 2:
-    → src/user/results.py
-    → tests/test_user_results.py (empty state edge case)
-  reviewer checks architecture + project conventions after each conversation
-  tester runs: pytest tests/test_user_search.py
-  quick summarizes; retro skill/orchestrator writes RETRO.md
-```
-
----
-
-### Example 2 — Without a PRD (plan directly)
-
-**Scenario:** Add CSV export to an existing list view. No PRD, you know what you want.
-
-```
-Step 1 — Brainstorm (optional):
-  /storm
-
-  architect (Opus) explores the idea:
-    "CSV export needs a serializer layer + HTTP response with correct headers"
-    "should reuse the existing list query, not duplicate it"
-    "streaming vs. in-memory — list could be large"
-  → writes plans/STORM_SEED.md with decisions + open questions
-
-Step 2 — Plan:
-  /plan list-csv-export
-
-  planner reads STORM_SEED.md (pre-filled answers)
-  interviews you on anything missing
-  reads CLAUDE.md + .claude/rules/ to learn project conventions
-  generates plans/list-csv-export/ (8 files):
-    CONVERSATION_PROMPTS.md has 2 conversations:
-      Conv 1: implement serializer + HTTP endpoint + unit tests
-      Conv 2: write integration test for full export flow
-
-Step 3 — Build one conversation at a time:
-  /build list-csv-export     ← implements Conv 1, pauses
-  /build list-csv-export     ← implements Conv 2, pauses
-
-  Or run everything:
-  /team-flow list-csv-export
-
-Step 4 — Verify:
-  pytest tests/test_csv_export.py
-```
-
-**Key difference from Example 1:** No PRD file. `/plan` does the interview itself.
-The rest of the pipeline is identical.
-
----
-
-### Decision guide: PRD import or /plan?
-
-| Situation | Use |
+| File | Owner to resolve |
 |---|---|
-| You have a BMAD PRD | `/bmad-import <feature> <prd.md>` |
-| You have any other requirements doc | `/prd-import <feature> <prd.md>` |
-| Complex feature, need discovery first | `/storm` then `/plan` |
-| You know what you want, no PRD | `/plan <feature>` (interview mode) |
-| Quick feature, just start building | `/plan <feature> lite` then `/build` |
+| `ARCH_FEEDBACK.md` | architect |
+| `DESIGN_QUESTIONS.md` | architect |
+| `IMPL_QUESTIONS.md` | planner |
+| `REVIEW_FAILURES.md` | builder |
+| `TEST_FAILURES.md` | builder |
+| `HUMAN_QUESTIONS.md` | user |
 
----
+File present means issue open. File deleted means resolved.
 
-## Quick Reference
+## Rigor Modes
 
-```bash
-# Recommended entry (new users)
-/help                            ← detect state → numbered menu
-                                 #   pick [1] → describe in plain English → /go routes you
+| Rigor | Use for | Planning surface |
+|---|---|---|
+| `nano` | Tiny low-risk changes | Minimal route; no full plan required by the core prompt. |
+| `lite` | Default small-to-normal work | Four core plan files, with escalator additions when needed. |
+| `standard` | Normal product features | All eight plan files and normal review/test gates. |
+| `strict` | Auth, payments, migrations, compliance | All eight files plus audit state and explicit approvals. |
 
-# Plain English entry
-/go                              ← prompts "What do you want?" → classifies → routes
-/go <what you want>              ← skip the prompt, routes immediately
+Fast mode controls pauses. Rigor controls process depth. `strict` should not
+auto-advance through human approval gates.
 
-# Direct pipeline entry
-/team-flow <feature>
-/team-flow <feature> lite
-/team-flow <feature> standard
-/team-flow <feature> strict
+## Command Map
 
-# Run with no pauses
-/team-flow <feature> fast
+Claude Code:
 
-# Resume mid-pipeline
-/team-flow <feature> build       ← skip to build stage
-/team-flow <feature> test        ← skip to test stage
-/team-flow <feature> plan        ← skip discovery, start planning
-/team-flow <feature> build fast  ← resume build, no pauses
-
-# Individual stages (manual control)
-/storm                           ← architect explores the idea
-/plan <feature>                  ← planner creates plans/<feature>/
-/build <feature>                 ← builder implements next conversation
-/retro <feature>                 ← quick summarizes; retro skill writes the retrospective + extracts lessons
-/lessons                         ← promote candidate lessons → LESSONS.md (active)
-/archive <feature>               ← move completed plan to plans/.archive/
-
-# Code quality
-/review                         ← reviewer checks staged changes
-
-# Codebase exploration
-/explore <question>             ← scout traces a local codebase question
+```text
+/pathly help
+/pathly flow <feature>
+/pathly debug <symptom>
+/pathly explore <question>
+/pathly meet [feature]
 ```
 
----
+Codex:
 
-## Directory Map
-
+```text
+Use Pathly help
+Use Pathly flow for <feature>
+Use Pathly to debug <symptom>
+Use Pathly to explore <question>
 ```
-~/.claude/
-├── ARCHITECTURE.md         ← this file
-├── FEEDBACK_PROTOCOL.md    ← feedback file formats + escalation rules
-├── ORCHESTRATOR_FSM.md     ← deterministic workflow state machine
-├── agents/
-│   ├── README.md
-│   ├── architect.md
-│   ├── po.md
-│   ├── planner.md
-│   ├── builder.md
-│   ├── tester.md
-│   ├── quick.md
-│   ├── reviewer.md
-│   ├── orchestrator.md
-│   ├── scout.md
-│   └── web-researcher.md
-├── orchestrator/           ← FSM runtime (Python)
-│   ├── constants.py        ← named constants for FSMState, Agent, FeedbackFile, Mode, Rigor
-│   ├── utils.py            ← utc_now() timestamp helper (single source across all modules)
-│   ├── state.py            ← 14-state immutable State dataclass; state_stack for nested blocks
-│   ├── events.py           ← 9 event classes + event_factory() deserializer
-│   ├── reducer.py          ← pure reduce(state, event) → new_state; _AGENT_TRANSITIONS dict
-│   ├── eventlog.py         ← per-feature EVENTS.jsonl + STATE.json writer
-│   └── test_fsm.py         ← 9 FSM unit tests
-├── skills/
-│   ├── team-flow/SKILL.md
-│   ├── storm/SKILL.md
-│   ├── plan/SKILL.md
-│   ├── build/SKILL.md
-│   ├── review/SKILL.md
-│   ├── retro/SKILL.md
-│   ├── lessons/SKILL.md
-│   ├── archive/SKILL.md
-│   └── prd-import/SKILL.md
-├── pathly/hooks/
-│   └── classify_feedback.py    ← PostToolUse/Write — auto-tags IMPL_QUESTIONS.md
-└── templates/plan/
-    ├── USER_STORIES.template.md
-    ├── IMPLEMENTATION_PLAN.template.md
-    ├── PROGRESS.template.md
-    ├── CONVERSATION_PROMPTS.template.md
-    ├── HAPPY_FLOW.template.md
-    ├── EDGE_CASES.template.md
-    ├── ARCHITECTURE_PROPOSAL.template.md
-    └── FLOW_DIAGRAM.template.md
 
-.claude/  (project-local — defined per project, not documented here)
-├── rules/    ← project-specific conventions
-├── skills/   ← project-specific tools
-└── host hooks    ← project-specific guards
+CLI:
+
+```text
+pathly help [feature]
+pathly init <feature>
+pathly flow <feature> [--entry discovery|build|test] [--fast]
+pathly meet [feature] --role planner --question "..."
 ```

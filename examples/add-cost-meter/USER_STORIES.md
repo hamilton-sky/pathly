@@ -22,7 +22,7 @@ After a pipeline run, there was no way to know how many tokens the run consumed 
 **As a** developer reviewing a completed pipeline run, **I want** the retro to print a cost summary, **so that** I know how much the run cost without leaving the terminal.
 
 **Acceptance Criteria:**
-- [ ] `/retro` reads `EVENTS.jsonl` and sums cost events by agent
+- [ ] Retro workflow reads `EVENTS.jsonl` and sums cost events by agent
 - [ ] Retro output includes a cost table: agent | conversations | total_usd
 - [ ] If no cost events exist: retro skips the cost section without error
 

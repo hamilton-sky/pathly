@@ -1,10 +1,10 @@
 # Pathly Core
 
-This folder is the tool-agnostic source of truth for Pathly.
+This folder is the tool-agnostic source of truth for Pathly workflow content.
 
-Core files describe what Pathly knows and how the workflows behave. They should
-not depend on Claude Code slash-command syntax, Codex plugin metadata, or any
-other host-specific packaging format.
+Core files describe what Pathly knows and how workflows behave. They should not
+depend on Claude Code slash-command syntax, Codex plugin metadata, or any other
+host-specific packaging format.
 
 Adapters turn this core into tool-specific experiences:
 
@@ -13,7 +13,7 @@ Adapters turn this core into tool-specific experiences:
 - CLI commands
 - future Cursor, Windsurf, BMAD, or generic prompt packs
 
-Current status: `core/` contains the canonical prompt and agent contract copies.
+Current status: `core/` contains canonical prompt and agent contract copies.
 Adapter folders own host-specific wrappers. `.agents/skills/` is retained as a
 direct Codex-safe skill-discovery mirror of `adapters/codex/skills/`.
 
@@ -24,14 +24,14 @@ test, or execute Pathly in their own top-level folders.
 
 ```text
 pathly/
-├── core/          # shared prompts, workflow contracts, agent specs, templates
-├── adapters/      # host-specific packaging for Codex, Claude Code, CLI, etc.
-├── .agents/       # Codex marketplace metadata and direct skill mirror
-├── pathly/        # Python CLI package
-├── orchestrator/  # filesystem state machine/runtime code
-├── tests/         # automated quality gates
-├── docs/          # design, readiness, and review notes
-└── examples/      # sample Pathly project artifacts
+|-- core/          # shared prompts, workflow contracts, agent specs, templates
+|-- adapters/      # host-specific packaging for Codex, Claude Code, CLI, etc.
+|-- .agents/       # Codex marketplace metadata and direct skill mirror
+|-- pathly/        # Python CLI package
+|-- orchestrator/  # filesystem state machine/runtime code
+|-- tests/         # automated quality gates
+|-- docs/          # design, readiness, and review notes
+`-- examples/      # sample Pathly project artifacts
 ```
 
 The target direction is:

@@ -1,125 +1,84 @@
-# Philosophy — Why This System Is Built the Way It Is
+# Philosophy - Why Pathly Works This Way
 
-*The five convictions behind Pathly.*
+Pathly is built around a small set of design choices that should stay stable
+across CLI, Claude Code, Codex, and future adapters.
 
----
+## 1. Files Are The Protocol
 
-## 1. Files are the protocol, not function calls
+Pathly does not rely on hidden conversation memory as the workflow state. Agents
+write files, the orchestrator reads files, and the next action is derived from
+disk.
 
-Most multi-agent systems pass messages between agents — direct calls, shared queues, in-memory state. This system does not. Every agent writes a file when its job is done. The orchestrator reads the filesystem, applies a deterministic transition, and emits the next single action. Nothing else.
+Useful state is visible in:
 
-This means:
-
-- **Any agent can stop and resume** because the file is always there.
-- **State is inspectable** — open `plans/<feature>/`, `STATE.json`, `EVENTS.jsonl`, `PROGRESS.md`, and `feedback/` to know exactly where things stand.
-- **Agents are replaceable** — swap the builder, the planner still reads the same plan files.
-
-The file is not a side effect of the process. It *is* the process.
-
----
-
-## 2. Agent = behavioral contract, not persona
-
-Most agent frameworks define agents as characters: "You are a helpful assistant who specializes in..." This system defines agents as constraints: here is what you think about, here is what you must never do.
-
-The difference is load-bearing.
-
-A persona drifts. Given enough turns, a "senior architect" starts writing code, a "reviewer" starts fixing things instead of reporting them. A behavioral contract does not drift — the rules are structural, not stylistic.
-
-```
-reviewer.md:
-  "Find what's wrong before it ships."
-  "Adversarial. Writes feedback files, but cannot edit source or run Bash."
+```text
+plans/<feature>/
+|-- PROGRESS.md
+|-- STATE.json
+|-- EVENTS.jsonl
+|-- feedback/
+`-- consults/
 ```
 
-That is not a personality. It is a constraint. The role is stable across every project.
+This makes interruption and recovery practical. If a session stops, another
+agent can inspect the filesystem and continue.
 
----
+## 2. Agents Are Contracts
 
-## 3. Feedback loops, not a linear chain
+An agent is a responsibility boundary, not a persona. The role contract defines
+what the agent may decide, write, and never do.
 
-A naive pipeline is a straight line: Storm → Plan → Build → Test → Done. When the tester finds a problem that originated in the plan, a straight line has no path back. You stop, or you ignore it.
+Examples:
 
-This system routes problems to their exact owner through typed feedback files:
+- Reviewer reports findings; it does not patch source.
+- Builder implements scoped work; it does not silently redesign architecture.
+- Orchestrator routes state; it does not implement features.
+- PO is optional and clarifies product intent when needed.
 
-```
-reviewer finds architectural flaw  → ARCH_FEEDBACK.md    → architect redesigns
-reviewer finds implementation bug  → REVIEW_FAILURES.md  → builder fixes
-builder has [REQ] ambiguity        → IMPL_QUESTIONS.md   → planner clarifies
-builder has [ARCH] blocker         → DESIGN_QUESTIONS.md → architect resolves
-tester finds failing criterion     → TEST_FAILURES.md    → builder fixes
-```
+## 3. Feedback Loops Beat Linear Pipelines
 
-Not "broadcast an error." Not "go back to start." Each problem travels back to the specific role that owns it. The pipeline bends back and heals without breaking.
+A straight pipeline cannot recover well when the wrong role needs to answer a
+problem. Pathly routes problems through typed feedback files:
 
-**File present = issue open. Deleted = resolved.** The orchestrator FSM never advances past an open feedback file.
-
-A `PostToolUse` hook (`classify_feedback.py`) fires whenever `IMPL_QUESTIONS.md` is written. It classifies each question as `[REQ]`, `[ARCH]`, or `[UNSURE]` via Haiku, rewrites the file with tags, and auto-splits `[ARCH]` questions into `DESIGN_QUESTIONS.md`. Classification is enforced by the system — not left to builder discipline.
-
----
-
-## 4. Human checkpoints are the point
-
-The pipeline pauses at every stage transition. This is not a limitation — it is the design.
-
-AI agents fail in long chains. Wrong assumptions compound. An architectural decision made in stage 2 can render five conversations of implementation worthless by stage 3. Pausing is cheap. Catching a wrong assumption at the plan review costs minutes. Catching it after three builder conversations costs hours.
-
-The fast mode (`/team-flow <feature> fast`) exists for when you are confident. The default is pauses, because the default assumption is that you are not yet confident.
-
-Rigor is separate from speed. `lite`, `standard`, and `strict` decide how much process structure the feature needs:
-
-- `lite` is for small, low-risk changes. It keeps the build-critical plan files and reduces ceremony.
-- `standard` is the default full feature pipeline.
-- `strict` is for high-risk work where human approvals, audit logs, review gates, and test mapping are required.
-
----
-
-## 5. The shape: narrow nodes, explicit joints, typed return paths
-
-Every unit in this system does exactly one job. Not "roughly one job" — one job. The reviewer never fixes. The builder never makes architecture decisions. The orchestrator never implements. Narrow nodes are where bugs surface cleanly; fat nodes are where bugs hide.
-
-The connections between units are named contracts — feedback files with specific formats, plan files with specific sections, behavioral rules written into each agent, and state transitions recorded in `EVENTS.jsonl`. You cannot pass something through without naming it, making it visible, making it checkable.
-
-The return paths are precise. Not a loop back to the start. `ARCH_FEEDBACK` goes to the architect specifically. `IMPL_QUESTIONS` goes to the planner specifically. Problems travel to their exact owner along labeled paths.
-
-```
- ┌──────────┐      ┌──────────┐      ┌──────────┐
- │ architect│─────►│ planner  │─────►│ builder  │
- └──────────┘      └──────────┘      └──────────┘
-      ▲                  ▲                 │
-      │ ARCH_FEEDBACK     │ IMPL_QUESTIONS  │
-      │                   └────────────────┘
-      └──────────────────────────────────────── from reviewer
+```text
+reviewer -> ARCH_FEEDBACK.md    -> architect
+reviewer -> REVIEW_FAILURES.md  -> builder
+builder  -> IMPL_QUESTIONS.md   -> planner
+builder  -> DESIGN_QUESTIONS.md -> architect
+tester   -> TEST_FAILURES.md    -> builder
+any role -> HUMAN_QUESTIONS.md  -> user
 ```
 
-One-way spine. Named joints. Typed return paths. **Clarity made structural.**
+File present means open. File deleted means resolved.
 
----
+## 4. Human Gates Are Intentional
 
-## 6. Memory that improves plans, not agents
+The default workflow pauses at meaningful stage transitions so wrong assumptions
+can be caught before more work is built on top of them.
 
-The lessons system (`/retro` → `LESSONS_CANDIDATE.md` → `/lessons` → `LESSONS.md`) does not make agents smarter. It compresses repeated failures into enforced planning constraints.
+Fast mode skips allowed pauses, but it does not skip feedback files, retry
+limits, missing prerequisites, or strict approval gates.
 
-When the same failure pattern appears in three different feature retros, it is promoted into `LESSONS.md` as an injection the planner applies before the next plan is written. The agent does not learn — the plan gets harder to fail.
+## 5. Rigor And Speed Are Separate
 
-This is the distinction:
-- **Smarter agent** → unpredictable, harder to audit
-- **Better constraint** → deterministic, reviewable, deletable
+Rigor controls how much process a feature needs:
 
-Lessons are constraints, not memory. They change what gets planned, not how the planner thinks.
+- `nano`: tiny, low-risk changes
+- `lite`: default path with the four core plan files
+- `standard`: all eight plan files and normal review/test gates
+- `strict`: audit-grade workflow with explicit approvals
 
----
+Speed controls whether pauses are interactive or auto-advanced. Keep those
+concepts separate in docs, prompts, and code.
 
-## The through-line
+## 6. Lessons Improve Plans, Not Agent Personalities
 
-Every design decision in this framework expresses the same answer to the same question:
+Retrospectives and lessons should become planning constraints. The goal is not
+to make an agent vaguely "smarter"; the goal is to make future plans harder to
+fail in the same way.
 
-> *How do you build a system where independent units collaborate reliably, failures are caught early, and no single unit carries too much responsibility?*
+## 7. Core Is Host-Neutral
 
-1. Give each unit exactly one job.
-2. Make boundaries explicit and enforced — not advisory.
-3. Route problems back to their owners through a structured protocol.
-4. Catch things early, before the next stage begins.
-5. Store state on disk so the system survives any interruption.
-6. Recover the pipeline by deriving state from disk, not from chat memory.
-7. Let repeated failures tighten the plan, not complicate the agent.
+Shared workflow meaning belongs in `core/`. Claude Code slash syntax, Codex
+natural-language invocation, direct `.agents/skills/` discovery, and terminal
+commands are adapter concerns.

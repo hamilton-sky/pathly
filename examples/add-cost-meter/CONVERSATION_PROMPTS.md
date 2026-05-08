@@ -1,39 +1,33 @@
-# add-cost-meter — Conversation Guide
+# add-cost-meter - Conversation Guide
 
-1 conversation. Produces runnable, tested code. Commit after.
+One conversation. Produces runnable, tested code.
 
----
-
-## Conversation 1: Cost events + retro summary (Phases 1–2)
+## Conversation 1: Cost Events And Retro Summary
 
 **Stories delivered:** S1.1, S1.2
 
-**Prompt to paste:**
-```
-Implement add-cost-meter Conversation 1 (Phases 1–2) from examples/add-cost-meter/IMPLEMENTATION_PLAN.md.
+```text
+Implement add-cost-meter Conversation 1 from examples/add-cost-meter/IMPLEMENTATION_PLAN.md.
 
 Scope:
-- Phase 1: Add `append_cost(agent, input_tokens, output_tokens, cost_usd)` to `orchestrator/eventlog.py`.
-  Appends a JSON line with `{"type": "cost", "agent": ..., "input_tokens": ..., "output_tokens": ..., "cost_usd": ..., "ts": ...}` to EVENTS.jsonl.
-  `cost_usd` may be null if token info was unavailable — do not raise, just write null.
-- Phase 2: Update `skills/retro/SKILL.md` to read EVENTS.jsonl after writing RETRO.md.
-  Filter lines where `type == "cost"`. Group by agent. Sum `cost_usd` (skip nulls).
-  Print a cost table: agent | conversations | total_usd.
-  If no cost events or EVENTS.jsonl missing: skip the section, print "No cost data recorded."
+- Record cost metadata in the event log path used by Pathly runtime events.
+- Update the canonical retro workflow in core/prompts/retro.md so retros can
+  summarize cost data from EVENTS.jsonl.
+- Keep adapter wrappers thin. Do not duplicate retro logic in
+  adapters/claude-code/skills/retro/SKILL.md or adapters/codex/skills/retro/SKILL.md.
 
 Layer rules:
-- Phase 1 touches orchestrator/ only.
-- Phase 2 touches skills/retro/ only.
-- Do NOT touch team-flow/SKILL.md, agents/, or any other file.
+- Runtime persistence belongs in orchestrator/.
+- Shared workflow instructions belong in core/prompts/.
+- Host-specific wrapper files should only point at core prompts.
 
-Verify: python -m pytest tests/ -q (or python orchestrator/eventlog.py --selftest if tests are not wired yet)
-After done, update examples/add-cost-meter/PROGRESS.md Conv 1 to DONE.
+Verify:
+python -m pytest tests/ -q
 
-If verification fails and the fix requires out-of-scope changes, stop and report.
-If fundamentally broken, rollback with git checkout on affected files and retry.
+After verification, update examples/add-cost-meter/PROGRESS.md Conv 1 to DONE.
 ```
 
-**Expected output:** `eventlog.py` has `append_cost`; retro skill prints cost table after RETRO.md.
-**Files touched:** `orchestrator/eventlog.py`, `skills/retro/SKILL.md`
+**Expected output:** runtime events can carry cost metadata and the retro
+workflow documents how to summarize it.
 
----
+**Files touched:** `orchestrator/eventlog.py`, `core/prompts/retro.md`

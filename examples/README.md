@@ -1,6 +1,9 @@
 # Examples
 
-Worked examples of complete pipeline runs. Each folder is the actual plan produced by `/team-flow` for a real feature, plus a `STORY.md` narrative that explains what happened.
+Worked examples of complete pipeline runs. Each folder is a plan produced by an
+older Pathly flow for a real feature, plus a `STORY.md` narrative that explains
+what happened. Some examples intentionally preserve historical context, but file
+paths should point at the current repository layout where possible.
 
 ## Current Example
 
@@ -128,4 +131,6 @@ To run your own feature through the pipeline:
 
 ```text
 /pathly flow my-feature-name
+pathly flow my-feature-name
+Use Pathly flow for my-feature-name
 ```

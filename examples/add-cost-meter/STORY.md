@@ -1,18 +1,29 @@
 # Example: add-cost-meter
 
-This folder contains the actual plan files used to implement cost tracking for the pipeline — improvement #3 from the internal system review.
+This folder contains historical plan files used to implement cost tracking for
+the pipeline: improvement #3 from the internal system review.
 
-## What happened
+## What Happened
 
-The retro stage had no visibility into how expensive a pipeline run actually was. Agents ran, tokens accumulated, and at the end there was no number to look at. After a few long runs where cost was unclear, the decision was to add cost tracking as a first-class concern: every agent completion appends a cost event to `EVENTS.jsonl`, and the retro skill surfaces a summary.
+The retro stage had no visibility into how expensive a pipeline run was. Agents
+ran, tokens accumulated, and the final retrospective did not expose cost. The
+feature added cost metadata to runtime events and taught the retro workflow how
+to summarize that data.
 
-The feature was small enough to fit in a single builder conversation. The rigor escalator ran and detected no cross-layer dependencies and no risk keywords — so the plan stayed at lite (4 files). No escalation was offered, no extra files were added. The builder touched 2 files (`orchestrator/eventlog.py` and `skills/retro/SKILL.md`), the reviewer passed on the first run, and the retro was written in under 5 minutes.
+The feature was small enough to fit in a single builder conversation. The rigor
+escalator found no cross-layer dependencies and no risk keywords, so the plan
+stayed at lite with four core files.
 
-## What this demonstrates
+In the current repository layout, shared retro behavior lives in
+`core/prompts/retro.md` and adapter wrappers live under
+`adapters/*/skills/retro/`.
 
-- Lite rigor in practice: 4 files, 1 conversation, no ceremony overhead
-- The escalator correctly staying quiet when there's nothing to escalate
-- A complete pipeline run from plan → build → review → test → retro
-- How `PROGRESS.md` tracks state so a run can be paused and resumed
+## What This Demonstrates
 
-To see what a standard-rigor plan looks like (with ARCHITECTURE_PROPOSAL.md, EDGE_CASES.md, etc.), check `docs/SECURITY_RELIABILITY_REVIEW.md` — the FSM orchestrator was planned at standard rigor and has all 8 files.
+- Lite rigor in practice: four files, one conversation, low overhead.
+- The escalator staying quiet when there is nothing to escalate.
+- A complete pipeline run from plan to build to review to test to retro.
+- How `PROGRESS.md` tracks state so a run can be paused and resumed.
+
+To see the current standard-rigor file set, inspect the templates under
+`core/templates/plan/`.

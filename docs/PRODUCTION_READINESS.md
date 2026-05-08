@@ -10,8 +10,8 @@ Pathly is currently best described as:
 
 - Public beta candidate for Claude Code and Codex workflows.
 - Supported for Claude Code through the existing install scripts.
-- Ready for Codex plugin testing through `.codex-plugin/plugin.json` and the
-  local marketplace helper.
+- Ready for Codex plugin testing through
+  `adapters/codex/.codex-plugin/plugin.json` and the local marketplace helper.
 - Packaged as a Python CLI named `pathly` for install guidance, project plan
   initialization, status menus, doctor checks, and the Python team-flow driver.
 - Not yet production-ready: end-to-end agent runs, hook hardening, public case
@@ -23,7 +23,8 @@ Pathly is currently best described as:
 Required before calling the release production-ready:
 
 - Keep the Claude Code install scripts working on macOS, Linux, and Windows.
-- Validate `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and
+- Validate `adapters/claude-code/.claude-plugin/plugin.json`,
+  `adapters/codex/.codex-plugin/plugin.json`, public marketplace metadata, and
   adapter manifests as JSON.
 - Document exactly what each install path writes and how to uninstall it.
 - Keep smoke tests that confirm every documented skill exists under
@@ -41,7 +42,9 @@ Current CLI scope:
 - `pathly help`, `pathly doctor`, `pathly debug`, `pathly explore`, and
   `pathly review` expose stable local fallback surfaces.
 - `pathly flow <feature>` runs the Python team-flow driver when the required
-  host tooling is available.
+  runner tooling is available.
+- `pathly meet [feature]` writes read-only consultation notes under
+  `plans/<feature>/consults/` when the required runner tooling is available.
 
 Recommended next:
 
@@ -75,7 +78,7 @@ Before publishing broadly:
 
 Done:
 
-- Add `.codex-plugin/plugin.json`.
+- Add `adapters/codex/.codex-plugin/plugin.json`.
 - Point Codex at `./adapters/codex/skills/`.
 - Add `.agents/skills/` as a direct skill-discovery mirror for Codex-safe
   wrappers.
@@ -89,6 +92,8 @@ Still needed:
 - Decide whether `adapters/claude-code/agents/` needs a Codex-native equivalent
   or can remain reference material.
 - Add Codex-specific install screenshots or exact UI steps once verified.
+- Keep docs clear that Codex uses natural-language skill prompts, not
+  plugin-defined `/pathly` slash commands in current builds.
 
 ## Multi-Tool Adapters
 
@@ -123,10 +128,11 @@ Recommended:
 - Changelog for every public release.
 - Version tag before large restructuring.
 - Example walkthroughs:
-  - New feature through `/go`.
-  - Bug fix through `/debug`.
-  - Stuck state through `/help --doctor`.
-  - Codebase question through `/explore`.
+  - New feature through `/pathly ...` in Claude Code and `Use Pathly ...` in
+    Codex.
+  - Bug fix through `debug`.
+  - Stuck state through `help` / `doctor`.
+  - Codebase question through `explore`.
 
 ## Security Notes
 
