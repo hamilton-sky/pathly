@@ -30,7 +30,7 @@ def stitch_skill(core_path: Path, meta_path: Path) -> str:
     return body
 
 
-def stitch_agent(core_path: Path, meta_path: Path) -> str:
+def stitch_agent(core_path: Path, meta_path: Path, *, footer: str | None = None) -> str:
     if not core_path.exists():
         raise FileNotFoundError(f"Core agent file not found: {core_path}")
 
@@ -63,5 +63,8 @@ def stitch_agent(core_path: Path, meta_path: Path) -> str:
 
     if meta.get("spawn_section"):
         parts.append(meta["spawn_section"].strip())
+
+    if footer:
+        parts.append(footer.strip())
 
     return "\n\n".join(parts) + "\n"

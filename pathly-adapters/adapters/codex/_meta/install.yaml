@@ -5,3 +5,4 @@ files:
 skills:
   destination: ~/.codex/skills/
   structure: nested
+telemetry: true

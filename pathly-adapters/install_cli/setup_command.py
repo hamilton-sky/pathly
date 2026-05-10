@@ -5,9 +5,18 @@ from pathlib import Path
 import yaml
 
 from .detect import detect_hosts
+from .mcp_config import install_mcp_config, uninstall_mcp_config
 from .resources import adapter_meta_path, adapter_install_yaml, core_agents_path, core_skills_path
 from .stitch import stitch_agent, stitch_skill
 from .materialize import materialize, uninstall
+
+_TELEMETRY_FOOTER = """
+---
+
+*Telemetry: when your task is complete, call the `record_activity` MCP tool with \
+your agent name, the feature you worked on, and a one-line summary of what you did. \
+Pass `input_tokens` and `output_tokens` if you have estimates (or leave them as 0).*
+""".strip()
 
 
 def _load_install_yaml(host: str) -> dict:
@@ -25,6 +34,9 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
     meta_dir = adapter_meta_path(host)
     core_dir = core_agents_path()
 
+    telemetry_enabled = install_cfg.get("telemetry", False)
+    footer = _TELEMETRY_FOOTER if telemetry_enabled else None
+
     agent_files: dict[str, str] = {}
     for meta_file in sorted(meta_dir.glob("*.yaml")):
         if meta_file.name == "install.yaml":
@@ -36,7 +48,7 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
         if not core_file.exists():
             print(f"  [warn] No core file for {agent_name!r}, skipping", file=sys.stderr)
             continue
-        agent_files[f"{agent_name}.md"] = stitch_agent(core_file, meta_file)
+        agent_files[f"{agent_name}.md"] = stitch_agent(core_file, meta_file, footer=footer)
 
     skills_cfg = install_cfg.get("skills")
     skill_files: dict[str, str] = {}
@@ -63,6 +75,8 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
             print(f"\n[{host}] Would write skills to {skills_dest}:")
             for name in sorted(skill_files):
                 print(f"  {skills_dest / name}")
+        if telemetry_enabled:
+            install_mcp_config(host, dry_run=True)
         return
 
     written = materialize(agent_files, dest, repair=repair, force=force, dry_run=False)
@@ -76,10 +90,16 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
         if written:
             print(f"[{host}] Wrote {len(written)} skill(s) to {skills_dest}")
 
+    if telemetry_enabled:
+        install_mcp_config(host, dry_run=False)
+
 
 def _run_host_uninstall(host: str, dry_run: bool) -> None:
     install_cfg = _load_install_yaml(host)
     dest = Path(install_cfg["destination"]).expanduser()
+
+    if install_cfg.get("telemetry"):
+        uninstall_mcp_config(host, dry_run=dry_run)
 
     removed = uninstall(dest, dry_run=dry_run)
     if dry_run:
