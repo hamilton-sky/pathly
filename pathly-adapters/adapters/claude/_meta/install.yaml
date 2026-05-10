@@ -2,3 +2,6 @@ host: claude
 destination: ~/.claude/agents/
 files:
   - source: agents/
+skills:
+  destination: ~/.claude/
+  structure: flat

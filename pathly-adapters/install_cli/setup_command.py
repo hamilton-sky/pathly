@@ -5,8 +5,8 @@ from pathlib import Path
 import yaml
 
 from .detect import detect_hosts
-from .resources import adapter_meta_path, adapter_install_yaml, core_agents_path
-from .stitch import stitch_agent
+from .resources import adapter_meta_path, adapter_install_yaml, core_agents_path, core_skills_path
+from .stitch import stitch_agent, stitch_skill
 from .materialize import materialize
 
 
@@ -29,6 +29,8 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
     for meta_file in sorted(meta_dir.glob("*.yaml")):
         if meta_file.name == "install.yaml":
             continue
+        if meta_file.stem.endswith("_skill"):
+            continue
         agent_name = meta_file.stem
         core_file = core_dir / f"{agent_name}.md"
         if not core_file.exists():
@@ -36,10 +38,29 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
             continue
         agent_files[f"{agent_name}.md"] = stitch_agent(core_file, meta_file)
 
+    skills_cfg = install_cfg.get("skills")
+    skill_files: dict[str, str] = {}
+    skills_dest: Path | None = None
+    if skills_cfg:
+        skills_dest = Path(skills_cfg["destination"]).expanduser()
+        core_skills_dir = core_skills_path()
+        for meta_file in sorted(meta_dir.glob("*_skill.yaml")):
+            skill_name = meta_file.stem.removesuffix("_skill")
+            skill_meta = yaml.safe_load(meta_file.read_text(encoding="utf-8"))
+            core_file = core_skills_dir / f"{skill_meta['skill']}.md"
+            try:
+                skill_files[skill_meta.get("filename", f"{skill_name}.md")] = stitch_skill(core_file, meta_file)
+            except FileNotFoundError:
+                print(f"  [warn] No core skill for {skill_name!r}, skipping", file=sys.stderr)
+
     if dry_run:
         print(f"\n[{host}] Would write to {dest}:")
         for name in sorted(agent_files):
             print(f"  {dest / name}")
+        if skills_dest and skill_files:
+            print(f"\n[{host}] Would write skills to {skills_dest}:")
+            for name in sorted(skill_files):
+                print(f"  {skills_dest / name}")
         return
 
     written = materialize(agent_files, dest, repair=repair, force=force, dry_run=False)
@@ -47,6 +68,11 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
         print(f"[{host}] Wrote {len(written)} file(s) to {dest}")
     else:
         print(f"[{host}] Nothing to write (files already current or not Pathly-owned)")
+
+    if skills_dest and skill_files:
+        written = materialize(skill_files, skills_dest, repair=repair, force=force, dry_run=False)
+        if written:
+            print(f"[{host}] Wrote {len(written)} skill(s) to {skills_dest}")
 
 
 def main() -> None:

@@ -11,6 +11,10 @@ def core_agents_path() -> Path:
     return _root() / "core" / "agents"
 
 
+def core_skills_path() -> Path:
+    return _root() / "core" / "skills"
+
+
 def adapters_path() -> Path:
     return _root() / "adapters"
 
