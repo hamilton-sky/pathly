@@ -79,19 +79,37 @@ def test_system_error_blocks():
     assert new_state.current == FSMState.BLOCKED_ON_HUMAN
 
 
-def test_system_retry_noop():
-    """Test: SYSTEM_EVENT with action=RETRY has no state change."""
+def test_system_retry_increments_count():
+    """Test: SYSTEM_EVENT RETRY increments counter but keeps state below threshold."""
     state = State(current=FSMState.STORMING)
 
     event = SystemEvent(
         action="RETRY",
         reason="Transient failure",
-        metadata={"action": "RETRY", "reason": "Transient failure"},
+        metadata={"action": "RETRY", "retry_key": "feat:REVIEW_FAILURES.md"},
     )
     new_state = reduce(state, event)
 
     assert new_state.current == FSMState.STORMING
+    assert new_state.retry_count_by_key.get("feat:REVIEW_FAILURES.md") == 1
     assert new_state.event_count == 1
+
+
+def test_system_retry_escalates_to_blocked_on_human():
+    """Test: SYSTEM_EVENT RETRY escalates to BLOCKED_ON_HUMAN when MAX_RETRIES reached."""
+    from orchestrator.constants import MAX_RETRIES
+
+    state = State(current=FSMState.STORMING)
+    retry_event = SystemEvent(
+        action="RETRY",
+        reason="Repeated failure",
+        metadata={"action": "RETRY", "retry_key": "feat:REVIEW_FAILURES.md"},
+    )
+    for _ in range(MAX_RETRIES):
+        state = reduce(state, retry_event)
+
+    assert state.current == FSMState.BLOCKED_ON_HUMAN
+    assert state.retry_count_by_key.get("feat:REVIEW_FAILURES.md") == MAX_RETRIES
 
 
 def test_state_transition_event():

@@ -39,7 +39,7 @@ def _suggest_next(state: dict) -> str:
     table = {
         "IDLE": "Run /pathly start <feature> in Claude Code to begin a new feature.",
         "PO_DISCUSSING": "PO discussion in progress. Open Claude Code to continue.",
-        "PO_PAUSED": "Resume PO discussion: open Claude Code and run /po to continue.",
+        "PO_PAUSED": "PO discussion complete. Run: pathly-team-flow <feature> --entry po to resume, or --entry discovery to skip to storm.",
         "EXPLORING": "Exploration in progress. Wait for discoverer agent to finish.",
         "EXPLORE_PAUSED": "Resume explore: open Claude Code and run /explore to continue.",
         "STORMING": "Storm in progress. Open Claude Code to continue.",

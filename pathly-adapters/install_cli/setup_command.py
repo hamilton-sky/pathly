@@ -7,7 +7,7 @@ import yaml
 from .detect import detect_hosts
 from .resources import adapter_meta_path, adapter_install_yaml, core_agents_path, core_skills_path
 from .stitch import stitch_agent, stitch_skill
-from .materialize import materialize
+from .materialize import materialize, uninstall
 
 
 def _load_install_yaml(host: str) -> dict:
@@ -77,6 +77,32 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
             print(f"[{host}] Wrote {len(written)} skill(s) to {skills_dest}")
 
 
+def _run_host_uninstall(host: str, dry_run: bool) -> None:
+    install_cfg = _load_install_yaml(host)
+    dest = Path(install_cfg["destination"]).expanduser()
+
+    removed = uninstall(dest, dry_run=dry_run)
+    if dry_run:
+        print(f"\n[{host}] Would remove {len(removed)} file(s) from {dest}:")
+        for name in sorted(removed):
+            print(f"  {dest / name}")
+    elif removed:
+        print(f"[{host}] Removed {len(removed)} file(s) from {dest}")
+    else:
+        print(f"[{host}] Nothing to remove.")
+
+    skills_cfg = install_cfg.get("skills")
+    if skills_cfg:
+        skills_dest = Path(skills_cfg["destination"]).expanduser()
+        skill_removed = uninstall(skills_dest, dry_run=dry_run)
+        if dry_run:
+            print(f"\n[{host}] Would remove {len(skill_removed)} skill(s) from {skills_dest}:")
+            for name in sorted(skill_removed):
+                print(f"  {skills_dest / name}")
+        elif skill_removed:
+            print(f"[{host}] Removed {len(skill_removed)} skill(s) from {skills_dest}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="pathly-setup",
@@ -90,7 +116,21 @@ def main() -> None:
     parser.add_argument("--apply", action="store_true", help="Write agent files to host config locations.")
     parser.add_argument("--repair", action="store_true", help="Overwrite Pathly-owned files.")
     parser.add_argument("--force", action="store_true", help="Overwrite all files, even those not owned by Pathly.")
+    parser.add_argument("--uninstall", action="store_true", help="Remove all Pathly-owned files from host config locations.")
     args = parser.parse_args()
+
+    hosts = [args.host] if args.host else detect_hosts()
+    if not hosts:
+        print("No supported hosts detected. Install Claude Code, Codex, or VS Code + Copilot first.")
+        sys.exit(1)
+
+    if args.uninstall:
+        for host in hosts:
+            try:
+                _run_host_uninstall(host, dry_run=args.dry_run)
+            except Exception as e:
+                print(f"[{host}] Error: {e}", file=sys.stderr)
+        return
 
     if not args.dry_run and not args.apply:
         print("pathly-setup: no writes performed (pass --apply to install, --dry-run to preview).")
@@ -100,11 +140,6 @@ def main() -> None:
         else:
             print("No supported hosts detected.")
         return
-
-    hosts = [args.host] if args.host else detect_hosts()
-    if not hosts:
-        print("No supported hosts detected. Install Claude Code, Codex, or VS Code + Copilot first.")
-        sys.exit(1)
 
     failed = False
     for host in hosts:

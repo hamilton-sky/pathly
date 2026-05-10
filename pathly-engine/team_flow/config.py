@@ -5,8 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from orchestrator.constants import MAX_RETRIES
 
-MAX_RETRIES = 2
+__all__ = ["MAX_RETRIES", "DriverConfig"]
 
 
 @dataclass(frozen=True)

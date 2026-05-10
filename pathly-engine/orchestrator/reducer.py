@@ -2,7 +2,7 @@
 
 from .state import State
 from .events import Event
-from .constants import FSMState, Agent, FeedbackFile, Mode, Rigor, Events
+from .constants import FSMState, Agent, FeedbackFile, Mode, Rigor, Events, MAX_RETRIES
 from .utils import utc_now
 
 # Maps (agent, from_state) → (fast_next_state, paused_next_state)
@@ -59,7 +59,8 @@ def reduce(state: State, event: Event) -> State:
     )
 
     if event.type == Events.COMMAND:
-        new_state.current = FSMState.STORMING
+        entry_state = event.metadata.get("entry_state", FSMState.STORMING)
+        new_state.current = entry_state
         new_state.active_command = getattr(event, "value", "")
         new_state.active_feature = event.metadata.get("feature", "")
         new_state.rigor = event.metadata.get("rigor", Rigor.STANDARD)
@@ -123,6 +124,8 @@ def reduce(state: State, event: Event) -> State:
                 new_retry = dict(new_state.retry_count_by_key)
                 new_retry[retry_key] = new_retry.get(retry_key, 0) + 1
                 new_state.retry_count_by_key = new_retry
+                if new_retry[retry_key] >= MAX_RETRIES:
+                    new_state.current = FSMState.BLOCKED_ON_HUMAN
             return new_state
 
         if action in ("ERROR", "TIMEOUT"):

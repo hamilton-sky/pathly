@@ -66,7 +66,7 @@ class TeamFlowDriver:
         self.files = TeamFlowFiles(self.config)
         self.prompts = PromptFactory(feature)
         self.eventlog = EventLog(feature=feature, base_path=str(self.config.repo_root / "plans"))
-        self.state = self.eventlog.reconstruct_state()
+        self.state = self.eventlog.recover()
         self.runner = self._select_runner(runner)
 
     @property
@@ -186,12 +186,13 @@ class TeamFlowDriver:
             return
 
         self._startup_verify()
-        if self.state.current == FSMState.IDLE and self.entry == "discovery":
+        if self.state.current == FSMState.IDLE and self.entry in ("discovery", "po"):
+            entry_state = FSMState.PO_DISCUSSING if self.entry == "po" else FSMState.STORMING
             self.emit(CommandEvent(
                 value=f"/team-flow {self.feature}",
-                metadata={"feature": self.feature, "mode": self.mode},
+                metadata={"feature": self.feature, "mode": self.mode, "entry_state": entry_state},
             ))
-        elif self.entry != "discovery":
+        elif self.entry not in ("discovery", "po"):
             self.skip_to_entry()
 
         self.banner(f"team-flow: {self.feature}  [mode={self.mode}, entry={self.entry}]")
@@ -206,7 +207,12 @@ class TeamFlowDriver:
 
     def _process_current_state(self) -> None:
         state = self.state.current
-        if state == FSMState.STORMING:
+        if state == FSMState.PO_DISCUSSING:
+            self.banner("PO - Product Owner Discussion")
+            self._run_agent(self.prompts.po(), Agent.PO, required=True)
+        elif state == FSMState.PO_PAUSED:
+            self._pause("PO discussion complete. Proceed to storm?", "yes", ["yes", "no"], stop_on="no")
+        elif state == FSMState.STORMING:
             self.banner("STAGE 1 - Storm (architect)")
             self._run_agent(self.prompts.storm(), Agent.ARCHITECT, required=True)
         elif state == FSMState.STORM_PAUSED:
@@ -372,11 +378,11 @@ class TeamFlowDriver:
                 self.emit(FileDeletedEvent(file=self.state.active_feedback_file))
             return
 
-        count = self._increment_retry(active)
-        if count > MAX_RETRIES:
-            self.log(f"Feedback loop exceeded {MAX_RETRIES} cycles for {active}. Manual intervention required.")
-            sys.exit(1)
-
+        self._increment_retry(active)
+        if self.state.current == FSMState.BLOCKED_ON_HUMAN:
+            # Reducer escalated: retry limit hit — BLOCKED_ON_HUMAN handled next iteration
+            return
+        count = self.state.retry_count_by_key.get(f"{self.feature}:{active}", 0)
         self.log(f"Resolving: {active} (attempt {count}/{MAX_RETRIES})")
         before = self.get_feedback_files()
 
@@ -458,7 +464,7 @@ Driver = TeamFlowDriver
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="FSM-driven pipeline driver for Pathly")
     parser.add_argument("feature", help="Feature name (plans/<feature>/ must exist for build/test entry)")
-    parser.add_argument("--entry", choices=["discovery", "build", "test"], default="discovery")
+    parser.add_argument("--entry", choices=["discovery", "po", "build", "test"], default="discovery")
     parser.add_argument("--fast", action="store_true", help="Skip human pause points")
     parser.add_argument(
         "--recover",

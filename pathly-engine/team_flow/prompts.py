@@ -7,6 +7,9 @@ class PromptFactory:
     def __init__(self, feature: str):
         self.feature = feature
 
+    def po(self) -> str:
+        return f"/po {self.feature}"
+
     def storm(self) -> str:
         return f"/storm {self.feature}"
 

@@ -70,6 +70,26 @@ class EventLog:
                 pass
             raise
 
+    def recover(self) -> State:
+        """Reconstruct from event log and reconcile with STATE.json.
+
+        EVENTS.jsonl is authoritative. If STATE.json disagrees, it is rewritten
+        from the replayed state so the two files are consistent again.
+        """
+        canonical = self.reconstruct_state()
+        directory = os.path.dirname(self.filepath) or "."
+        state_path = os.path.join(directory, "STATE.json")
+        if os.path.exists(state_path):
+            try:
+                with open(state_path, encoding="utf-8") as f:
+                    cached = json.load(f)
+                if cached.get("current") != canonical.current:
+                    # Event log wins — rewrite snapshot
+                    self.write_state_json(canonical)
+            except (json.JSONDecodeError, OSError):
+                self.write_state_json(canonical)
+        return canonical
+
     def clear(self) -> None:
         """Clear the event log (for testing only)."""
         try:

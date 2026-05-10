@@ -1,4 +1,5 @@
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -53,3 +54,39 @@ def materialize(
         _save_manifest(dest, manifest)
 
     return written
+
+
+def uninstall(dest: Path, *, dry_run: bool = False) -> list[str]:
+    """Remove all Pathly-owned files from dest using the manifest.
+
+    Returns list of filenames removed (or would-remove in dry_run).
+    """
+    manifest_path = dest / MANIFEST_NAME
+    if not manifest_path.exists():
+        print(f"  [warn] No manifest at {manifest_path} — nothing to uninstall.", file=sys.stderr)
+        return []
+
+    manifest = _load_manifest(dest)
+    removed: list[str] = []
+
+    for name in list(manifest["files"]):
+        target = dest / name
+        removed.append(name)
+        if not dry_run:
+            try:
+                target.unlink()
+            except FileNotFoundError:
+                pass
+            # Remove empty parent directories (nested skill dirs)
+            try:
+                target.parent.rmdir()
+            except OSError:
+                pass
+
+    if not dry_run:
+        try:
+            manifest_path.unlink()
+        except FileNotFoundError:
+            pass
+
+    return removed

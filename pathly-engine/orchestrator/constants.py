@@ -23,15 +23,19 @@ class FSMState:
 
 
 class Agent:
-    ARCHITECT  = "architect"
-    PLANNER    = "planner"
-    BUILDER    = "builder"
-    REVIEWER   = "reviewer"
-    TESTER     = "tester"
-    QUICK      = "quick"
-    EXPLORER   = "explorer"   # codebase exploration (subagent_type: Explore)
-    PO         = "po"         # product owner discussion (option [5] phase 1)
-    DIRECTOR   = "director"
+    ARCHITECT      = "architect"
+    PLANNER        = "planner"
+    BUILDER        = "builder"
+    REVIEWER       = "reviewer"
+    TESTER         = "tester"
+    QUICK          = "quick"
+    EXPLORER       = "explorer"        # codebase exploration (subagent_type: Explore)
+    PO             = "po"              # product owner discussion (option [5] phase 1)
+    DIRECTOR       = "director"
+    WEB_RESEARCHER = "web-researcher"  # sub-agent spawned inline by architect/planner; transparent to FSM
+
+
+MAX_RETRIES = 2  # max feedback-loop cycles before escalating to BLOCKED_ON_HUMAN
 
 
 class FeedbackFile:
