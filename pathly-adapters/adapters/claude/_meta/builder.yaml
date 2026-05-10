@@ -50,8 +50,9 @@ spawn_section: |
     """
   )
 
-  ### During implementation: factual lookups (spawn in parallel, up to 4)
-  # One quick per independent question — if you have 3 unrelated lookups, send 3 at once.
+  ### Factual lookups — pre-step or mid-implementation (spawn in parallel, up to 4)
+  # One quick per independent narrow question — send all at once in a single message.
+  # Use any time: before starting, mid-implementation, whenever independent facts are needed.
   # Never use quick for multi-file investigation — use scout instead.
   Agent(
     subagent_type="quick",
