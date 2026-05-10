@@ -1,0 +1,4 @@
+host: codex
+destination: ~/.codex/agents/
+files:
+  - source: agents/

@@ -1,0 +1,4 @@
+host: copilot
+destination: ~/.vscode/extensions/pathly/agents/
+files:
+  - source: agents/

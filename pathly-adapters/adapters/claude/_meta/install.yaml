@@ -1,0 +1,4 @@
+host: claude
+destination: ~/.claude/agents/
+files:
+  - source: agents/

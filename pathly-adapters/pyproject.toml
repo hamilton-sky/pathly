@@ -3,6 +3,7 @@ name = "pathly-adapters"
 version = "0.1.0"
 description = "Pathly adapter installer — stitches and deploys agent files to AI host tools."
 requires-python = ">=3.11"
+dependencies = ["pyyaml>=6.0"]
 
 [project.scripts]
 pathly-setup = "install_cli.__main__:main"
