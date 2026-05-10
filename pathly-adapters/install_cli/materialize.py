@@ -38,6 +38,11 @@ def materialize(
 
     for name, content in files.items():
         target = dest / name
+        # Guard against path traversal (e.g. name = "../../etc/passwd")
+        if not target.resolve().is_relative_to(dest.resolve()):
+            raise ValueError(
+                f"Path traversal detected: {name!r} escapes destination {dest}"
+            )
         if target.exists():
             if name in owned and not repair:
                 continue

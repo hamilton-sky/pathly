@@ -25,6 +25,7 @@ class TeamFlowFiles:
             cwd=str(self.config.repo_root),
             capture_output=True,
             text=True,
+            timeout=30,
         )
         return result.stdout
 
@@ -34,6 +35,7 @@ class TeamFlowFiles:
             cwd=str(self.config.repo_root),
             capture_output=True,
             text=True,
+            timeout=30,
         )
         return result.stdout.strip() == ""
 

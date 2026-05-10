@@ -254,6 +254,7 @@ class TeamFlowDriver:
                 capture_output=True,
                 text=True,
                 cwd=str(self.config.repo_root),
+                timeout=30,
             )
             self.log(status.stdout)
             sys.exit(1)
