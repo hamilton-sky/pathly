@@ -100,9 +100,12 @@ add targeted files when planning discovers risk.
 
 | Rigor | Use for | Required plan files | Gates |
 |---|---|---|---|
-| `lite` | small, low-risk changes | `USER_STORIES.md`, `IMPLEMENTATION_PLAN.md`, `PROGRESS.md`, `CONVERSATION_PROMPTS.md` | plan -> build -> optional review/test |
+| `nano` | single-file or trivial fixes (≤2 files changed) | none — direct build, no plan | build only; no review, no retro |
+| `lite` | small, low-risk changes | `USER_STORIES.md`, `IMPLEMENTATION_PLAN.md`, `PROGRESS.md`, `CONVERSATION_PROMPTS.md` | plan → build → optional review/test |
 | `standard` | normal product features | all 8 plan files | build + review per conversation, test, retro |
 | `strict` | auth, payments, data loss, migrations, regulated work | all 8 plan files plus mandatory `STATE.json` and `EVENTS.jsonl` | all standard gates plus mandatory human approvals and audit logs |
+
+`nano` skips all planning files and goes directly to build. It is only valid when the change scope is two files or fewer and no acceptance-criteria verification is required. The orchestrator transitions directly `IDLE → BUILDING`.
 
 `lite` reduces plan surface area but keeps the files needed by the build
 workflow.
@@ -110,6 +113,24 @@ workflow.
 `standard` is the current pipeline: storm can be skipped, human pauses are default, feedback routing is enforced, and `STATE.json` / `EVENTS.jsonl` are written when runtime support exists.
 
 `strict` is audit-grade workflow. It requires discovery or PRD import before planning, requires human approval at storm, plan, implementation, and test gates, requires review after every conversation, requires complete acceptance-criteria test mapping, and treats missing `STATE.json` or `EVENTS.jsonl` as a workflow error. `strict` should reject `fast` unless a future project explicitly opts into strict automation.
+
+## Rigor Escalator
+
+The rigor escalator promotes a feature from `lite` to `standard` mid-workflow when planning discovers risk factors. The orchestrator reads escalation signals written by the planner or architect and adds the missing plan files before the next build starts.
+
+**Escalation triggers:**
+
+| Signal | Added files | Reason |
+|---|---|---|
+| Planner writes `[ESCALATE: standard]` in `IMPLEMENTATION_PLAN.md` | `HAPPY_FLOW.md`, `EDGE_CASES.md`, `ARCHITECTURE_PROPOSAL.md`, `FLOW_DIAGRAM.md` | Scope is larger than originally estimated |
+| Architect writes `[ESCALATE: strict]` in `ARCHITECTURE_PROPOSAL.md` | `STATE.json`, `EVENTS.jsonl` audit gates | Change touches auth, data migration, or regulated surfaces |
+| Builder opens `DESIGN_QUESTIONS.md` twice in one conversation | `ARCHITECTURE_PROPOSAL.md` | Repeated architectural ambiguity signals under-specified design |
+| `ARCH_FEEDBACK.md` is created after build starts | `ARCHITECTURE_PROPOSAL.md` | Structural rework required; plan surface insufficient |
+
+**Rules:**
+- Escalation is one-way — rigor never decreases mid-workflow.
+- Escalation writes the missing files before the next agent spawn; it does not restart the workflow.
+- If escalation occurs at `BUILDING`, the orchestrator pauses at `IMPLEMENT_PAUSED` and notifies the user before continuing.
 
 ## Feedback Priority
 
@@ -304,7 +325,68 @@ Every transition should produce logs like:
 [ACTION] spawn(reviewer)
 [FILE] REVIEW_FAILURES.md created
 [STATE] REVIEWING -> BLOCKED_ON_FEEDBACK
+[STACK] ["REVIEWING"]
 [ACTION] spawn(builder)
 ```
 
+Each `EVENTS.jsonl` line must include a `stack` field reflecting the `stateStack` after the transition. This makes the nested-blocking state visible and recoverable without re-reading feedback files:
+
+```jsonl
+{"ts":"2026-05-11T10:00:00Z","event":"FILE_CREATED","file":"REVIEW_FAILURES.md","prev":"REVIEWING","next":"BLOCKED_ON_FEEDBACK","action":"spawn(builder)","stack":["REVIEWING"],"retry_key":"conv-2:REVIEW_FAILURES.md","retries":1}
+{"ts":"2026-05-11T10:05:00Z","event":"FILE_DELETED","file":"REVIEW_FAILURES.md","prev":"BLOCKED_ON_FEEDBACK","next":"REVIEWING","action":"spawn(reviewer)","stack":[],"retry_key":"conv-2:REVIEW_FAILURES.md","retries":1}
+```
+
+A corrupt or missing `stack` field during recovery means the orchestrator cannot know which state to pop back to. In that case, fall back to the full disk-recovery algorithm (see Recovery section) rather than using `STATE.json` alone.
+
 The event log is the audit trail. The state file is the checkpoint. The filesystem is the source of truth.
+
+## State Diagram
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDLE
+
+    IDLE --> STORMING : COMMAND(team-flow) / spawn(architect)
+    IDLE --> EXPLORING : COMMAND + explore / spawn(scout)
+    IDLE --> PO_DISCUSSING : COMMAND + discovery
+    IDLE --> BUILDING : COMMAND + nano / spawn(builder)
+
+    EXPLORING --> EXPLORE_PAUSED : AGENT_DONE(scout) [interactive]
+    EXPLORING --> PLANNING : AGENT_DONE(scout) [fast]
+    EXPLORE_PAUSED --> PLANNING : human A / spawn(planner)
+    EXPLORE_PAUSED --> DONE : human B or C
+
+    PO_DISCUSSING --> PO_PAUSED : STATE_TRANSITION
+    PO_PAUSED --> STORMING : human yes / spawn(architect)
+    PO_PAUSED --> DONE : human no
+
+    STORMING --> STORM_PAUSED : AGENT_DONE(architect)
+    STORM_PAUSED --> PLANNING : human yes / spawn(planner)
+    STORM_PAUSED --> DONE : human no
+
+    PLANNING --> PLAN_PAUSED : AGENT_DONE(planner)
+    PLAN_PAUSED --> BUILDING : human go / spawn(builder)
+    PLAN_PAUSED --> DONE : human stop
+
+    BUILDING --> REVIEWING : AGENT_DONE(builder) / spawn(reviewer)
+    REVIEWING --> BLOCKED_ON_FEEDBACK : FILE_CREATED(ARCH_FEEDBACK) / spawn(architect)
+    REVIEWING --> BLOCKED_ON_FEEDBACK : FILE_CREATED(REVIEW_FAILURES) / spawn(builder)
+    REVIEWING --> IMPLEMENT_PAUSED : AGENT_DONE(reviewer)
+
+    BLOCKED_ON_FEEDBACK --> BUILDING : FILE_DELETED [was REVIEWING→BUILDING]
+    BLOCKED_ON_FEEDBACK --> BLOCKED_ON_HUMAN : retries > 2
+    BLOCKED_ON_FEEDBACK --> BLOCKED_ON_HUMAN : NO_DIFF_DETECTED
+    BLOCKED_ON_HUMAN --> BLOCKED_ON_FEEDBACK : HUMAN_RESPONSE
+
+    IMPLEMENT_PAUSED --> BUILDING : human continue / spawn(builder)
+    IMPLEMENT_PAUSED --> TESTING : IMPLEMENT_COMPLETE / spawn(tester)
+    IMPLEMENT_PAUSED --> DONE : human stop
+
+    TESTING --> BLOCKED_ON_FEEDBACK : FILE_CREATED(TEST_FAILURES) / spawn(builder)
+    TESTING --> TEST_PAUSED : AGENT_DONE(tester)
+    TEST_PAUSED --> BUILDING : human fix / spawn(builder)
+    TEST_PAUSED --> RETRO : human done / spawn(quick)
+
+    RETRO --> DONE : AGENT_DONE(quick)
+    DONE --> [*]
+```

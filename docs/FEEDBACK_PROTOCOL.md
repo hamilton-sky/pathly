@@ -34,13 +34,37 @@ work; they simply do not carry TTL metadata.
 
 ## Routing
 
-```text
-ARCH_FEEDBACK.md    -> architect
-DESIGN_QUESTIONS.md -> architect
-IMPL_QUESTIONS.md   -> planner
-REVIEW_FAILURES.md  -> builder
-TEST_FAILURES.md    -> builder
-HUMAN_QUESTIONS.md  -> user
+```mermaid
+flowchart LR
+    subgraph Writers
+        RV[reviewer]
+        BL[builder]
+        TS[tester]
+        ANY[any role / orchestrator]
+    end
+
+    subgraph FeedbackFiles["Feedback Files (priority order)"]
+        HQ["① HUMAN_QUESTIONS.md"]
+        AF["② ARCH_FEEDBACK.md"]
+        DQ["③ DESIGN_QUESTIONS.md"]
+        IQ["④ IMPL_QUESTIONS.md"]
+        RF["⑤ REVIEW_FAILURES.md"]
+        TF["⑥ TEST_FAILURES.md"]
+    end
+
+    subgraph Owners
+        USR[user]
+        ARC[architect]
+        PLN[planner]
+        BLD[builder]
+    end
+
+    ANY -->|escalation / stall| HQ --> USR
+    RV -->|structural problem| AF --> ARC
+    BL -->|design blocker| DQ --> ARC
+    BL -->|requirement ambiguity| IQ --> PLN
+    RV -->|implementation violation| RF --> BLD
+    TS -->|criteria fail| TF --> BLD
 ```
 
 When multiple files exist, the FSM routes one at a time using the priority

@@ -1,5 +1,7 @@
 # Installable Workflow Architecture Proposal
 
+> **Superseded** — consolidated into [INSTALLER_DESIGN.md](INSTALLER_DESIGN.md). This file is kept for git history.
+
 ## Status
 
 Proposal for the next Pathly architecture increment.

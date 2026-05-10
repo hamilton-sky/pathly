@@ -1,5 +1,7 @@
 # Installable Workflow Architecture Recommendations
 
+> **Superseded** — consolidated into [INSTALLER_DESIGN.md](INSTALLER_DESIGN.md). This file is kept for git history.
+
 ## Summary
 
 The installable workflow proposal is directionally correct. Pathly should remain

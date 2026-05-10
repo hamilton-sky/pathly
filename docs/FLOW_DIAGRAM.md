@@ -8,60 +8,44 @@ Pathly has three public front doors over the same core workflows:
 
 ## High-Level Flow
 
-```text
-plain-English request
-  |
-  v
-director / pathly router
-  |
-  |-- help            -> state-aware numbered menu
-  |-- doctor          -> local prerequisite and stuck-state diagnostics
-  |-- explore         -> read-only codebase investigation
-  |-- debug           -> bug investigation workflow
-  |-- review          -> review current changes
-  |-- meet            -> read-only role consultation note
-  `-- flow / run      -> feature pipeline
+```mermaid
+flowchart TD
+    A[plain-English request] --> B[director / pathly router]
+    B --> C[help\nstate-aware numbered menu]
+    B --> D[doctor\nprerequisite & stuck-state diagnostics]
+    B --> E[explore\nread-only codebase investigation]
+    B --> F[debug\nbug investigation workflow]
+    B --> G[review\nreview current changes]
+    B --> H[meet\nread-only role consultation]
+    B --> I[flow / run\nfeature pipeline]
 ```
 
 ## Feature Pipeline
 
-```text
-flow <feature>
-  |
-  v
-startup checks
-  |
-  v
-discovery choice
-  |-- storm first
-  |-- skip discovery
-  `-- import PRD / BMAD PRD
-  |
-  v
-plan
-  |-- lite: 4 core files
-  |-- standard: 8 plan files
-  `-- strict: 8 plan files + audit state requirements
-  |
-  v
-rigor escalator
-  |
-  v
-build one conversation
-  |
-  v
-review
-  |-- REVIEW_FAILURES.md -> builder
-  |-- ARCH_FEEDBACK.md -> architect
-  `-- pass -> next conversation or test
-  |
-  v
-test
-  |-- TEST_FAILURES.md -> builder
-  `-- pass -> retro
-  |
-  v
-retro / lessons / optional archive
+```mermaid
+flowchart TD
+    A[flow feature] --> B[startup checks]
+    B --> C{discovery choice}
+    C --> D[storm first\nspawn architect]
+    C --> E[skip discovery]
+    C --> F[import PRD / BMAD PRD]
+    D & E & F --> G{plan depth}
+    G --> H[nano\nno plan files\ndirect build]
+    G --> I[lite\n4 core files]
+    G --> J[standard\n8 plan files]
+    G --> K[strict\n8 files + audit gates]
+    H & I & J & K --> L[rigor escalator\npromotion if risk found]
+    L --> M[build one conversation]
+    M --> N[review]
+    N --> O{review result}
+    O --> |REVIEW_FAILURES.md| M
+    O --> |ARCH_FEEDBACK.md| P[architect fixes design]
+    P --> M
+    O --> |pass| Q[test]
+    Q --> R{test result}
+    R --> |TEST_FAILURES.md| M
+    R --> |pass| S[retro / lessons / optional archive]
+    S --> T[DONE]
 ```
 
 ## Files Written By A Feature
