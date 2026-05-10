@@ -1,32 +1,28 @@
 # [Feature Name] — Flow Diagram
 
-## [Primary Flow Name, e.g. "Happy Path: checkout workflow"]
+## [Primary Flow Name, e.g. "Happy Path: setup workflow"]
 
 ```
-[workflow JSON step]
-        │  "action": "xx_step"
-        ▼
-[GlueAction._execute]
-        │  _build_pom(Page, …, page=page, resolver=resolver)
-        ▼
-[POM method]
-        │  _resolve_and_click_any(CFG_LIST)
-        ▼
-[ElementResolver cascade]
+[entry point / trigger]
         │
-        ├─ Phase 1: RoleResolver ──► unique match → click
-        ├─ Phase 2: SemanticFilter (MiniLM)
-        └─ Phase 3: AI Pick (Groq → Gemini → Claude)
+        ▼
+[component / module]
+        │  [key operation]
+        ▼
+[next component]
+        │
+        ├─ [success path] ──► [outcome A]
+        └─ [failure path] ──► [outcome B]
 ```
 
 ## [Fallback / Error Flow]
 
 ```
-[resolver finds 0 matches]
+[failure condition]
         │
-        └─ raises ElementNotFoundError
+        └─ [error handler]
                 │
-                └─ StepRunner catches → retry N times → fail step
+                └─ [recovery or escalation]
 ```
 
 ## Component Legend

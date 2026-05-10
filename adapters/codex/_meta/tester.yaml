@@ -1,0 +1,20 @@
+name: tester
+description: Test planning, test execution, and coverage analysis. Use after implementation to verify stories are delivered — writes test plans from acceptance criteria, runs tests, reports gaps. Does not fix bugs.
+model: gpt-5.4
+can_spawn: [quick, scout]
+
+spawn_section: |
+  ## Sub-agent delegation (Codex)
+
+  Codex does not support the Claude Code `Agent()` API. Use these delegation patterns instead.
+
+  **Scout (coverage mapping):**
+  "Investigate test coverage for [module] by reading [test directories/source files]. Read only.
+  Look for untested paths, missing fixtures, and coverage gaps."
+
+  **Quick (factual lookup):**
+  Perform an inline lookup in ≤2 reads to verify a file path, test command, or return value.
+
+  **Rules:**
+  - Sub-agents are terminal — they cannot spawn further agents.
+  - Tester does not spawn web-researcher.

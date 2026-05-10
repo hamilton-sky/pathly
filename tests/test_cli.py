@@ -302,6 +302,37 @@ planner"""
     assert "Verify the saved filter is restored on reload." in consults[0].read_text(encoding="utf-8")
 
 
+def test_version_flag_prints_version_and_exits(capsys):
+    result = cli.main(["--version"])
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert output.startswith("pathly ")
+    assert "2.0.0" in output
+
+
+def test_version_short_flag_prints_version_and_exits(capsys):
+    result = cli.main(["-V"])
+
+    assert result == 0
+    output = capsys.readouterr().out
+    assert output.startswith("pathly ")
+    assert "2.0.0" in output
+
+
+def test_version_flag_works_as_subprocess():
+    result = subprocess.run(
+        [sys.executable, "-m", "pathly.cli", "--version"],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0
+    assert result.stdout.startswith("pathly ")
+    assert "2.0.0" in result.stdout
+
+
 def test_meet_planner_promotion_uses_plan_write_tools(tmp_path, monkeypatch, capsys):
     cli.main(["--project-dir", str(tmp_path), "init", "checkout-flow"])
     calls = []

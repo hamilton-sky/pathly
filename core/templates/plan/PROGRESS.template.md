@@ -23,7 +23,7 @@ See **CONVERSATION_PROMPTS.md** for exact prompts to paste in each conversation.
 
 | # | Phase | Layer | Description | Conv | Status | Key Files |
 |---|-------|-------|-------------|------|--------|-----------|
-| 1 | [name] | POM/Glue/Flow | [description] | 1 | TODO | `[files]` |
+| 1 | [name] | [layer] | [description] | 1 | TODO | `[files]` |
 ...
 
 ## Prerequisites

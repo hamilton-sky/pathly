@@ -5,8 +5,8 @@
 #   .\install.ps1 -Uninstall   # remove
 #
 # What it installs:
-#   adapters\claude-code\skills\ -> %USERPROFILE%\.claude\skills\ (slash commands)
-#   adapters\claude-code\agents\ -> %USERPROFILE%\.claude\agents\ (sub-agents)
+#   core\skills\ -> %USERPROFILE%\.claude\skills\ (slash commands)
+#   adapters\claude\agents\ -> %USERPROFILE%\.claude\agents\ (sub-agents)
 #
 # After install, register the feedback hook (optional):
 #   python -m pip install -e .
@@ -17,8 +17,8 @@ param([switch]$Uninstall)
 $ClaudeDir = "$env:USERPROFILE\.claude"
 $PluginName = "pathly"
 $ScriptDir = $PSScriptRoot
-$ClaudeSkillSource = Join-Path $ScriptDir "adapters\claude-code\skills"
-$ClaudeAgentSource = Join-Path $ScriptDir "adapters\claude-code\agents"
+$ClaudeSkillSource = Join-Path $ScriptDir "core\skills"
+$ClaudeAgentSource = Join-Path $ScriptDir "adapters\claude\agents"
 $CoreTemplateSource = Join-Path $ScriptDir "core\templates"
 
 Write-Host ""
@@ -28,10 +28,10 @@ Write-Host ""
 
 if ($Uninstall) {
     Write-Host "Uninstalling..."
-    Get-ChildItem $ClaudeSkillSource -Directory | ForEach-Object {
+    Get-ChildItem $ClaudeSkillSource -Filter "*.md" | ForEach-Object {
         $dest = "$ClaudeDir\skills\$($_.Name)"
-        if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
-        Write-Host "  - /$($_.Name)"
+        if (Test-Path $dest) { Remove-Item -Force $dest }
+        Write-Host "  - /$($_.BaseName)"
     }
     Get-ChildItem $ClaudeAgentSource -Filter "*.md" | ForEach-Object {
         $dest = "$ClaudeDir\agents\$($_.Name)"
@@ -49,11 +49,9 @@ if ($Uninstall) {
 # Skills
 Write-Host "Installing skills..."
 New-Item -ItemType Directory -Force -Path "$ClaudeDir\skills" | Out-Null
-Get-ChildItem $ClaudeSkillSource -Directory | ForEach-Object {
-    $dest = "$ClaudeDir\skills\$($_.Name)"
-    if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
-    Copy-Item -Recurse $_.FullName $dest
-    Write-Host "  + /$($_.Name)"
+Get-ChildItem $ClaudeSkillSource -Filter "*.md" | ForEach-Object {
+    Copy-Item -Force $_.FullName "$ClaudeDir\skills\$($_.Name)"
+    Write-Host "  + /$($_.BaseName)"
 }
 
 # Agents

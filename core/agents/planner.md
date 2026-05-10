@@ -43,24 +43,20 @@ Before writing stories or plans, gather context using sub-agents. Spawn at most 
 
 | Level | Agent | When to use | Budget |
 |---|---|---|---|
-| 0 — Pre-flight | *(self)* | Read CLAUDE.md + LESSONS.md first, always | free |
+| 0 — Pre-flight | *(self)* | Read project conventions file + LESSONS.md first, always | free |
 | 1 — Quick | `quick` | Single factual lookup (≤2 tool calls) | ephemeral |
 | 3 — Web | `web-researcher` | Domain research, similar product patterns, industry standards | cited summary |
 
-**Invocation pattern:**
-```python
-Agent(
-  subagent_type="web-researcher",
-  model="haiku",
-  description="<task-name>",   # e.g. "research-onboarding-flow-patterns"
-  prompt="""
-  [ROLE: Planner — read-only external research before writing stories]
-  [WAY OF THINKING: Look for how similar products solve this problem. Surface scope implications, user expectations, and edge cases that belong in stories.]
-  [CONSTRAINTS: Cite every fact. Do not make technical implementation recommendations — that is the architect's domain.]
-  [SCOPE: ...]
-  [QUESTION: ...]
-  """
-)
+**Delegation pattern** (host-specific syntax in adapter files):
+```
+spawn web-researcher:
+  role: Planner — read-only external research before writing stories
+  way of thinking: Look for how similar products solve this problem. Surface scope
+    implications, user expectations, and edge cases that belong in stories.
+  constraints: Cite every fact. Do not make technical implementation recommendations —
+    that is the architect's domain.
+  scope: [...]
+  question: [...]
 ```
 
 **Rules:**

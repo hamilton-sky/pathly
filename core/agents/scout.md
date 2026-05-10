@@ -28,7 +28,7 @@ Every response must end with this exact structure:
 ## Hard constraints — READ ONLY
 - Do NOT write to any file.
 - Do NOT edit or create any file.
-- Do NOT create feedback files (IMPL_QUESTIONS.md, DESIGN_QUESTIONS.md, HUMAN_QUESTIONS.md).
+- Do NOT create any files — including feedback or blocking question files.
 - Do NOT spawn additional agents.
-- Do NOT modify PROGRESS.md or any state file.
-- If you find something that needs a human or architectural decision, flag it under `## Ambiguities` — the builder writes the feedback file, not you.
+- Do NOT modify any state or progress files.
+- If you find something that needs a human or architectural decision, flag it under `## Ambiguities` — the caller writes any blocking files, not you.

@@ -23,6 +23,7 @@ from orchestrator.constants import Mode
 from .plans import PlanRepository
 from pathly import team_flow
 from pathly.hooks.contracts import HookEvent
+from pathly.resources import package_version
 
 
 class CliManager:
@@ -30,6 +31,11 @@ class CliManager:
         self.agent = agent or ClaudeTextAgent()
 
     def main(self, argv: list[str] | None = None) -> int:
+        import sys as _sys
+        effective = argv if argv is not None else _sys.argv[1:]
+        if "--version" in effective or "-V" in effective:
+            print(f"pathly {package_version()}")
+            return 0
         parser = self.build_parser()
         args = parser.parse_args(argv)
         ctx = ProjectContext.from_args(args)
@@ -174,6 +180,12 @@ class CliManager:
         parser = argparse.ArgumentParser(
             prog="pathly",
             description="Pathly: guided agent workflows for software changes.",
+        )
+        parser.add_argument(
+            "--version",
+            "-V",
+            action="store_true",
+            help="Print the installed Pathly version and exit.",
         )
         parser.add_argument(
             "--project-dir",

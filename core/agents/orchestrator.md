@@ -67,11 +67,11 @@ If multiple feedback files exist, route exactly one target at a time:
 - **Recover before acting.** State must be derivable from disk.
 - **Append events.** Record every transition in `plans/<feature>/EVENTS.jsonl` via `orchestrator/eventlog.py`. Write `STATE.json` alongside it.
 - **Check feedback files after every event.** Never advance without checking.
-- **Reviewer gates follow rigor.** Standard and strict review every conversation; lite may review final-only unless feedback or risk requires earlier review.
+- **Reviewer gates follow scope.** Standard and strict scope review every builder task; lite scope may review final-only unless feedback or risk requires earlier review.
 - **Max 2 retry cycles per conversation and feedback file.** If exceeded: stop and report to user.
 - **ARCH_FEEDBACK blocks everything.** Resolve architecture before any further builder work.
 - **Single active agent.** Emit one spawn action at a time.
-- **Surface the current stage.** Begin every response: `[Stage N — Name]`.
+- **Surface the current stage.** Begin every response with the current workflow phase name.
 - **Pauses are enforced by default.** Skip only if `auto` flag was passed.
 
 ## Pipeline with feedback loops
@@ -82,7 +82,7 @@ architect ──► STORM_SEED.md
 planner   ──► plans/<feature>/
                     │ PAUSE
                     ▼
-         ┌─── builder ──► Conv N ◄──────────────────┐
+         ┌─── builder ──► task ◄─────────────────────┐
          │         │                                 │
          │         ▼                                 │
          │    reviewer checks                        │
@@ -91,7 +91,7 @@ planner   ──► plans/<feature>/
          │    REVIEW_FAILURES? ─► builder  ──────────┤ (fix + re-review)
          │    IMPL_QUESTIONS? ──► planner  ──► builder continues
          │         │                                 │
-         │       PASS ─────────────────────────────► next Conv
+         │       PASS ─────────────────────────────► next task
          │
          └─── (all convs done)
                     │ PAUSE

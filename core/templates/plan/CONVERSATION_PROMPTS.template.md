@@ -17,13 +17,12 @@ Scope:
 - Phase X: [specific instructions with file paths and layer]
 - Phase Y: [specific instructions with file paths and layer]
 
-Three-layer rules to observe:
-- All interactive locators must be cfg lists (see .claude/rules/pom-layer.md)
-- Every POM construction must pass page=page, resolver=resolver (see .claude/rules/glue-layer.md)
-- No raw page.locator() calls in glue files
+Architectural rules to observe:
+- [Read CLAUDE.md and .claude/rules/ for project-specific rules before implementing]
+- Stay within the stated layer. Do not touch other layers.
 
 Do NOT touch [exclusions — other layers, other sites, exam tests, etc.].
-Verify: python stepper/main.py --workflow stepper/sites/<site>/workflows/<file>.json --show
+Verify: <project verify command>
 After done, update plans/$ARGUMENTS/PROGRESS.md phases X-Y to DONE.
 
 If verification fails and the fix requires out-of-scope changes, stop and report.

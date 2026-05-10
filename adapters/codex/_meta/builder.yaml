@@ -1,0 +1,23 @@
+name: builder
+description: Write code, fix bugs, implement features, refactor existing code, and run tests. Use for all coding execution tasks after the plan is clear.
+model: gpt-5.4
+can_spawn: [quick, scout]
+
+spawn_section: |
+  ## Sub-agent delegation (Codex)
+
+  Codex does not support the Claude Code `Agent()` API. Use these delegation patterns instead.
+
+  **Scout (read-only investigation):**
+  Before editing, describe a focused investigation phase:
+  "Investigate [question] by reading [scope directories/files]. Read only. Do not edit any files.
+  Compress findings to a short summary before entering the edit phase."
+
+  **Quick (factual lookup):**
+  Perform an inline lookup in ≤2 reads. Do not write to any file during a quick lookup.
+  If 2 reads are not enough, the question is not atomic — escalate to a scout investigation.
+
+  **Rules:**
+  - Sub-agents are terminal — they cannot spawn further agents.
+  - After all sub-agents return, compress findings into a short summary before touching any file.
+  - Builder is the sole implementation owner. Sub-agents are advisory only.

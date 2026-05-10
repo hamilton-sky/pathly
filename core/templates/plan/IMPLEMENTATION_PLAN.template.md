@@ -4,27 +4,27 @@
 [What this feature adds — which site, which actions, which workflow, 2-3 sentences]
 
 ## Layer Architecture
-[Show how the feature spans POM / Glue / Flow layers]
+[Show how the feature spans the implementation layers]
 
 ```
-Flow (JSON)  →  Glue (stepper/sites/…)  →  POM (poms/…)
-   ↓                    ↓                        ↓
-[workflow]         [action classes]         [locators + interactions]
+Plans (IMPLEMENTATION_PLAN.md)  →  Implementation modules  →  Interfaces / contracts
+         ↓                                  ↓                          ↓
+[feature definition]              [business logic]            [public API / contracts]
 ```
 
 ## Phases
 
 ### Phase 1: [Phase Title] (estimated effort)
-**Layer:** POM / Glue / Flow / Engine
+**Layer:** [API / Service / CLI / Data / UI / Infra]
 **Delivers stories:** S1.1, S1.2
 **Files:**
-- `poms/<site>/pages/<file>.py` — [what changes]
-- `stepper/sites/<site>/pages/<file>.py` — NEW: [what it does]
+- `<module>/<component>/<file>.py` — [what changes]
+- `<module>/<component>/<file>.py` — NEW: [what it does]
 
 **Details:**
 [Specific implementation instructions — cfg list keys, method signatures, action names]
 
-**Verify:** `pytest exam/` or `python stepper/main.py --workflow stepper/sites/<site>/workflows/<file>.json --show`
+**Verify:** `<project verify command — e.g. pytest, make test, or the stated verify script>`
 
 ### Phase 2: [Phase Title] (estimated effort)
 ...

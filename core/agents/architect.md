@@ -37,38 +37,28 @@ Before deep design work, gather context using sub-agents. Spawn at most **4 tota
 
 | Level | Agent | When to use | Budget |
 |---|---|---|---|
-| 0 — Pre-flight | *(self)* | Read CLAUDE.md + `.claude/rules/` first, always | free |
+| 0 — Pre-flight | *(self)* | Read project conventions file + any linked rules first, always | free |
 | 1 — Quick | `quick` | Single factual lookup (≤2 tool calls) | ephemeral |
 | 2 — Scout | `scout` | Cross-file pattern investigation (5–15 tool calls) | structured findings |
 | 3 — Web | `web-researcher` | External design patterns, library docs, domain knowledge | cited summary |
 
-**Invocation pattern:**
-```python
-Agent(
-  subagent_type="scout",
-  model="haiku",
-  description="<task-name>",   # e.g. "map-layer-boundaries"
-  prompt="""
-  [ROLE: Architect — read-only investigation before design begins]
-  [WAY OF THINKING: Look for patterns that constrain or inform architecture choices. Flag anything that would make a design option impossible or costly.]
-  [CONSTRAINTS: Read only. Do not suggest fixes. Stay within the stated scope.]
-  [SCOPE: ...]
-  [QUESTION: ...]
-  """
-)
+**Delegation pattern** (host-specific syntax in adapter files):
+```
+spawn scout:
+  role: Architect — read-only investigation before design begins
+  way of thinking: Look for patterns that constrain or inform architecture choices.
+    Flag anything that would make a design option impossible or costly.
+  constraints: Read only. Do not suggest fixes. Stay within the stated scope.
+  scope: [...]
+  question: [...]
 
-Agent(
-  subagent_type="web-researcher",
-  model="haiku",
-  description="<task-name>",   # e.g. "research-event-sourcing-patterns"
-  prompt="""
-  [ROLE: Architect — read-only external research before design begins]
-  [WAY OF THINKING: Look for established patterns, trade-offs, and failure modes. Prefer authoritative sources. Flag thin or contradictory evidence.]
-  [CONSTRAINTS: Cite every fact. Cross-reference at least two sources. Do not present opinion as consensus.]
-  [SCOPE: ...]
-  [QUESTION: ...]
-  """
-)
+spawn web-researcher:
+  role: Architect — read-only external research before design begins
+  way of thinking: Look for established patterns, trade-offs, and failure modes.
+    Prefer authoritative sources. Flag thin or contradictory evidence.
+  constraints: Cite every fact. Cross-reference at least two sources. Do not present opinion as consensus.
+  scope: [...]
+  question: [...]
 ```
 
 **Rules:**

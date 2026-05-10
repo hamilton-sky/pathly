@@ -6,8 +6,8 @@
 #   bash install.sh --uninstall  # remove
 #
 # What it installs:
-#   adapters/claude-code/skills/ → ~/.claude/skills/   (slash commands)
-#   adapters/claude-code/agents/ → ~/.claude/agents/   (sub-agents)
+#   core/skills/ → ~/.claude/skills/   (slash commands)
+#   adapters/claude/agents/ → ~/.claude/agents/   (sub-agents)
 #
 # After install, register the feedback hook (optional):
 #   python -m pip install -e .
@@ -18,8 +18,8 @@ set -euo pipefail
 CLAUDE_DIR="$HOME/.claude"
 PLUGIN_NAME="pathly"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CLAUDE_SKILL_SOURCE="$SCRIPT_DIR/adapters/claude-code/skills"
-CLAUDE_AGENT_SOURCE="$SCRIPT_DIR/adapters/claude-code/agents"
+CLAUDE_SKILL_SOURCE="$SCRIPT_DIR/core/skills"
+CLAUDE_AGENT_SOURCE="$SCRIPT_DIR/adapters/claude/agents"
 CORE_TEMPLATE_SOURCE="$SCRIPT_DIR/core/templates"
 UNINSTALL="${1:-}"
 
@@ -30,9 +30,9 @@ echo ""
 
 if [ "$UNINSTALL" = "--uninstall" ]; then
     echo "Uninstalling..."
-    for skill_dir in "$CLAUDE_SKILL_SOURCE"/*/; do
-        skill_name=$(basename "$skill_dir")
-        rm -rf "$CLAUDE_DIR/skills/$skill_name"
+    for skill_file in "$CLAUDE_SKILL_SOURCE"/*.md; do
+        skill_name=$(basename "$skill_file" .md)
+        rm -f "$CLAUDE_DIR/skills/$skill_name.md"
         echo "  - /$skill_name"
     done
     for agent_file in "$CLAUDE_AGENT_SOURCE"/*.md; do
@@ -51,9 +51,9 @@ fi
 # Skills
 echo "Installing skills..."
 mkdir -p "$CLAUDE_DIR/skills"
-for skill_dir in "$CLAUDE_SKILL_SOURCE"/*/; do
-    skill_name=$(basename "$skill_dir")
-    cp -r "$skill_dir" "$CLAUDE_DIR/skills/$skill_name"
+for skill_file in "$CLAUDE_SKILL_SOURCE"/*.md; do
+    skill_name=$(basename "$skill_file" .md)
+    cp "$skill_file" "$CLAUDE_DIR/skills/$skill_name.md"
     echo "  + /$skill_name"
 done
 
