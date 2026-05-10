@@ -29,3 +29,7 @@ Thumbs.db
 # IDE
 .idea/
 .vscode/
+!.vscode/settings.json
+
+# Generated adapter agent files (produced by pathly install, not committed)
+adapters/*/agents/*.md

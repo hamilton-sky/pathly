@@ -1,6 +1,6 @@
 # pathly-interface-redesign — Progress
 
-## Status: IN PROGRESS
+## Status: COMPLETE
 
 ## Story Status
 
@@ -13,7 +13,7 @@
 | S2.2 | `/pathly help` — context-aware state display | Conv 1 | DONE |
 | S3.1 | Agent meta YAML — thin adapter files | Conv 2 | DONE |
 | S3.2 | Agent capability matrix — explicit `can_spawn` | Conv 2 | DONE |
-| S4.1 | Install-time stitching — no committed generated files | Conv 3 | TODO |
+| S4.1 | Install-time stitching — no committed generated files | Conv 3 | DONE |
 
 ## Conversation Breakdown
 
@@ -21,7 +21,7 @@
 |------|--------|---------|------------|--------|--------|
 | 1 | Phases 1-3 | S1.1, S1.2, S1.3, S2.1, S2.2 | None | DONE | Manual smoke: type each `/pathly [verb]`, confirm routing. `pytest tests/test_cli.py -q` |
 | 2 | Phases 1-4 | S3.1, S3.2 | Conv 1 DONE | DONE | `python -c "import yaml, glob; [yaml.safe_load(open(f)) for f in glob.glob('adapters/**/_meta/*.yaml', recursive=True)]"` |
-| 3 | Phases 1-4 | S4.1 | Conv 2 DONE | TODO | `pytest tests/test_stitch.py -q`; `pathly install --dry-run` shows N agents, no errors |
+| 3 | Phases 1-4 | S4.1 | Conv 2 DONE | DONE | `pytest tests/test_stitch.py -q`; `pathly install --dry-run` shows N agents, no errors |
 
 See **CONVERSATION_PROMPTS.md** for exact prompts to paste in each conversation.
 
@@ -36,10 +36,10 @@ See **CONVERSATION_PROMPTS.md** for exact prompts to paste in each conversation.
 | 5 | Claude meta files | adapters/claude | Create `_meta/*.yaml` for all 12 agents — Claude adapter | 2 | DONE | `adapters/claude/_meta/*.yaml` |
 | 6 | Codex + Copilot meta files | adapters/codex, adapters/copilot | Create `_meta/*.yaml` for all agents — Codex + Copilot | 2 | DONE | `adapters/codex/_meta/*.yaml`, `adapters/copilot/_meta/*.yaml` |
 | 7 | Strip adapter agent files | adapters | Remove duplicated behavioral content from adapter agent files | 2 | DONE | `adapters/*/agents/*.md` |
-| 8 | `stitch.py` implementation | pathly/cli | New module: stitch core agent + meta YAML → complete file | 3 | TODO | `pathly/cli/stitch.py` |
-| 9 | Integrate stitcher into install | pathly/cli | Update `pathly install` to stitch, add `--dry-run` validation | 3 | TODO | `pathly/cli/setup_command.py` |
-| 10 | Gitignore generated files | repo | Add adapter agent files to `.gitignore` | 3 | TODO | `.gitignore` |
-| 11 | Stitch tests | tests | `tests/test_stitch.py` — unit tests for stitcher | 3 | TODO | `tests/test_stitch.py` |
+| 8 | `stitch.py` implementation | pathly/cli | New module: stitch core agent + meta YAML → complete file | 3 | DONE | `pathly/cli/stitch.py` |
+| 9 | Integrate stitcher into install | pathly/cli | Update `pathly install` to stitch, add `--dry-run` validation | 3 | DONE | `pathly/cli/manager.py` |
+| 10 | Gitignore generated files | repo | Add adapter agent files to `.gitignore` | 3 | DONE | `.gitignore` |
+| 11 | Stitch tests | tests | `tests/test_stitch.py` — unit tests for stitcher | 3 | DONE | `tests/test_stitch.py` |
 
 ## Prerequisites
 

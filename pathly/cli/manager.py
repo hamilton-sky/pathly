@@ -170,11 +170,49 @@ class CliManager:
         if args.target == "codex":
             return CodexInstaller(Path(__file__).resolve().parents[2]).run(args)
         if args.target == "claude":
-            print("Install Claude Code support from this repository root:")
-            print("  ./install.ps1        # Windows")
-            print("  bash install.sh      # macOS/Linux")
-            return 0
+            return self._run_claude_install(args)
         raise AssertionError(args.target)
+
+    def _run_claude_install(self, args: argparse.Namespace) -> int:
+        from .stitch import stitch_agent
+
+        repo_root = Path(__file__).resolve().parents[2]
+        meta_dir = repo_root / "adapters" / "claude" / "_meta"
+        core_dir = repo_root / "core" / "agents"
+        dest_dir = Path.home() / ".claude" / "agents"
+        dry_run = not args.apply
+
+        print(f"pathly install claude {'--dry-run' if dry_run else '--apply'}")
+        print(f"Destination: {dest_dir}")
+        print()
+
+        stitched = 0
+        warnings: list[str] = []
+
+        for meta_path in sorted(meta_dir.glob("*.yaml")):
+            agent_name = meta_path.stem
+            core_path = core_dir / f"{agent_name}.md"
+            if not core_path.exists():
+                warnings.append(f"Missing core file: {core_path.name}")
+                continue
+
+            content = stitch_agent(core_path, meta_path)
+            dest_file = dest_dir / f"{agent_name}.md"
+
+            if dry_run:
+                print(f"  Would write: {dest_file}")
+            else:
+                dest_dir.mkdir(parents=True, exist_ok=True)
+                dest_file.write_text(content, encoding="utf-8")
+                print(f"  Wrote: {dest_file}")
+            stitched += 1
+
+        print()
+        print(f"Stitched {stitched} agents -> {dest_dir}. Warnings: {len(warnings)}.")
+        for w in warnings:
+            print(f"  WARNING: {w}")
+
+        return 0 if not warnings else 1
 
     def build_parser(self) -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(

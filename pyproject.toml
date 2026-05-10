@@ -7,6 +7,7 @@ requires-python = ">=3.11"
 license = {file = "LICENSE"}
 dependencies = [
     "anthropic>=0.40.0",
+    "pyyaml>=6",
 ]
 
 [project.scripts]
@@ -44,5 +45,6 @@ include = ["orchestrator*", "pathly*"]
 "pathly/adapters/codex/agents" = ["adapters/codex/agents/*.md"]
 "pathly/adapters/claude" = ["adapters/claude/README.md"]
 "pathly/adapters/claude/.claude-plugin" = ["adapters/claude/.claude-plugin/plugin.json", "adapters/claude/.claude-plugin/marketplace.json"]
-"pathly/adapters/claude/agents" = ["adapters/claude/agents/*.md"]
-"pathly/adapters/copilot/agents" = ["adapters/copilot/agents/*.md"]
+"pathly/adapters/claude/_meta" = ["adapters/claude/_meta/*.yaml"]
+"pathly/adapters/codex/_meta" = ["adapters/codex/_meta/*.yaml"]
+"pathly/adapters/copilot/_meta" = ["adapters/copilot/_meta/*.yaml"]
