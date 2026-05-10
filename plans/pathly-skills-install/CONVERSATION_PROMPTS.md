@@ -86,6 +86,14 @@ install.yaml, and skill loop in _run_host() are all done.
 
 Working directory for all paths: pathly-adapters/
 
+** Before implementing, spawn a Scout agent with this question:**
+"Map the following in pathly-adapters/:
+ 1. core/skills/ — what .md files already exist?
+ 2. adapters/claude/_meta/, adapters/codex/_meta/, adapters/copilot/_meta/ — what files exist, what is the naming pattern?
+ 3. install_cli/stitch.py — what is the current signature of stitch_skill()?
+Report: directory contents, file names, any patterns you notice."
+Use scout findings to confirm paths and avoid overwriting existing files.
+
 Scope:
 
 Phase 3 — New core skill bodies:
@@ -187,6 +195,14 @@ core/skills/start.md and end.md exist, and all 15 *_skill.yaml files exist acros
 the three adapters.
 
 Working directory: pathly-adapters/
+
+** Before implementing, spawn a Quick agent with this question:**
+"In pathly-adapters/, read tests/test_stitch.py and show me:
+ 1. The import style used (relative vs absolute)
+ 2. How fixtures and tmp_path are used
+ 3. The first 2 test function signatures
+So the new test file can mirror the same style."
+Use quick findings to match the existing test conventions exactly.
 
 Scope:
 
