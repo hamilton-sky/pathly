@@ -21,10 +21,9 @@ security pass over generated prompts and trusted/untrusted file boundaries.
 
 Files reviewed:
 
-- `pathly/hooks/classify_feedback.py`
-- `pathly/hooks/inject_feedback_ttl.py`
-- `pathly/hooks/__main__.py`
-- `pathly/cli/hooks_command.py`
+- Hooks infrastructure is planned but not yet implemented as Python files.
+- The pipeline functions correctly without hooks; TTL frontmatter injection
+  and feedback classification are planned additions.
 
 Risk:
 
@@ -68,8 +67,8 @@ Production recommendation:
 
 Files reviewed:
 
-- `pathly/team_flow/manager.py`
-- `pathly/runners/`
+- `pathly-engine/team_flow/manager.py`
+- `pathly-engine/runners/`
 - skill docs that instruct `git diff`, `git status`, and verification commands
 
 Risk:
@@ -84,7 +83,7 @@ Mitigation today:
 - Python subprocess calls use argument lists rather than shell string
   interpolation.
 - The main Python driver runs from the repository root.
-- The reviewer prompt in `pathly/team_flow/manager.py` reviews working-tree changes
+- The reviewer prompt in `pathly-engine/team_flow/manager.py` reviews working-tree changes
   with `git diff HEAD -- . ':(exclude)plans/'`.
 - Pre-flight checks stop when `claude` is unavailable.
 
@@ -110,14 +109,14 @@ Production recommendation:
 
 Files reviewed:
 
-- `core/prompts/team-flow.md`
-- `core/prompts/go.md`
-- `core/prompts/plan.md`
-- `core/prompts/prd-import.md`
-- `core/prompts/bmad-import.md`
-- `core/agents/director.md`
-- adapter wrappers under `adapters/claude-code/skills/` and
-  `adapters/codex/skills/`
+- `pathly-adapters/core/skills/team-flow.md`
+- `pathly-adapters/core/skills/go.md`
+- `pathly-adapters/core/skills/plan.md`
+- `pathly-adapters/core/skills/prd-import.md`
+- `pathly-adapters/core/skills/bmad-import.md`
+- `pathly-adapters/core/agents/director.md`
+- adapter wrappers under `pathly-adapters/adapters/claude/` and
+  `pathly-adapters/adapters/codex/`
 
 Risk:
 
@@ -179,10 +178,10 @@ Production hardening still needed:
 
 Files reviewed:
 
-- `orchestrator/eventlog.py`
-- `orchestrator/reducer.py`
-- `orchestrator/state.py`
-- `pathly/team_flow/manager.py`
+- `pathly-engine/orchestrator/eventlog.py`
+- `pathly-engine/orchestrator/reducer.py`
+- `pathly-engine/orchestrator/state.py`
+- `pathly-engine/team_flow/manager.py`
 - feedback-file protocol docs
 
 Risk:
@@ -224,8 +223,8 @@ Production recommendation:
 
 Files reviewed:
 
-- `pathly/team_flow/manager.py`
-- `core/prompts/team-flow.md`
+- `pathly-engine/team_flow/manager.py`
+- `pathly-adapters/core/skills/team-flow.md`
 - `docs/ORCHESTRATOR_FSM.md`
 - `docs/FEEDBACK_PROTOCOL.md`
 

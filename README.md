@@ -298,6 +298,27 @@ pathly doctor                     # diagnose: engine installed, plans/ accessibl
 
 The `pathly` command does **not** spawn AI agents. It writes filesystem state that Claude Code or Codex reads and acts on.
 
+### Copilot
+
+Install agent files into VS Code with GitHub Copilot:
+
+```bash
+pip install -e pathly-adapters/
+pathly-setup copilot --apply
+```
+
+Pathly agent files are installed as Copilot custom instructions. Invocation syntax varies by VS Code / Copilot version — check your Copilot chat settings after install. Keep Claude Code slash-command examples (`/pathly`) separate from Copilot usage; they are different surfaces.
+
+### Token Activity Log
+
+Track agent runs and token usage across all projects:
+
+```bash
+pathly-tokens
+```
+
+Each agent records its work to `~/.pathly/activity.jsonl` when it finishes a task. `pathly-tokens` prints a grouped summary by feature showing timestamp, agent, token counts, and a one-line summary per run. Token counts are optional — agents pass `0` when they cannot measure.
+
 ### Pathly Setup (Adapter Installer)
 
 Install agent files into AI host tools:
