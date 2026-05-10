@@ -26,5 +26,17 @@ Skills are loaded directly from `core/skills/` — no adapter wrappers needed.
 `adapters/claude/agents/` provides Claude Code-specific agent files with
 `tools:[]` frontmatter and `Agent()` invocation syntax for subagent spawning.
 
-Current status: `core/skills/`, `adapters/claude/agents/`, `install.sh`, and
-`install.ps1` provide the working Claude Code install path.
+## Install
+
+```bash
+pip install -e pathly-adapters/
+pathly-setup claude --apply
+```
+
+Preview writes first:
+
+```bash
+pathly-setup claude --dry-run
+```
+
+Current status: `pathly-adapters/core/skills/` and `pathly-adapters/adapters/claude/agents/` provide the working Claude Code install path via `pathly-setup`.

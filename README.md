@@ -114,31 +114,18 @@ Then open any project in Claude Code and run:
 Local development install:
 
 ```bash
-# macOS / Linux
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
-bash install.sh
-
-# Optional: register the auto-classification hook
-python -m pip install -e .
-pathly hooks install claude
+pip install -e pathly-adapters/
+pathly-setup claude --apply
 ```
 
 ```powershell
 # Windows (PowerShell)
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
-.\install.ps1
-
-# Optional: register the auto-classification hook
-python -m pip install -e .
-pathly hooks install claude
-```
-
-**To uninstall:**
-```bash
-bash install.sh --uninstall           # macOS / Linux
-.\install.ps1 -Uninstall              # Windows
+pip install -e pathly-adapters/
+pathly-setup claude --apply
 ```
 
 Then open any project in Claude Code and run:
@@ -179,7 +166,7 @@ Use Pathly to add password reset
 
 Local development install:
 
-Pathly includes a Codex plugin manifest at `adapters/codex/.codex-plugin/plugin.json`.
+Pathly includes a Codex plugin manifest at `pathly-adapters/adapters/codex/.codex-plugin/plugin.json`.
 Current Codex builds load local plugins through a marketplace root. Let Pathly
 create a small local marketplace that points to the Codex adapter inside your
 checkout, then add that marketplace to Codex.
@@ -194,13 +181,13 @@ Example Windows setup after cloning:
 ```powershell
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
-python -m pip install -e .
-pathly install codex --apply
+pip install -e pathly-adapters/
+pathly-setup codex --apply
 codex plugin marketplace add C:\tmp\pathly-marketplace
 ```
 
 Restart Codex after adding or changing the local marketplace. If you need to
-repair the marketplace later, rerun `pathly install codex --apply`.
+repair the marketplace later, rerun `pathly-setup codex --apply`.
 
 Manual PowerShell setup:
 
@@ -209,9 +196,9 @@ $market = "C:\tmp\pathly-marketplace"
 $plugin = "$market\plugins\pathly"
 New-Item -ItemType Directory -Path "$market\.agents\plugins" -Force
 New-Item -ItemType Directory -Path "$plugin" -Force
-New-Item -ItemType Junction -Path "$plugin\.codex-plugin" -Target ".\adapters\codex\.codex-plugin"
-New-Item -ItemType Junction -Path "$plugin\skills" -Target ".\adapters\codex\skills"
-New-Item -ItemType Junction -Path "$plugin\core" -Target ".\core"
+New-Item -ItemType Junction -Path "$plugin\.codex-plugin" -Target ".\pathly-adapters\adapters\codex\.codex-plugin"
+New-Item -ItemType Junction -Path "$plugin\skills" -Target ".\pathly-adapters\adapters\codex\skills"
+New-Item -ItemType Junction -Path "$plugin\core" -Target ".\pathly-adapters\core"
 @'
 {
   "name": "pathly-local",
@@ -245,9 +232,8 @@ If a friend clones the repo, their next steps are:
 
 ```powershell
 cd pathly
-python -m pip install -e .
-pathly install codex       # prints the Codex marketplace setup
-pathly install codex --apply
+pip install -e pathly-adapters/
+pathly-setup codex --apply
 codex plugin marketplace add C:\tmp\pathly-marketplace
 ```
 
@@ -286,10 +272,10 @@ agent files remain available as role contracts, but full multi-tool adapter
 packaging is tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
 
 Pathly also ships `.agents/skills/` as a direct skill-discovery compatibility
-layer. Those files mirror `adapters/codex/skills/` exactly, so tools that scan
+layer. Those files mirror `pathly-adapters/adapters/codex/skills/` exactly, so tools that scan
 `.agents/skills/<name>/SKILL.md` can use the same Codex-safe wrappers without a
 Codex marketplace install. Do not edit `.agents/skills/` directly; update the
-Codex adapter wrappers and refresh the mirror.
+Codex adapter wrappers in `pathly-adapters/adapters/codex/skills/` and refresh the mirror.
 
 Supported surfaces:
 
@@ -300,48 +286,45 @@ Direct skill: .agents/skills/pathly/SKILL.md
 CLI fallback: pathly --project-dir <project> help
 ```
 
-### Pathly CLI
+### Pathly CLI (Engine)
 
-Install Pathly as an editable package while developing or from a cloned repo on
-a new machine:
-
-```bash
-python -m pip install -e ".[dev]"
-pathly --help
-```
-
-Run Pathly from any project folder:
+Install the engine package:
 
 ```bash
-pathly init checkout-flow
-pathly run checkout-flow --entry build
-pathly doctor
+pip install -e pathly-engine/
 ```
 
-You can also point Pathly at another project explicitly:
+Check and advance state from any project folder:
 
 ```bash
-pathly --project-dir C:\Users\Yafit\pathly-test init demo
-pathly --project-dir C:\Users\Yafit\pathly-test run demo --entry build
+pathly status                     # current FSM state + suggested next action
+pathly status <feature>           # state for a named feature
+pathly go "add password reset"    # record intent; prints current state and next step
+pathly doctor                     # diagnose: engine installed, plans/ accessible, STATE.json readable
 ```
 
-Adapter install helpers show the commands for each host:
+The `pathly` command does **not** spawn AI agents. It writes filesystem state that Claude Code or Codex reads and acts on.
+
+### Pathly Setup (Adapter Installer)
+
+Install agent files into AI host tools:
 
 ```bash
-pathly install codex
-pathly install claude
+pip install -e pathly-adapters/
+pathly-setup                      # detect hosts; no writes
+pathly-setup --dry-run            # preview what would be written
+pathly-setup --apply              # install into all detected hosts
+pathly-setup claude --apply       # install for Claude Code only
+pathly-setup codex --apply        # install for Codex only
 ```
-
-The `pathly/` folder is the Python package behind that CLI. Keep it: it provides
-the `pathly` command declared in `pyproject.toml`, adapter install guidance, and
-the stable fallback contract for users who are not inside Claude Code or Codex.
 
 ### Developer Install
 
-Use the development extra when changing Pathly itself or running tests:
+Install both packages for local development and tests:
 
 ```bash
-python -m pip install -e ".[dev]"
+pip install -e pathly-adapters/
+pip install -e pathly-engine/
 pytest -q
 ```
 

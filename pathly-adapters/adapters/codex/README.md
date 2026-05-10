@@ -44,8 +44,8 @@ machine.
 ```powershell
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
-python -m pip install -e .
-pathly install codex --apply
+pip install -e pathly-adapters/
+pathly-setup codex --apply
 codex plugin marketplace add C:\tmp\pathly-marketplace
 ```
 
