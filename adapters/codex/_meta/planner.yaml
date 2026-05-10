@@ -6,7 +6,8 @@ can_spawn: [quick, scout]
 spawn_section: |
   ## Sub-agent delegation (Codex)
 
-  Codex does not support the Claude Code `Agent()` API. Use these delegation patterns instead.
+  Codex supports a native sub-agent API (`spawn_agent`, `wait_agent`, `close_agent`).
+  See https://developers.openai.com/codex/subagents for exact syntax.
 
   **Quick (factual lookup):**
   Perform an inline lookup in ≤2 reads. Do not write to any file during a quick lookup.

@@ -65,7 +65,7 @@ Architectural boundaries:
 - Setup detects hosts, prints planned writes, and materializes adapter files only when explicitly applying.
 - Setup must not advance workflow state, spawn lifecycle agents, or interpret FSM transitions.
 - Adapters remain thin host wrappers over `core/` assets.
-- Codex docs and output must keep natural-language invocation, not `/pathly`.
+- Codex invocation accepts natural language ("Use Pathly..."), `@pathly`, and `$skill-name`. Do not use `/pathly` (reserved for Codex's own UI).
 
 Expected file areas:
 - `pathly/cli/setup_command.py`

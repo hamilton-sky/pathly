@@ -6,8 +6,10 @@ can_spawn: [orchestrator, architect, po, web-researcher]
 spawn_section: |
   ## Sub-agent delegation (Codex)
 
-  Codex does not support the Claude Code `Agent()` API. Use natural language role delegation instead.
+  Codex supports a native sub-agent API (`spawn_agent`, `wait_agent`, `close_agent`).
+  See https://developers.openai.com/codex/subagents for exact syntax.
 
+  Prose fallback — use natural language role delegation:
   "Enter the [role] role and [task description]. Follow the behavioral contract in core/agents/[role].md."
 
   For routing decisions, delegate to orchestrator:

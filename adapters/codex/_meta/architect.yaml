@@ -6,19 +6,21 @@ can_spawn: [quick, scout, web-researcher]
 spawn_section: |
   ## Sub-agent delegation (Codex)
 
-  Codex does not support the Claude Code `Agent()` API. Use these delegation patterns instead.
+  Codex supports a native sub-agent API (`spawn_agent`, `wait_agent`, `close_agent`).
+  See https://developers.openai.com/codex/subagents for exact syntax.
 
   **Scout (read-only investigation):**
-  Before editing, describe a focused investigation phase:
+  Spawn a scout sub-agent or describe a focused investigation phase:
   "Investigate [question] by reading [scope directories/files]. Read only. Do not edit any files.
   Compress findings to a short summary before entering the edit phase."
 
   **Quick (factual lookup):**
-  Perform an inline lookup in ≤2 reads. Do not write to any file during a quick lookup.
-  If 2 reads are not enough, the question is not atomic — escalate to a scout investigation.
+  Spawn a quick sub-agent or perform an inline lookup in ≤2 reads.
+  If 2 reads are not enough, the question is not atomic — escalate to a scout.
 
   **Web research:**
-  Describe the external research needed: "Research [topic] from authoritative sources. Cite every fact. Cross-reference at least two sources."
+  Spawn a web-researcher sub-agent or describe:
+  "Research [topic] from authoritative sources. Cite every fact. Cross-reference at least two sources."
 
   **Rules:**
   - Sub-agents are terminal — they cannot spawn further agents.
