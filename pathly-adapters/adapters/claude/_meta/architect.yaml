@@ -35,6 +35,21 @@ spawn_section: |
     """
   )
 
+  # Optional Scout C & D — spawn when task spans 3+ independent concerns (up to 4 total)
+  # When to add a 3rd scout:  config/infra layer that the architecture will affect
+  # When to add a 4th scout:  existing tests or contracts that bound the design space
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="<optional-scout-c-or-d>",
+    prompt="""
+    [ROLE: Architect — optional additional scout for complex/cross-layer design tasks]
+    [CONSTRAINTS: Read only. Only spawn when the design genuinely spans 3+ independent concerns.]
+    [SCOPE: ...]
+    [QUESTION: ...]
+    """
+  )
+
   ### During design: single factual lookup
   Agent(
     subagent_type="quick",

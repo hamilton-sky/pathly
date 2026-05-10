@@ -35,6 +35,21 @@ spawn_section: |
     """
   )
 
+  # Optional Scout C & D — spawn when task spans 3+ independent concerns (up to 4 total)
+  # When to add a 3rd scout:  existing tests for the module being changed
+  # When to add a 4th scout:  plan/story spec to verify implementation matches intent
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="<optional-scout-c-or-d>",
+    prompt="""
+    [ROLE: Builder — optional additional scout for complex/cross-layer tasks]
+    [CONSTRAINTS: Read only. Only spawn when the task genuinely spans 3+ independent concerns.]
+    [SCOPE: ...]
+    [QUESTION: ...]
+    """
+  )
+
   ### During implementation: single factual lookup
   Agent(
     subagent_type="quick",

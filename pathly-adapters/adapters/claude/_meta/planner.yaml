@@ -35,6 +35,21 @@ spawn_section: |
     """
   )
 
+  # Optional Scout C & D — spawn when task spans 3+ independent concerns (up to 4 total)
+  # When to add a 3rd scout:  related feature branches or adjacent plans that may conflict
+  # When to add a 4th scout:  existing test coverage to understand what stories are already verified
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="<optional-scout-c-or-d>",
+    prompt="""
+    [ROLE: Planner — optional additional scout for complex/cross-feature planning tasks]
+    [CONSTRAINTS: Read only. Only spawn when planning genuinely spans 3+ independent concerns.]
+    [SCOPE: ...]
+    [QUESTION: ...]
+    """
+  )
+
   ### During planning: single factual lookup
   Agent(
     subagent_type="quick",

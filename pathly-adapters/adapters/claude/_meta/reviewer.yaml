@@ -35,6 +35,21 @@ spawn_section: |
     """
   )
 
+  # Optional Scout C & D — spawn when task spans 3+ independent concerns (up to 4 total)
+  # When to add a 3rd scout:  related tests to check if test coverage matches the change
+  # When to add a 4th scout:  story/plan spec to verify the change matches intent
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="<optional-scout-c-or-d>",
+    prompt="""
+    [ROLE: Reviewer — optional additional scout for complex/cross-layer reviews]
+    [CONSTRAINTS: Read only. Do not write feedback files. Only spawn when the review spans 3+ independent concerns.]
+    [SCOPE: ...]
+    [QUESTION: ...]
+    """
+  )
+
   ### During review: single factual lookup
   Agent(
     subagent_type="quick",

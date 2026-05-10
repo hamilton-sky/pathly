@@ -35,6 +35,21 @@ spawn_section: |
     """
   )
 
+  # Optional Scout C & D — spawn when task spans 3+ independent concerns (up to 4 total)
+  # When to add a 3rd scout:  plan/acceptance criteria to verify tests match what was specified
+  # When to add a 4th scout:  cross-module dependencies that affect test setup or fixtures
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="<optional-scout-c-or-d>",
+    prompt="""
+    [ROLE: Tester — optional additional scout for complex/cross-module test tasks]
+    [CONSTRAINTS: Read only. Do not suggest implementation changes. Only spawn when the test task genuinely spans 3+ independent concerns.]
+    [SCOPE: ...]
+    [QUESTION: ...]
+    """
+  )
+
   ### During test planning or execution: single factual lookup
   Agent(
     subagent_type="quick",
