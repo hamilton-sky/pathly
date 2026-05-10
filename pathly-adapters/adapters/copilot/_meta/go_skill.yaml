@@ -1,0 +1,4 @@
+skill: go
+filename: go.md
+invocation: "#pathly" # TODO: confirm Copilot prefix spec
+natural_language: "go, continue, next step, keep going, resume"

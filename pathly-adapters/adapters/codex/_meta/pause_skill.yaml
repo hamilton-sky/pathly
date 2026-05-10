@@ -1,0 +1,7 @@
+skill: pause
+filename: pause.md
+invocation: "@pause"
+natural_language: "pause, stop for now, save and exit"
+wrapper: |
+  Write `status: PAUSED` to the current feature's PROGRESS.md (if one exists in plans/).
+  Then print: "Session paused. Resume with /go when ready."

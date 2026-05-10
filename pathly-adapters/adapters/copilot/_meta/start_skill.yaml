@@ -1,0 +1,4 @@
+skill: start
+filename: start.md
+invocation: "#pathly" # TODO: confirm Copilot prefix spec
+natural_language: "start, begin, new session, wake up"
