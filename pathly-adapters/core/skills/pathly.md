@@ -9,16 +9,34 @@ Split `$ARGUMENTS` into:
 - **subcommand** — first word (lowercase)
 - **args** — everything after the first word
 
+### Core FSM commands
+
 | subcommand | aliases | behavior |
 |---|---|---|
 | (empty) | — | → **help** |
 | `start` | `s` | → **start** |
 | `go` | `g`, `continue`, `resume`, `next` | → **go** |
-| `end` | `done`, `finish`, `wrap` | → **end** |
 | `pause` | `stop` | → **pause** |
+| `end` | `done`, `finish`, `wrap` | → **end** |
 | `help` | `h`, `?` | → **help** |
 | `meet` | — | → **meet** |
-| anything else | — | treat all of `$ARGUMENTS` as intent → **go** |
+| `build` | `b` | → **go** with intent `"continue build"` |
+| `storm` | — | → **go** with intent `"storm <args>"` |
+
+### Specialized commands (skip director routing)
+
+| subcommand | behavior |
+|---|---|
+| `po` | → **po** skill directly |
+| `debug` | → **debug** skill directly |
+| `explore` | → **explore** skill directly |
+| `verify` | → **verify-state** skill directly |
+
+### Catch-all
+
+| subcommand | behavior |
+|---|---|
+| anything else | treat all of `$ARGUMENTS` as natural language intent → **go** |
 
 Before invoking, print:
 ```
@@ -29,26 +47,50 @@ Pathly route: <subcommand>
 
 ## Behavior: start
 
-You are the Director entry point. Greet the user and route to the right workflow.
+You are the Director entry point. Greet the user, show the full feature journey,
+and route to the right workflow.
 
 Print:
 
 ```
-Welcome to Pathly. What do you want to do?
+╔═══════════════════════════════════════════╗
+║           Welcome to Pathly               ║
+╚═══════════════════════════════════════════╝
 
-  (1) /pathly go        — describe what you want to build or continue
-  (2) /pathly go storm  — brainstorm or shape an unclear idea
-  (3) /pathly help      — show the state-aware menu
+Typical path for a new feature:
 
-Reply with 1, 2, or 3 — or just describe what you want:
+  0. /pathly po      — clarify requirements with the Product Owner (optional, recommended for ambiguous features)
+  1. /pathly storm   — brainstorm the approach with the architect
+  2. /pathly go      — plan + route to build (director chooses rigor)
+  3. /pathly build   — implement conversation by conversation
+     (review + test happen automatically inside the pipeline)
+  4. /pathly end     — retro + archive
+
+Quick actions:
+  /pathly debug <symptom>   — investigate a bug
+  /pathly explore <question>— read-only codebase Q&A
+  /pathly verify            — check for stale feedback or FSM drift
+  /pathly meet              — consult a role mid-flow
+  /pathly help              — state-aware menu
+
+What would you like to do?
+
+  (1) Start a new feature      — describe it and let the director route
+  (2) Clarify requirements     — talk to the PO first
+  (3) Brainstorm an idea       — open architect storm session
+  (4) Continue in-progress work
+  (5) Import a PRD file
+
+Reply with 1–5 — or just describe what you want:
 ```
 
 Wait for user input. Then route:
 
-- **1 or go**: route to **go** behavior (ask for intent if not provided)
-- **2 or storm**: ask "What idea do you want to explore?" → invoke `storm <answer>`
-- **3 or help**: route to **help** behavior
-- **Free text**: treat as intent and route via **go** behavior
+- **1 or free text**: treat as intent → route via **go** behavior
+- **2 or po**: ask "Which feature? (or describe it)" → route to **po** skill
+- **3 or storm**: ask "What idea do you want to explore?" → invoke `storm <answer>`
+- **4 or continue**: route to **go** behavior with intent `"continue"`
+- **5 or prd / import**: ask "Feature name and PRD file path?" → route to **go** with intent `"prd-import <name> <path>"`
 
 ---
 
@@ -298,57 +340,40 @@ Reply with 1–4:
 **Step 3 — Full command reference (shown on "See all commands")**
 
 ```
-───────────────────────────────────────────
-  ENTRY POINTS
-───────────────────────────────────────────
-  /pathly                    state-aware menu
-  /pathly <intent>           Director routes immediately
-  /pathly start              welcome menu
-  /pathly go [intent]        Director — reads state, routes
-  /pathly help [feature]     state-aware menu for a specific feature
-  /pathly end                wrap up session, offer retro
+╔═══════════════════════════════════════════╗
+║         Pathly — All Commands             ║
+╚═══════════════════════════════════════════╝
+
+── CORE FSM COMMANDS ──────────────────────
+  /pathly start              welcome menu + full journey map
+  /pathly go [intent]        Director — reads state, routes intelligently
+  /pathly storm [topic]      brainstorm with architect → STORM_SEED.md
+  /pathly build              continue next conversation in pipeline
   /pathly pause              save state, exit cleanly
-  /pathly meet               consult a role on the active feature
+  /pathly meet [feature]     consult a role mid-flow (context-aware menu)
+  /pathly end                wrap up session, offer retro
+  /pathly help [feature]     state-aware menu + diagnostics
 
-───────────────────────────────────────────
-  PIPELINE
-───────────────────────────────────────────
-  team-flow <feature>        full pipeline, default rigor
-  team-flow <feature> nano   tiny change, ≤2 files
-  team-flow <feature> lite   short plan, 1–3 conversations
-  team-flow <feature> standard  full 8-file plan
-  team-flow <feature> strict    audit gates, high-risk changes
-  team-flow <feature> build     skip to build stage
-  team-flow <feature> test      skip to test stage
-  team-flow <feature> fast      no pause points
+── SPECIALIZED COMMANDS ───────────────────
+  /pathly po [feature]       Product Owner session — clarify requirements
+  /pathly debug <symptom>    bug investigation pipeline
+  /pathly explore <question> read-only codebase Q&A
+  /pathly verify [feature]   health check: stale feedback, FSM drift
 
-───────────────────────────────────────────
-  INDIVIDUAL STAGES
-───────────────────────────────────────────
-  storm [topic]              brainstorm → STORM_SEED.md
-  plan <feature> [rigor]     create plan files
-  review                     audit staged changes
-  retro <feature>            write RETRO.md + extract lessons
-  lessons                    promote candidates → LESSONS.md
-  archive <feature>          move to plans/.archive/
-  prd-import <f> <file>      translate PRD → plan files
-  bmad-import <f> <file>     translate BMAD PRD → plan files
-  verify-state [feature]     check stale feedback, PROGRESS drift
+── CATCH-ALL ──────────────────────────────
+  /pathly <anything>         Director routes natural language intent
 
-───────────────────────────────────────────
-  FEEDBACK FILES  (plans/<feature>/feedback/)
-───────────────────────────────────────────
-  ARCH_FEEDBACK.md    reviewer → architect  (BLOCKING)
-  REVIEW_FAILURES.md  reviewer → builder
-  IMPL_QUESTIONS.md   builder  → planner
-  DESIGN_QUESTIONS.md builder  → architect
-  TEST_FAILURES.md    tester   → builder
-  HUMAN_QUESTIONS.md  any      → user (BLOCKED_ON_HUMAN)
+── FEEDBACK FILES ─────────────────────────
+  plans/<feature>/feedback/
+  ARCH_FEEDBACK.md     reviewer → architect  (BLOCKING — pipeline halts)
+  REVIEW_FAILURES.md   reviewer → builder
+  IMPL_QUESTIONS.md    builder  → planner
+  DESIGN_QUESTIONS.md  builder  → architect
+  TEST_FAILURES.md     tester   → builder
+  HUMAN_QUESTIONS.md   any      → user      (BLOCKED_ON_HUMAN)
 
-───────────────────────────────────────────
-  TELEMETRY
-───────────────────────────────────────────
-  pathly-tokens              show activity by feature (run in terminal)
+── TELEMETRY ──────────────────────────────
+  pathly-tokens         show token/cost activity by feature (run in terminal)
 
-═══════════════════════════════════════════
+╚═══════════════════════════════════════════╝
 ```

@@ -13,8 +13,10 @@ from .config import DriverConfig
 
 
 class TeamFlowFiles:
-    def __init__(self, config: DriverConfig):
+    def __init__(self, config: DriverConfig, clock=None):
         self.config = config
+        # Injectable clock for testing. Defaults to real UTC time.
+        self._clock = clock if clock is not None else (lambda: datetime.now(timezone.utc))
 
     def feedback_files(self) -> set:
         return open_feedback_files(self.config.feedback_dir)
@@ -96,7 +98,7 @@ class TeamFlowFiles:
 
         event_id = frontmatter.get("created_by_event", "")
         created_at = frontmatter.get("created_at", "")
-        ttl_hours = frontmatter.get("ttl_hours", "24")
+        ttl_hours = frontmatter.get("ttl_hours", "168")  # default 1 week — avoids false positives on long pauses
 
         if event_id and event_id != "unknown" and known_event_ids and event_id not in known_event_ids:
             return f"event {event_id} not in current EVENTS.jsonl (orphan from a previous run)"
@@ -105,7 +107,7 @@ class TeamFlowFiles:
             try:
                 created = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
                 ttl = timedelta(hours=float(ttl_hours))
-                if datetime.now(timezone.utc) > created + ttl:
+                if self._clock() > created + ttl:
                     return f"TTL expired (created {created_at}, ttl={ttl_hours}h)"
             except (TypeError, ValueError):
                 return ""

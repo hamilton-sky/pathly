@@ -41,46 +41,157 @@ Stop there.
 
 ## Step 2: List relevant roles
 
-Offer only the roles relevant to the current state.
+Print a context-aware menu based on the inferred workflow state.
+Only show roles that are useful at this point in the pipeline.
 
-Default role sets:
+### Role descriptions (use in all menus)
 
-- **planning** -> `planner`, `po`, `architect`
-- **building** -> `planner`, `architect`, `reviewer`, `tester`, `scout`
-- **review feedback open** -> `reviewer`, `architect`, `planner`, `scout`
-- **architecture feedback open** -> `architect`, `planner`, `reviewer`, `scout`
-- **testing** -> `tester`, `planner`, `architect`, `reviewer`, `scout`
-- **done / retro complete** -> `reviewer`, `tester`, `planner`
+```
+po             -> requirements, scope, success criteria, user value
+planner        -> stories, acceptance criteria, task breakdown, ordering
+architect      -> design, layers, contracts, migrations, rollback plans
+reviewer       -> likely violations, diff quality, contract risks (advisory only)
+tester         -> verification strategy, acceptance coverage, likely gaps
+web-researcher -> external patterns, library docs, domain knowledge (cite sources)
+```
 
-Rules:
+### Menu by state
 
-- Do not offer `builder` as a meet target. Builder is an implementation owner,
-  not an advisory role.
-- Do not offer `director` as a meet target. Director routes workflows; it does
-  not act as a subject-matter consultant.
-- Offer `po` only when product intent, scope, user value, or success criteria
-  are plausible consultation topics.
-- Offer `web-researcher` only if the user explicitly wants external references.
+Print exactly one of the menus below based on the inferred state.
 
-Print the menu in this format:
-
+**storming / not started:**
 ```text
 ===========================================
-  meet - <feature>
-  State: <state>
+  meet — <feature>
+  State: storming / not started
 ===========================================
 
   Pick a role to consult:
 
-  [1] planner      -> requirements, stories, acceptance criteria, task breakdown
-  [2] architect    -> design, layers, contracts, migrations, rollback
-  [3] reviewer     -> likely review risks, contract violations, diff quality
-  [4] tester       -> verification strategy, acceptance coverage, likely gaps
-  [5] scout        -> read-only codebase investigation
+  [1] po             -> is this the right thing to build?
+  [2] architect      -> how might we approach this technically?
+  [3] web-researcher -> what patterns exist externally?
+  [4] See all commands
+
+Reply with 1–4:
+```
+
+**planning:**
+```text
+===========================================
+  meet — <feature>
+  State: planning
+===========================================
+
+  Pick a role to consult:
+
+  [1] po             -> scope, success criteria, what's out of scope
+  [2] planner        -> story breakdown, ordering, rigor level
+  [3] architect      -> design decisions, layer contracts, high-risk areas
+  [4] web-researcher -> external patterns or library options
+  [5] See all commands
+
+Reply with 1–5:
+```
+
+**building:**
+```text
+===========================================
+  meet — <feature>
+  State: building
+===========================================
+
+  Pick a role to consult:
+
+  [1] po             -> confirm scope or success criteria mid-build
+  [2] planner        -> story clarification, acceptance criteria, task reordering
+  [3] architect      -> design question, layer contract, integration shape
+  [4] reviewer       -> early review — likely violations before I write the code
+  [5] web-researcher -> external reference for a specific implementation question
   [6] See all commands
 
-Reply with 1-6:
+Reply with 1–6:
 ```
+
+**review feedback open:**
+```text
+===========================================
+  meet — <feature>
+  State: review feedback open
+===========================================
+
+  Pick a role to consult:
+
+  [1] reviewer       -> clarify what the feedback is asking for
+  [2] architect      -> is the reviewer's concern architecturally valid?
+  [3] planner        -> does fixing this require a scope change?
+  [4] See all commands
+
+Reply with 1–4:
+```
+
+**architecture feedback open:**
+```text
+===========================================
+  meet — <feature>
+  State: architecture feedback open
+===========================================
+
+  Pick a role to consult:
+
+  [1] architect      -> what is the correct design resolution?
+  [2] planner        -> does the redesign change stories or ordering?
+  [3] reviewer       -> will the proposed resolution satisfy review gates?
+  [4] See all commands
+
+Reply with 1–4:
+```
+
+**testing:**
+```text
+===========================================
+  meet — <feature>
+  State: testing
+===========================================
+
+  Pick a role to consult:
+
+  [1] tester         -> what's being tested, what's missing, likely gaps
+  [2] planner        -> does this test failure imply a scope change?
+  [3] architect      -> is the failure a design issue or an implementation issue?
+  [4] reviewer       -> would this failure have been caught in review?
+  [5] See all commands
+
+Reply with 1–5:
+```
+
+**done / retro complete:**
+```text
+===========================================
+  meet — <feature>
+  State: done / retro complete
+===========================================
+
+  Pick a role to consult:
+
+  [1] reviewer       -> was there anything in the diff worth noting for next time?
+  [2] tester         -> were all acceptance criteria genuinely covered?
+  [3] planner        -> should any stories be carried into the next feature?
+  [4] See all commands
+
+Reply with 1–4:
+```
+
+### Rules (apply to all states)
+
+- Do NOT offer `builder` — implementation owner, not advisory.
+- Do NOT offer `director` — routes workflows, not a consultant.
+- Do NOT offer `orchestrator`, `quick`, or `scout` as named options.
+  Scout may be spawned internally by another role during consultation if needed.
+- Offer `po` only in states where scope, intent, or success criteria are live questions
+  (storming, planning, building). Not in review/test/done.
+- Offer `web-researcher` only in storming/planning/building — and only when the question
+  clearly benefits from external sources.
 
 ## Step 3: Collect one bounded question
 

@@ -383,7 +383,9 @@ class TeamFlowDriver:
         if self.state.current == FSMState.BLOCKED_ON_HUMAN:
             # Reducer escalated: retry limit hit — BLOCKED_ON_HUMAN handled next iteration
             return
-        count = self.state.retry_count_by_key.get(f"{self.feature}:{active}", 0)
+        event_id = self._read_feedback_event_id(active)
+        retry_key = f"event-{event_id}:{active}"
+        count = self.state.retry_count_by_key.get(retry_key, 0)
         self.log(f"Resolving: {active} (attempt {count}/{MAX_RETRIES})")
         before = self.get_feedback_files()
 
@@ -453,8 +455,42 @@ class TeamFlowDriver:
         if self.state.current == FSMState.PLAN_PAUSED:
             self.emit(HumanResponseEvent(value="go"))
 
+    def _read_feedback_event_id(self, feedback_filename: str) -> str:
+        """Return the created_by_event ID from a feedback file's frontmatter.
+
+        Falls back to the filename itself so retry keys remain unique even
+        when frontmatter is absent or malformed.  This makes the retry budget
+        stable across conversation replanning: if conv-3 is split into conv-3a
+        and conv-3b the same feedback file (same event ID) still counts toward
+        the same budget rather than resetting because the conversation number
+        changed.
+        """
+        feedback_path = self.feedback_dir / feedback_filename
+        try:
+            content = feedback_path.read_text(encoding="utf-8")
+        except OSError:
+            return feedback_filename
+
+        if not content.startswith("---"):
+            return feedback_filename
+
+        end = content.find("---", 3)
+        if end == -1:
+            return feedback_filename
+
+        for line in content[3:end].splitlines():
+            if ":" in line:
+                key, _, value = line.partition(":")
+                if key.strip() == "created_by_event":
+                    event_id = value.strip()
+                    if event_id and event_id != "unknown":
+                        return event_id
+
+        return feedback_filename
+
     def _increment_retry(self, feedback_file: str) -> int:
-        key = f"{self.feature}:{feedback_file}"
+        event_id = self._read_feedback_event_id(feedback_file)
+        key = f"event-{event_id}:{feedback_file}"
         self.emit(SystemEvent(action="RETRY", metadata={"retry_key": key}))
         return self.state.retry_count_by_key.get(key, 0)
 
