@@ -81,14 +81,21 @@ Known limitations today:
   token cost, and recovery behavior.
 
 **New in this version:**
+- **FSM-style command set** — 8 core commands (`start · storm · go · build · pause · meet · end · help`) + 4 specialized (`po · debug · explore · verify`); natural-language catch-all routes everything else via director
+- **`/pathly po [feature]`** — dedicated Product Owner session: structured Q&A, writes `PO_NOTES.md`, shown as step 0 in the journey map
+- **`/pathly start` journey map** — welcome screen now shows the full `po → storm → go → build → end` path upfront
+- **`/pathly meet` context-aware menus** — 7 different role menus based on current FSM state; `po` offered in storming/planning/building; `builder`, `director`, `orchestrator` never shown as consult targets
+- **web-researcher upgraded to Sonnet** — synthesis across multiple external sources needs reasoning capacity; Haiku remains for `quick` (local lookups) and `scout` (read-only investigation)
+- **Retry budget bound to event ID** — retry key now uses `created_by_event` from feedback file frontmatter instead of conversation number; survives conversation replanning without silently resetting the counter
+- **TTL default raised to 168h (1 week)** — avoids false positives when users pause for days; clock is now injectable for testing
+- **15 new TTL tests** — `test_ttl.py` covers not-expired, expired, long-pause false positives, orphan detection, missing frontmatter
+- **Protocol alignment test** — `tests/test_feedback_protocol.py` asserts Python `FeedbackFile` constants and Markdown docs reference the same filenames; prevents silent drift between runtime and behavioral contracts
 - **Rigor escalator** — starts at `lite` (4 files), offers targeted additions based on what planning reveals
 - **`/pathly debug <symptom>`** — dedicated bug pipeline: scout traces, tester verifies before and after fix
 - **`/pathly explore <question>`** — investigation mode: answer questions about the codebase without building
-- **`/pathly doctor`** — diagnoses stuck FSM, orphan feedback files, stale state; offers one action per issue
 - **`[AUTO_FIX]` in reviewer** — trivial findings (unused import, missing newline) applied in batch, no human turn
 - **Cost meter** — `RETRO.md` shows per-agent token + cost breakdown from `EVENTS.jsonl`
 - **Inline quick queries** — builder can ask atomic questions (≤ 2 tool calls) without creating feedback files
-- **TTL on feedback files** — frontmatter tracks creation event; `/pathly verify-state` detects orphans and expired files
 - **Startup integrity check** — every `/pathly flow` run scans for orphan/expired feedback files and FSM drift before the first agent spawns; fast mode auto-resolves safe issues, stops on real ones
 
 ---
@@ -417,41 +424,54 @@ validated with smoke runs before release.
 
 ## Everyday Commands
 
-**Director** is the decision-making agent role. It reads the user's free-form
-request, inspects project state, chooses `nano`, `lite`, `standard`, or
-`strict`, and decides whether to start discovery, planning, build, test, review,
-or retro.
+Pathly uses a **FSM-style command set**. Eight core commands move the pipeline forward;
+four specialized commands handle specific situations; the catch-all routes anything else.
 
-**`/pathly`** is the normal user command. It activates Director:
+### Start here
 
 ```text
-/pathly fix the broken checkout button
-/pathly add password reset
-/pathly continue the login work
-/pathly review my current changes
+/pathly start           ← welcome screen + full journey map
+/pathly po              ← clarify requirements first (step 0 for ambiguous features)
+/pathly storm           ← brainstorm the approach with the architect
+/pathly go              ← director reads state and decides what to do next
 ```
 
-**`/pathly flow`** is the explicit pipeline command. Use it when you already know
-the feature name, rigor, and entry point:
+### Move the pipeline
 
 ```text
-/pathly flow password-reset strict
-/pathly flow navbar-copy nano
-/pathly flow checkout build
+/pathly build           ← implement the next conversation
+/pathly pause           ← save state and exit cleanly
+/pathly meet            ← consult a role mid-flow (context-aware menu)
+/pathly end             ← wrap up, offer retro
 ```
 
-Direct skills such as `/pathly continue`, `/pathly review`, and `/pathly retro` are for manual recovery
-or advanced control.
+### When you know what you want
 
-**`/pathly help`** is the state-aware menu. Use it when you are unsure what to do next.
-`/pathly doctor` runs diagnostics for stuck state, orphan feedback files, and
-pipeline drift.
+```text
+/pathly add password reset          ← director routes (new feature)
+/pathly fix the broken checkout     ← director routes (bug → debug pipeline)
+/pathly continue the login work     ← director routes (resume)
+/pathly review my current changes   ← director routes (review diff)
+```
 
-**`/pathly debug`** is for known bug symptoms. It traces the repro, confirms the bug
-before the fix, applies the fix, and verifies after.
+### Specialized entry points
 
-**`/pathly explore`** is for codebase questions. It investigates and writes findings
-without building anything.
+```text
+/pathly debug <symptom>     ← bug pipeline: trace → fix → verify
+/pathly explore <question>  ← read-only codebase Q&A
+/pathly verify              ← check for stale feedback or FSM drift
+/pathly help                ← state-aware menu
+/pathly help --doctor       ← diagnose stuck state, orphan files, pipeline drift
+```
+
+### Explicit pipeline control (advanced)
+
+```text
+/pathly flow password-reset strict     ← full pipeline, chosen rigor
+/pathly flow navbar-copy nano          ← tiny change, direct to build
+/pathly flow checkout build            ← skip to build stage
+/pathly flow payment fast              ← no pause points
+```
 
 ---
 
@@ -485,7 +505,7 @@ without building anything.
 | `quick` | Haiku | Read, Glob, Grep | Local lookup only; no writes or spawning |
 | `orchestrator` | Haiku | Read, Glob, Grep, Write, Edit, Bash, Agent | Manages FSM state and spawns agents; no web |
 | `scout` | Haiku | Read, Glob, Grep | Read-only local investigation; no writes, spawn, or web |
-| `web-researcher` | Haiku | WebSearch, WebFetch | Web-only research; cannot touch local files |
+| `web-researcher` | Sonnet | WebSearch, WebFetch | Web-only research; cannot touch local files |
 
 ---
 
@@ -520,27 +540,38 @@ tier rules, per-agent sub-agent lists, and ownership guarantees.
 
 ## Core Skills
 
-| Skill | Command | What it does |
-|---|---|---|
-| `team-flow` | `/pathly flow <feature>` | Full pipeline: discovery→plan→build×N→test→retro with rigor escalator |
-| `storm` | `/pathly storm` | Architect explores the idea with ASCII diagrams |
-| `plan` | `/pathly plan <feature> [lite|standard|strict]` | Creates `plans/<feature>/` with 4 core files + escalator-selected extras |
-| `build` | `/pathly continue <feature>` | Implements the next TODO conversation |
-| `review` | `/pathly review` | Reviewer audits code; trivial findings tagged `[AUTO_FIX]` for batch apply |
-| `retro` | `/pathly retro <feature>` | Writes RETRO.md with cost summary + appends to LESSONS_CANDIDATE.md |
-| `lessons` | `/pathly lessons` | Promotes candidate lessons to LESSONS.md for planner |
-| `archive` | `/pathly archive <feature>` | Moves completed plan to `plans/.archive/` |
-| `prd-import` | `/pathly prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file (generic, AI-generated, or BMAD-structured) into plan files. `/pathly bmad-import` is an alias that routes here. |
-| `verify-state` | `/pathly verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
-| `meet` | `/pathly meet [feature]` | Consult one relevant role during an active feature flow; writes a read-only consult note and offers planner/architect promotion |
-| `debug` | `/pathly debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
-| `explore` | `/pathly explore <question>` | Investigation mode: answer codebase questions without building anything |
-| `help` | `/pathly help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
-| `pathly` | `/pathly <request>` | Main dispatcher: routes free-form requests and subcommands to the right skill |
-| `go` | `/pathly go [intent]` | Director entry: reads project state and routes to the appropriate next skill |
-| `start` | `/pathly start` | Session opener: shows the workflow menu and routes to the chosen entry point |
-| `pause` | `/pathly pause` | Saves session state cleanly (writes PAUSED to PROGRESS.md); resume with `/pathly go` |
-| `end` | `/pathly end` | Session wrap-up: offers retro for any in-progress feature, then closes |
+### FSM Control Commands
+
+| Command | What it does |
+|---|---|
+| `/pathly start` | Welcome screen — shows the full `po → storm → go → build → end` journey map; 5-option menu |
+| `/pathly go [intent]` | Director entry: reads project state and routes to the right skill; catch-all for free-form intent |
+| `/pathly storm [topic]` | Architect explores the idea with ASCII diagrams → `STORM_SEED.md` |
+| `/pathly build` | Implements the next TODO conversation (alias: `go continue`) |
+| `/pathly pause` | Saves session state cleanly; resume with `/pathly go` |
+| `/pathly meet [feature]` | Context-aware role consultation: shows different agents based on current FSM state; writes consult note; offers planner/architect promotion |
+| `/pathly end` | Session wrap-up: offers retro for any in-progress feature, then closes |
+| `/pathly help [feature]` | State-aware menu; `--doctor` diagnoses stuck FSM and orphan files |
+
+### Specialized Commands
+
+| Command | What it does |
+|---|---|
+| `/pathly po [feature]` | Product Owner session: structured Q&A → `PO_NOTES.md`; offered as step 0 in the journey map |
+| `/pathly debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
+| `/pathly explore <question>` | Investigation mode: answer codebase questions without building anything |
+| `/pathly verify [feature]` | Checks orphan/expired feedback files (TTL default 168h), PROGRESS drift, dead code references |
+
+### Pipeline Internals (used by director / `go`)
+
+| Skill | What it does |
+|---|---|
+| `team-flow <feature> [rigor]` | Full pipeline: discovery→plan→build×N→test→retro with rigor escalator |
+| `review` | Reviewer audits code; trivial findings tagged `[AUTO_FIX]` for batch apply |
+| `retro <feature>` | Writes RETRO.md with cost summary + appends to LESSONS_CANDIDATE.md |
+| `lessons` | Promotes candidate lessons to LESSONS.md for planner |
+| `archive <feature>` | Moves completed plan to `plans/.archive/` |
+| `prd-import <feature> <prd.md> [rigor]` | Translates any PRD (generic, AI-generated, or BMAD) into plan files; `/pathly bmad-import` is an alias |
 
 ---
 
@@ -618,11 +649,14 @@ Every feedback file carries a YAML frontmatter block:
 ```yaml
 ---
 created_at: 2026-05-04T08:12:00Z
-created_by_event: <last-event-id>
-ttl_hours: 24
+created_by_event: evt-abc123
+ttl_hours: 168
 ---
 ```
-`/pathly verify-state` and `/pathly doctor` use this to detect orphan files (event not in current log) and expired files (TTL elapsed) — both are safe to delete automatically.
+`/pathly verify` and `/pathly help --doctor` use this to detect orphan files (event not in current log) and expired files (TTL elapsed) — both are safe to delete automatically.
+
+- Default TTL is **168 hours (1 week)** — avoids false positives when you pause a feature for a few days.
+- The `created_by_event` ID also anchors the **retry budget**: the feedback loop tracks retries per event ID, not per conversation number, so replanning a conversation doesn't silently reset the counter.
 
 | File | Written by | Resolved by |
 |---|---|---|

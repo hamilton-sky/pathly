@@ -23,14 +23,21 @@ Each agent should inject YAML frontmatter into feedback files when creating them
 ```yaml
 ---
 created_at: 2026-05-04T08:12:00Z
-created_by_event: <last-event-timestamp-or-id>
-ttl_hours: 24
+created_by_event: evt-abc123
+ttl_hours: 168
 ---
 ```
 
-`verify-state`, `doctor`, and startup checks can use this metadata to flag stale
-or orphaned feedback files. If hooks are not installed, feedback files still
-work; they simply do not carry TTL metadata.
+`/pathly verify`, `/pathly help --doctor`, and the startup check use this metadata to detect:
+
+- **Orphan files** — `created_by_event` is not present in `EVENTS.jsonl` (file survived from a previous run)
+- **Expired files** — current time exceeds `created_at + ttl_hours`
+
+Both are safe to delete automatically.
+
+Default TTL is **168 hours (1 week)**. This avoids false positives when users pause a feature for several days. Override per-file by writing a shorter `ttl_hours` value (e.g. `24` for files that should not survive a day).
+
+If hooks are not installed, feedback files still work; they simply do not carry TTL metadata and orphan detection is skipped.
 
 ## Routing
 
@@ -95,7 +102,7 @@ normal review failure.
 1. The owner fixes or answers the issue.
 2. The owner deletes the feedback file.
 3. The orchestrator sees no open feedback and resumes the previous state.
-4. Max retry cycles are enforced per conversation and feedback file.
+4. Max retry cycles are enforced **per feedback file creation event**, not per conversation number. The retry key is `event-<created_by_event>:<filename>`. This means replanning a conversation (which changes the conversation number) does not silently reset the retry counter for an existing feedback file.
 5. Zero-diff review loops escalate to `HUMAN_QUESTIONS.md [STALL]`.
 
 Feedback files are blocking. Pathly should not advance a workflow while any

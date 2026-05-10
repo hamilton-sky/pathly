@@ -68,11 +68,13 @@ host-specific wrappers in `adapters/claude-code/agents/`.
 
 The default pipeline stays lean:
 
-- `po` is optional and on-demand.
+- `po` has a dedicated `/pathly po [feature]` skill — structured Q&A, writes `PO_NOTES.md`. Shown as step 0 in the journey map.
 - `architect` is on-demand unless rigor or risk requires design review.
 - Builder-side consultation must be a bounded question with a concrete output.
-- `meet` is a separate read-only consultation workflow.
-- `director` is not a default `meet` target.
+- `meet` is a separate read-only consultation workflow with **context-aware menus** — the roles offered change based on the current FSM state (7 different menus: storming, planning, building, review-open, arch-open, testing, done).
+- `director`, `orchestrator`, `builder`, `quick`, and `scout` are **not** valid `meet` targets — they are pipeline-internal roles.
+- `po` is offered in `meet` during storming, planning, and building states.
+- `web-researcher` is offered in `meet` only when the user's question explicitly needs external sources.
 
 `meet` writes notes under `plans/<feature>/consults/`. Promotion to planner or
 architect updates is a follow-up action, not something the consulted role does
@@ -139,35 +141,42 @@ auto-advance through human approval gates.
 
 ## Command Map
 
-Claude Code:
+### Claude Code — FSM command set
 
 ```text
-/go help
-/go flow <feature>
-/go debug <symptom>
-/go explore <question>
-/go meet [feature]
+/pathly start               ← welcome screen + full journey map
+/pathly po [feature]        ← Product Owner session (step 0)
+/pathly storm [topic]       ← brainstorm with architect
+/pathly go [intent]         ← director routes free-form intent
+/pathly build               ← implement next conversation
+/pathly pause               ← save state and exit
+/pathly meet [feature]      ← context-aware role consultation
+/pathly end                 ← wrap up + offer retro
+/pathly help [feature]      ← state-aware menu / --doctor for diagnostics
+/pathly debug <symptom>     ← bug pipeline
+/pathly explore <question>  ← read-only codebase Q&A
+/pathly verify [feature]    ← check stale feedback / FSM drift
 ```
 
-Codex:
+### Codex
 
 ```text
 Use Pathly help
 Use Pathly flow for <feature>
 Use Pathly to debug <symptom>
 Use Pathly to explore <question>
+Use Pathly po for <feature>
 ```
 
-CLI (pathly-engine):
+### CLI (pathly-engine)
 
 ```text
 pathly help [feature]
 pathly init <feature>
 pathly flow <feature> [--entry discovery|build|test] [--fast]
-pathly meet [feature] --role planner --question "..."
 ```
 
-Install (pathly-adapters):
+### Install (pathly-adapters)
 
 ```text
 pathly-setup          # detect tools, stitch core + adapter meta, deploy

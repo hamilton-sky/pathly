@@ -10,14 +10,25 @@ Pathly has three public front doors over the same core workflows:
 
 ```mermaid
 flowchart TD
-    A[plain-English request] --> B[director / pathly router]
+    A[plain-English request] --> B[/pathly dispatcher]
+    B --> S[start\nwelcome + journey map]
+    B --> PO[po\nProduct Owner Q&A → PO_NOTES.md]
+    B --> ST[storm\narchitect brainstorm]
+    B --> GO[go\ndirector routes intent]
+    B --> BLD[build\nnext conversation]
     B --> C[help\nstate-aware numbered menu]
-    B --> D[doctor\nprerequisite & stuck-state diagnostics]
+    B --> D[help --doctor\nstuck-state diagnostics]
     B --> E[explore\nread-only codebase investigation]
     B --> F[debug\nbug investigation workflow]
     B --> G[review\nreview current changes]
-    B --> H[meet\nread-only role consultation]
+    B --> H[meet\ncontext-aware role consultation]
+    B --> V[verify\nstale feedback / FSM drift]
     B --> I[flow / run\nfeature pipeline]
+
+    S --> PO
+    PO --> ST
+    ST --> GO
+    GO --> BLD
 ```
 
 ## Feature Pipeline
@@ -91,13 +102,19 @@ forward while a known feedback file exists.
 
 ## Invocation Examples
 
-Claude Code:
+Claude Code — FSM-style commands:
 
 ```text
-/pathly add password reset
-/pathly flow checkout-flow
+/pathly start                           ← full journey map
+/pathly po checkout-flow                ← clarify requirements first
+/pathly storm                           ← brainstorm with architect
+/pathly go add password reset           ← director routes new feature
+/pathly build                           ← implement next conversation
+/pathly meet checkout-flow              ← context-aware role consultation
 /pathly debug checkout button does nothing
-/pathly meet checkout-flow
+/pathly explore how does checkout state flow through the app?
+/pathly verify                          ← check for stale feedback
+/pathly end                             ← wrap up + retro
 ```
 
 Codex:
@@ -105,6 +122,8 @@ Codex:
 ```text
 Use Pathly help
 Use Pathly flow for checkout-flow
+Use Pathly po for checkout-flow
+Use Pathly to debug checkout button does nothing
 Use Pathly to explore how checkout state flows
 ```
 
@@ -114,5 +133,4 @@ CLI:
 pathly help
 pathly init checkout-flow
 pathly flow checkout-flow --entry build
-pathly meet checkout-flow --role planner --question "Is this split too large?"
 ```

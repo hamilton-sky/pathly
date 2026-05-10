@@ -81,7 +81,7 @@ interface Context {
   mode: "interactive" | "fast"
   rigor: "lite" | "standard" | "strict"
   currentConversation?: number
-  retryCountByKey: Record<string, number>
+  retryCountByKey: Record<string, number>  // keyed by "event-<created_by_event>:<filename>"
   stateStack: State[]          // pushed on FILE_CREATED, popped on FILE_DELETED — supports nested blocks
   activeFeedbackFile?: FeedbackFile
   activeTarget?: AgentName | "human"
@@ -91,7 +91,11 @@ interface Context {
 
 `mode` controls human pauses. `rigor` controls how much workflow structure is required.
 
-Retry keys should include the current conversation and feedback file, for example `conv-2:REVIEW_FAILURES.md`. This prevents unrelated feedback loops from consuming each other's retry budget.
+Retry keys are bound to the **feedback file's creation event ID**, not the conversation number. Format: `event-<created_by_event>:<filename>` — for example `event-evt-abc123:REVIEW_FAILURES.md`.
+
+This means replanning a conversation (which changes the conversation number) does not silently reset the retry counter for an existing feedback file. If the feedback file is deleted and a genuinely new one is created later, it gets a new event ID and a fresh budget — correct behaviour.
+
+Fallback: if `created_by_event` is missing or `"unknown"`, the key falls back to `event-<filename>:<filename>` so the budget is still tracked, just less precisely.
 
 ## Rigor Modes
 
@@ -332,8 +336,8 @@ Every transition should produce logs like:
 Each `EVENTS.jsonl` line must include a `stack` field reflecting the `stateStack` after the transition. This makes the nested-blocking state visible and recoverable without re-reading feedback files:
 
 ```jsonl
-{"ts":"2026-05-11T10:00:00Z","event":"FILE_CREATED","file":"REVIEW_FAILURES.md","prev":"REVIEWING","next":"BLOCKED_ON_FEEDBACK","action":"spawn(builder)","stack":["REVIEWING"],"retry_key":"conv-2:REVIEW_FAILURES.md","retries":1}
-{"ts":"2026-05-11T10:05:00Z","event":"FILE_DELETED","file":"REVIEW_FAILURES.md","prev":"BLOCKED_ON_FEEDBACK","next":"REVIEWING","action":"spawn(reviewer)","stack":[],"retry_key":"conv-2:REVIEW_FAILURES.md","retries":1}
+{"ts":"2026-05-11T10:00:00Z","event":"FILE_CREATED","file":"REVIEW_FAILURES.md","prev":"REVIEWING","next":"BLOCKED_ON_FEEDBACK","action":"spawn(builder)","stack":["REVIEWING"],"retry_key":"event-evt-abc123:REVIEW_FAILURES.md","retries":1}
+{"ts":"2026-05-11T10:05:00Z","event":"FILE_DELETED","file":"REVIEW_FAILURES.md","prev":"BLOCKED_ON_FEEDBACK","next":"REVIEWING","action":"spawn(reviewer)","stack":[],"retry_key":"event-evt-abc123:REVIEW_FAILURES.md","retries":1}
 ```
 
 A corrupt or missing `stack` field during recovery means the orchestrator cannot know which state to pop back to. In that case, fall back to the full disk-recovery algorithm (see Recovery section) rather than using `STATE.json` alone.
