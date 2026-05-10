@@ -45,7 +45,7 @@ def materialize(
 
         written.append(name)
         if not dry_run:
-            dest.mkdir(parents=True, exist_ok=True)
+            target.parent.mkdir(parents=True, exist_ok=True)
             target.write_text(content, encoding="utf-8")
             manifest["files"][name] = datetime.now(timezone.utc).isoformat()
 

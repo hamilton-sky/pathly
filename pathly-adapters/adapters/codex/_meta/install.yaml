@@ -3,5 +3,5 @@ destination: ~/.codex/agents/
 files:
   - source: agents/
 skills:
-  destination: ~/.codex/
-  structure: flat
+  destination: ~/.codex/skills/
+  structure: nested

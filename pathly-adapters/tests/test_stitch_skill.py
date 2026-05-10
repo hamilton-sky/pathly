@@ -111,3 +111,42 @@ def test_stitch_skill_real_go_claude(tmp_path):
     result = stitch_skill(core_file, meta_file)
     assert not result.startswith("---")
     assert len(result) > 0
+
+
+# ---------------------------------------------------------------------------
+# materialize — nested paths (structure: nested)
+# ---------------------------------------------------------------------------
+
+from install_cli.materialize import materialize
+
+
+def test_materialize_nested_creates_subdirectory(tmp_path):
+    files = {"go/SKILL.md": "# go skill\n\nBody."}
+    written = materialize(files, tmp_path)
+    assert written == ["go/SKILL.md"]
+    assert (tmp_path / "go" / "SKILL.md").read_text() == "# go skill\n\nBody."
+
+
+def test_materialize_nested_multiple_skills(tmp_path):
+    files = {
+        "go/SKILL.md": "go body",
+        "help/SKILL.md": "help body",
+    }
+    written = materialize(files, tmp_path)
+    assert set(written) == {"go/SKILL.md", "help/SKILL.md"}
+    assert (tmp_path / "go" / "SKILL.md").exists()
+    assert (tmp_path / "help" / "SKILL.md").exists()
+
+
+def test_materialize_nested_dry_run_no_dirs_created(tmp_path):
+    files = {"go/SKILL.md": "body"}
+    written = materialize(files, tmp_path / "dest", dry_run=True)
+    assert written == ["go/SKILL.md"]
+    assert not (tmp_path / "dest").exists()
+
+
+def test_materialize_nested_repair_overwrites_owned(tmp_path):
+    materialize({"go/SKILL.md": "v1"}, tmp_path)
+    written = materialize({"go/SKILL.md": "v2"}, tmp_path, repair=True)
+    assert written == ["go/SKILL.md"]
+    assert (tmp_path / "go" / "SKILL.md").read_text() == "v2"

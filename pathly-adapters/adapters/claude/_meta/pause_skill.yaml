@@ -1,5 +1,4 @@
 skill: pause
-filename: pause.md
 invocation: /pause
 natural_language: "pause, stop for now, save and exit"
 wrapper: |

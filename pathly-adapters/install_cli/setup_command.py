@@ -43,13 +43,15 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
     skills_dest: Path | None = None
     if skills_cfg:
         skills_dest = Path(skills_cfg["destination"]).expanduser()
+        nested = skills_cfg.get("structure") == "nested"
         core_skills_dir = core_skills_path()
         for meta_file in sorted(meta_dir.glob("*_skill.yaml")):
             skill_name = meta_file.stem.removesuffix("_skill")
             skill_meta = yaml.safe_load(meta_file.read_text(encoding="utf-8"))
             core_file = core_skills_dir / f"{skill_meta['skill']}.md"
+            default_filename = f"{skill_name}/SKILL.md" if nested else f"{skill_name}.md"
             try:
-                skill_files[skill_meta.get("filename", f"{skill_name}.md")] = stitch_skill(core_file, meta_file)
+                skill_files[skill_meta.get("filename", default_filename)] = stitch_skill(core_file, meta_file)
             except FileNotFoundError:
                 print(f"  [warn] No core skill for {skill_name!r}, skipping", file=sys.stderr)
 

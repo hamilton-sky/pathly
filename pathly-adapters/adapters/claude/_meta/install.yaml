@@ -3,5 +3,5 @@ destination: ~/.claude/agents/
 files:
   - source: agents/
 skills:
-  destination: ~/.claude/
-  structure: flat
+  destination: ~/.claude/skills/
+  structure: nested

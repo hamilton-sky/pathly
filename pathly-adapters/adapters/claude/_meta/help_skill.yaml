@@ -1,4 +1,3 @@
 skill: help
-filename: help.md
 invocation: /help
 natural_language: "help, what can you do, show commands"
