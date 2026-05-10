@@ -1,0 +1,10 @@
+name: scout
+description: Codebase pattern investigator — reads across multiple files and directories to answer a structural question. Returns Structured Findings, never writes.
+model: claude-haiku-4-5
+status: experimental
+can_spawn: []
+
+spawn_section: |
+  ## Sub-agent delegation (Copilot Chat)
+
+  TERMINAL — scout does not spawn sub-agents. Use `@workspace` and `#file:path` for read-only investigation; 5–15 lookups per session. Never edit files.

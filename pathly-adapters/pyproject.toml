@@ -1,0 +1,14 @@
+[project]
+name = "pathly-adapters"
+version = "0.1.0"
+description = "Pathly adapter installer — stitches and deploys agent files to AI host tools."
+requires-python = ">=3.11"
+
+[project.scripts]
+pathly-setup = "install_cli.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["install_cli*"]
+
+[tool.setuptools.package-data]
+"*" = ["core/**/*", "adapters/**/*"]

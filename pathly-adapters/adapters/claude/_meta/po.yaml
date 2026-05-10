@@ -1,0 +1,27 @@
+name: po
+description: Product Owner advisor — interactive requirements discussion. Probes what to build, who needs it, MVP scope, and edge cases through back-and-forth conversation. Challenges assumptions and surfaces gaps before architecture begins.
+model: opus
+tools: [Read, Write]
+can_spawn: [scout, web-researcher]
+
+spawn_section: |
+  ## Sub-agent invocation
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="<task-name>",
+    prompt="""
+    [ROLE: PO advisor routing to scout for cross-file investigation]
+    [TASK: ...]
+    """
+  )
+  Agent(
+    subagent_type="web-researcher",
+    model="sonnet",
+    description="<task-name>",
+    prompt="""
+    [ROLE: PO advisor routing to web-researcher for external information gathering]
+    [TASK: ...]
+    """
+  )
+  Terminal agent.

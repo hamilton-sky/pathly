@@ -1,0 +1,11 @@
+[project]
+name = "pathly-engine"
+version = "0.1.0"
+description = "Pathly engine — orchestrator, runners, and team-flow manager."
+requires-python = ">=3.11"
+
+[project.scripts]
+pathly = "engine_cli.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["orchestrator*", "runners*", "team_flow*", "engine_cli*"]
