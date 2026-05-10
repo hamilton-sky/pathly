@@ -1,4 +1,4 @@
-skill: pause
+﻿skill: pause
 filename: pause.md
 invocation: "@pathly /pause"
 natural_language: "pause, stop for now, save and exit"
