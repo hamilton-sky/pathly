@@ -1,10 +1,4 @@
 name: web-researcher
-description: External knowledge gatherer — searches the web for design patterns, library docs, best practices, and domain knowledge. Returns cited findings, never writes.
+description: External knowledge gatherer — searches the web for design patterns, library docs, best practices, and domain knowledge. Use when architect or planner needs external context before making design decisions. Returns cited findings, never writes.
 model: claude-sonnet-4-6
 status: experimental
-can_spawn: []
-
-spawn_section: |
-  ## Sub-agent delegation (Copilot Chat)
-
-  TERMINAL — web-researcher does not spawn sub-agents. Use web search manually; 5–10 lookups per session. Cite every fact. Cross-reference at least two sources. Do not present web content as authoritative without a source.

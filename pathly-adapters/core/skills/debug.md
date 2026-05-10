@@ -78,6 +78,7 @@ Confirm the symptom is written before continuing.
 Spawn the **scout** agent with this prompt:
 
 ```
+ROLE: builder
 Read debugs/<symptom-name>/SYMPTOM.md.
 Your goal: find the minimum reproduction path for this bug.
 - Trace the code path from the entry point to where the symptom occurs.
@@ -117,6 +118,7 @@ If status is `[CONFIRMED]` or `[PARTIAL]`: continue.
 Spawn the **scout** again to identify the root cause:
 
 ```
+ROLE: builder
 Read debugs/<symptom-name>/SYMPTOM.md and debugs/<symptom-name>/REPRO.md.
 The repro is confirmed. Now identify the exact root cause:
 - Find the specific line or condition that causes the bug.

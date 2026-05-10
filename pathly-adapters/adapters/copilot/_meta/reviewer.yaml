@@ -1,21 +1,4 @@
 name: reviewer
-description: Adversarial reviewer — finds contract violations and reports them without fixing. Checks dependency direction, structural rules, and security concerns.
+description: Adversarial reviewer — finds contract violations and reports them without fixing. Checks dependency direction, structural rules, and security concerns. Can write feedback files, but cannot edit source or run Bash.
 model: claude-sonnet-4-6
 status: experimental
-can_spawn: [quick, scout]
-
-spawn_section: |
-  ## Sub-agent delegation (Copilot Chat)
-
-  Copilot Chat does not support the Claude Code `Agent()` API. Use these delegation patterns instead.
-
-  **Investigation phase:**
-  Use `@workspace` to find similar patterns in the codebase. Use `#file:path` for specific files.
-  Describe your investigation plan before executing.
-  Report facts only — do not suggest fixes.
-
-  **Quick lookup:**
-  Use `#file:path` for a single-file read to verify a rule or path.
-
-  **Rules:**
-  - Reviewer does not spawn web-researcher — review against project rules, not external opinion.

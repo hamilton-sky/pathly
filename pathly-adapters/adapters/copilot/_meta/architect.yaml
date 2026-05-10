@@ -2,21 +2,3 @@ name: architect
 description: Technical architecture design, layer decisions, system design, trade-off analysis, and deep design sessions. Use when the HOW needs to be figured out — layer structure, dependency direction, technology choices, design patterns.
 model: claude-opus-4-6
 status: experimental
-can_spawn: [quick, scout, web-researcher]
-
-spawn_section: |
-  ## Sub-agent delegation (Copilot Chat)
-
-  Copilot Chat does not support the Claude Code `Agent()` API. Use these delegation patterns instead.
-
-  **Investigation phase:**
-  Use `@workspace` to explore the codebase before proposing designs. Use `#file:path` to read specific files.
-  Describe your investigation plan before executing: "I will read [files/dirs] to understand [question]."
-  Compress findings to a short summary before proposing a design.
-
-  **Web research:**
-  Describe the external research needed and manually look up authoritative sources. Cite every fact.
-
-  **Rules:**
-  - Read only during the investigation phase — no edits.
-  - Compress all findings into a short summary before continuing design work.

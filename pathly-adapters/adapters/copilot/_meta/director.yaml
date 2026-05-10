@@ -2,14 +2,3 @@ name: director
 description: Natural-language front door for the framework. Classifies user intent, chooses the lightest safe workflow, and invokes the pipeline behind the scenes.
 model: claude-opus-4-6
 status: experimental
-can_spawn: [orchestrator, architect, po, web-researcher]
-
-spawn_section: |
-  ## Sub-agent delegation (Copilot Chat)
-
-  Copilot Chat does not support the Claude Code `Agent()` API. Use prose delegation instead.
-
-  "Switch to the [role] role for [task]. Follow the behavioral contract in core/agents/[role].md."
-
-  For routing decisions, delegate to orchestrator:
-  "Switch to the orchestrator role for feature [name]. Follow core/agents/orchestrator.md."

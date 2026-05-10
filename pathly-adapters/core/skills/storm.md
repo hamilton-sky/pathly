@@ -16,6 +16,20 @@ A back-and-forth thinking space. The user brings a topic — a feature idea, a d
 
 Everything stays in chat. No files. No plans. No code (unless a short snippet clarifies something).
 
+## Codebase context (architect topics)
+
+When `$ARGUMENTS` references a technical/codebase topic (mentions a module, layer, component, refactor, or design pattern), spawn a quick lookup BEFORE printing the activation banner:
+
+Spawn `quick` with `ROLE: architect`:
+```
+ROLE: architect
+Single factual lookup: what existing patterns, layer boundaries, and design decisions are relevant to: [$ARGUMENTS]?
+Read at most 2 files. Return 3–5 bullet facts only. Stop if nothing relevant found.
+```
+
+If the quick returns facts: open the storm with those facts as a `## Known Context` block, then print the banner.
+If `$ARGUMENTS` is empty or non-technical: skip this step entirely.
+
 ## Activation
 
 Print this banner exactly:

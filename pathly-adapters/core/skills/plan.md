@@ -62,6 +62,14 @@ unclear:
 - Success criteria, out-of-scope items, or product edge cases are missing.
 - A PRD exists but has gaps or conflicting requirements.
 
+Before writing user stories, spawn `quick` with `ROLE: po`:
+```
+ROLE: po
+Single factual lookup: who are the existing users of [feature area]? What similar features already exist in this codebase that set scope expectations?
+Read at most 2 files. Return 3–5 bullet facts relevant to product scope only.
+```
+Inject findings into PO consultation context.
+
 If PO consultation is needed, request or read `plans/$FEATURE/PO_NOTES.md`, then
 turn those notes into user stories and acceptance criteria. Do not keep PO in
 the default lite path when the user already gave enough product context.
@@ -72,6 +80,15 @@ Consult `architect` only when technical risk is material:
 - Data migrations, auth, payments, security, compliance, or rollback are in scope.
 - The feature changes shared abstractions or public contracts.
 - The planner cannot produce implementation phases without design decisions.
+
+When architect consultation is triggered, first spawn `scout` with `ROLE: architect`:
+```
+ROLE: architect
+What cross-layer dependencies, existing design decisions, and architectural constraints apply to [feature]?
+Scope: ARCHITECTURE_PROPOSAL.md files, layer boundary files, files the feature will touch.
+Return: existing constraints that must be respected, patterns to follow, open design questions.
+```
+Inject findings as `## Architecture Context` into the architect spawn prompt.
 
 Do not add a generic "consult everyone" stage. Use targeted consultation so
 Pathly stays low-latency and low-token by default.

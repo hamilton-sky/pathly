@@ -45,28 +45,40 @@ Run `git status` (without -uall flag).
   ```
   Wait for user decision before continuing. In auto-flow mode, stop immediately.
 
-## Scout delegation
+## Context gathering — two-phase builder
 
-During implementation (Step 5), builder may spawn sub-agents to gather codebase context before editing.
+For non-trivial conversations (touches multiple files or an unfamiliar area), run a two-phase build before Step 5:
 
-**When to use scout:** when you need to read 3+ files across multiple directories before making an implementation decision. For ≤ 2 tool calls, use `quick` instead.
+**Phase 1 — Analyze:**
+Spawn `builder` with `phase: analyze` prepended to the conversation prompt:
+```
+phase: analyze
+[conversation prompt]
+```
+Parse the `## NEEDS_CONTEXT` block it returns. If the block says `none`: skip Phase 2.
 
-**When to use quick:** single-file lookups, one-line answers, existence checks.
+**Phase 2 — Scout (if NEEDS_CONTEXT has entries):**
+Spawn all entries in parallel (max 4 total):
+- `type: quick` → spawn `quick` with `ROLE: builder` + the question
+- `type: scout` → spawn `scout` with `ROLE: builder` + scope + question
 
-| Dimension | Quick | Scout |
-|-----------|-------|-------|
-| Typical tool calls | ≤ 2 | 5–15 |
-| Output shape | 1-line answer | Structured Findings + Recommendation |
-| Example questions | "Does this file exist?" | "How are all modals structured?" |
+After all return, compress findings into a short summary.
 
-**Rules:**
-- **Max 4 sub-agents per conversation** (quick + scout combined — shared cap).
-- Sub-agents are terminal — they cannot spawn further agents.
-- Scout is read-only: cannot write files, create feedback files, or spawn agents.
-- **Summarize before editing (load-bearing):** after all sub-agents return, compress findings into a short summary before touching any file. Raw sub-agent output must not persist into the edit phase.
-- If a scout returns conflicting findings: factual conflict → spawn a third targeted scout; architectural conflict → write `DESIGN_QUESTIONS.md [ARCH]` and stop.
+**Phase 3 — Implement (Step 5):**
+Spawn `builder` with `phase: implement`, injecting findings:
+```
+phase: implement
+## Scout Findings
+[compressed summary — or "none" if Phase 2 was skipped]
 
-Invocation: spawn the `scout` role with `[SCOPE: ...] [QUESTION: ...] [CONTEXT: ...]`.
+[original conversation prompt]
+```
+
+**When to skip Phase 1:**
+- Nano tasks (≤ 2 files, context already fully described in the prompt)
+- Continuation conversations where prior scout findings are still valid
+
+**If scouts return conflicting findings:** factual conflict → spawn one more targeted scout to verify; architectural conflict → write `DESIGN_QUESTIONS.md [ARCH]` and stop.
 
 ## Step 2: Locate the plan folder
 

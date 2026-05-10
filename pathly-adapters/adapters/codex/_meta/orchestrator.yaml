@@ -1,17 +1,3 @@
 name: orchestrator
 description: Pipeline orchestrator — deterministic filesystem FSM for the feature pipeline. Recovers state from disk, processes one event, emits one next action, and never implements anything itself.
 model: gpt-5.5
-can_spawn: all
-
-spawn_section: |
-  ## Sub-agent delegation (Codex)
-
-  Codex does not support the Claude Code `Agent()` API. Use natural language role delegation instead.
-
-  For orchestrator subagent spawning, use natural language role delegation:
-  "Enter the [role] role and [task description]. Follow the behavioral contract in core/agents/[role].md."
-
-  Examples:
-  - "Enter the architect role and run a design storm for [feature]. Follow core/agents/architect.md."
-  - "Enter the builder role and implement Conversation N for [feature]. Follow core/agents/builder.md."
-  - "Enter the reviewer role and review the changes for [feature]. Follow core/agents/reviewer.md."

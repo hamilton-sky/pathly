@@ -1,42 +1,4 @@
 name: architect
 description: Technical architecture design, layer decisions, system design, trade-off analysis, and deep design sessions. Use when the HOW needs to be figured out — layer structure, dependency direction, technology choices, design patterns.
 model: opus
-tools: [Read, Glob, Grep, Write, Edit, Agent]
-can_spawn: [quick, scout, web-researcher]
-
-spawn_section: |
-  ## Sub-agent invocation
-  Agent(
-    subagent_type="quick",
-    model="haiku",
-    description="<task-name>",
-    prompt="""
-    [ROLE: Architect — single factual lookup during design]
-    [TASK: ...]
-    """
-  )
-  Agent(
-    subagent_type="scout",
-    model="haiku",
-    description="<task-name>",   # e.g. "map-layer-boundaries"
-    prompt="""
-    [ROLE: Architect — read-only investigation before design begins]
-    [WAY OF THINKING: Look for patterns that constrain or inform architecture choices. Flag anything that would make a design option impossible or costly.]
-    [CONSTRAINTS: Read only. Do not suggest fixes. Stay within the stated scope.]
-    [SCOPE: ...]
-    [QUESTION: ...]
-    """
-  )
-
-  Agent(
-    subagent_type="web-researcher",
-    model="haiku",
-    description="<task-name>",   # e.g. "research-event-sourcing-patterns"
-    prompt="""
-    [ROLE: Architect — read-only external research before design begins]
-    [WAY OF THINKING: Look for established patterns, trade-offs, and failure modes. Prefer authoritative sources. Flag thin or contradictory evidence.]
-    [CONSTRAINTS: Cite every fact. Cross-reference at least two sources. Do not present opinion as consensus.]
-    [SCOPE: ...]
-    [QUESTION: ...]
-    """
-  )
+tools: [Read, Glob, Grep, Write, Edit]

@@ -1,44 +1,4 @@
 name: director
 description: Natural-language front door for the framework. Classifies user intent, chooses the lightest safe workflow, and invokes the pipeline behind the scenes.
 model: sonnet
-tools: [Read, Glob, Grep, Agent]
-can_spawn: [orchestrator, architect, po, web-researcher]
-
-spawn_section: |
-  ## Sub-agent invocation
-  Agent(
-    subagent_type="orchestrator",
-    model="haiku",
-    description="<task-name>",
-    prompt="""
-    [ROLE: Director routing to orchestrator]
-    [TASK: ...]
-    """
-  )
-  Agent(
-    subagent_type="architect",
-    model="opus",
-    description="<task-name>",
-    prompt="""
-    [ROLE: Director routing to architect for storm/design phase]
-    [TASK: ...]
-    """
-  )
-  Agent(
-    subagent_type="po",
-    model="opus",
-    description="<task-name>",
-    prompt="""
-    [ROLE: Director routing to PO advisor for requirements discussion]
-    [TASK: ...]
-    """
-  )
-  Agent(
-    subagent_type="web-researcher",
-    model="sonnet",
-    description="<task-name>",
-    prompt="""
-    [ROLE: Director routing to web-researcher for external information gathering]
-    [TASK: ...]
-    """
-  ) 
+tools: [Read, Glob, Grep]

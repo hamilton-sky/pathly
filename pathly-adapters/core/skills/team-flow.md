@@ -628,12 +628,34 @@ Track `retryCount = 0` per conversation.
 
 While any conversation row has status TODO:
 
-  **3a. Builder implements**
+  **3a. Builder implements — two-phase**
 
-  **Spawn** `builder`:
+  **Phase 1 — Analyze:**
+  **Spawn** `builder` with `phase: analyze`:
   ```
+  phase: analyze
+  Route to continue [feature] conversation N.
+  List what you need to know before implementing — output NEEDS_CONTEXT block only.
+  ```
+  Parse the `## NEEDS_CONTEXT` block. If it says `none`, skip Phase 2.
+
+  **Phase 2 — Scout (if NEEDS_CONTEXT has entries):**
+  Spawn all entries in parallel (max 4 total):
+  - `type: quick` → spawn `quick` with `ROLE: builder` + question
+  - `type: scout` → spawn `scout` with `ROLE: builder` + scope + question
+
+  Compress all findings into a short summary before Phase 3.
+
+  **Phase 3 — Implement:**
+  **Spawn** `builder` with `phase: implement`:
+  ```
+  phase: implement
   Route to continue [feature] in manual mode.
   Execute conversation N only. Verify, update PROGRESS.md.
+
+  ## Scout Findings
+  [compressed summary — or "none" if Phase 2 was skipped]
+
   If you hit requirement ambiguity (what should this do?): write plans/[feature]/feedback/IMPL_QUESTIONS.md
   If you hit a technical blocker (how is this possible?): write plans/[feature]/feedback/DESIGN_QUESTIONS.md
   Use the shared feedback protocol formats, then report blocked.
@@ -667,11 +689,26 @@ While any conversation row has status TODO:
 
   If `rigor = standard` or `strict`, reviewer runs after every builder conversation.
 
-  If review is required for this point in the selected rigor, **spawn** `reviewer`:
+  If review is required for this point in the selected rigor:
+
+  **Pre-review scout:**
+  **Spawn** `scout` with `ROLE: reviewer`:
+  ```
+  ROLE: reviewer
+  What architectural rules, layer contracts, and coding conventions apply to the files changed in conversation N of [feature]?
+  Check: project guidance files (CLAUDE.md, .claude/rules/), plans/[feature]/ARCHITECTURE_PROPOSAL.md if it exists.
+  Return only the rules relevant to the specific files touched — not a general summary.
+  ```
+
+  **Spawn** `reviewer` with scout findings injected:
   ```
   Review the changes from conversation N of [feature].
   Run: git diff HEAD~1 HEAD (or git diff --staged if not yet committed).
-  Check against plans/[feature]/ARCHITECTURE_PROPOSAL.md and any project rule files if present.
+
+  ## Applicable Rules (from pre-review scout)
+  [scout findings]
+
+  Check against these rules and plans/[feature]/ARCHITECTURE_PROPOSAL.md.
   If architectural violations found: write plans/[feature]/feedback/ARCH_FEEDBACK.md
   If implementation violations found: write plans/[feature]/feedback/REVIEW_FAILURES.md
   Use the shared feedback protocol formats.
@@ -760,6 +797,16 @@ While any conversation row has status TODO:
    - Then proceed to spawn tester below.
 
 Track `testRetryCount = 0`.
+
+**Pre-tester scout:**
+Spawn `scout` with `ROLE: tester`:
+```
+ROLE: tester
+What test patterns, existing test fixtures, and coverage gaps exist for the files changed in conversation N of [feature]?
+Scope: test directories, source files touched, existing test helpers/fixtures.
+Return: existing test patterns to follow, missing coverage areas, and any test commands specific to this module.
+```
+Inject findings as `## Test Context` into the tester spawn prompt.
 
 **Spawn** `tester`:
 ```

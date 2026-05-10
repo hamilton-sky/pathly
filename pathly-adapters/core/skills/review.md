@@ -14,6 +14,21 @@ Review code at $ARGUMENTS against this project's architectural standards.
 - `last` → review `git diff HEAD~1 HEAD`
 - file path → review that specific file
 
+## Pre-review context gathering
+
+Before loading project rules, spawn a role-scoped scout to retrieve architectural rules applicable to the changed files:
+
+Spawn `scout` with `ROLE: reviewer`:
+```
+ROLE: reviewer
+What architectural rules, layer contracts, coding conventions, and dependency direction rules apply to these changed files: [list from git diff]?
+Scope: ARCHITECTURE_PROPOSAL.md in the matching plans/ folder, project rule files, similar existing files in the same layer.
+Return only rules directly relevant to the specific files that changed. 3–8 bullet points max.
+```
+
+Inject findings as `## Applicable Rules` before Step 2.
+If no rule files exist and the scout finds nothing: proceed without injection.
+
 ## Step 1 — Get the diff
 
 Run the appropriate git diff command based on `$ARGUMENTS`.
