@@ -19,61 +19,83 @@ The user installs Pathly once. After that, they interact with their AI coding to
 
 ## Folder structure
 
+This is a **monorepo** containing two pip packages plus shared docs and plans.
+
 ```
-pathly/
-├── core/                        ← SINGLE SOURCE OF TRUTH (tool-agnostic)
-│   ├── agents/                  ← Agent behavior contracts (no spawning syntax)
-│   │   ├── architect.md
-│   │   ├── builder.md
-│   │   ├── director.md
-│   │   ├── discoverer.md
-│   │   ├── orchestrator.md
-│   │   ├── planner.md
-│   │   ├── po.md
-│   │   ├── quick.md
-│   │   ├── reviewer.md
-│   │   ├── scout.md
-│   │   ├── tester.md
-│   │   └── web-researcher.md
-│   ├── prompts/                 ← Skill logic in natural language (tool-agnostic)
-│   │   ├── team-flow.md
-│   │   ├── explore.md
-│   │   ├── build.md
-│   │   ├── review.md
-│   │   ├── storm.md
-│   │   └── ...
-│   └── templates/               ← Plan file templates (PROGRESS, USER_STORIES, etc.)
-│       └── plan/
+pathly/                              ← monorepo root (pyproject: pathly-monorepo)
 │
-├── adapters/                    ← THIN tool-specific wrappers (spawning syntax only)
-│   ├── claude-code/             ← Adds Agent() tool calls
-│   │   ├── agents/              ← Wraps core/agents/ with Agent() spawning syntax
-│   │   └── skills/              ← SKILL.md files per skill (reads core/prompts/ + adds spawn)
-│   ├── codex/                   ← Adds Agents SDK calls
-│   │   └── skills/              ← SKILL.md files per skill (no agents/ — Codex reads natively)
-│   └── cli/                     ← CLI adapter notes
+├── pathly-adapters/                 ← pip package: pathly-adapters
+│   │                                   installs via: pip install -e pathly-adapters/
+│   │                                   CLI entry: pathly-setup
+│   │
+│   ├── core/                        ← SINGLE SOURCE OF TRUTH (tool-agnostic)
+│   │   ├── agents/                  ← Agent behavior contracts (.md — no spawning syntax)
+│   │   │   ├── architect.md
+│   │   │   ├── builder.md
+│   │   │   ├── director.md
+│   │   │   ├── orchestrator.md
+│   │   │   ├── planner.md
+│   │   │   ├── po.md
+│   │   │   ├── quick.md
+│   │   │   ├── reviewer.md
+│   │   │   ├── scout.md
+│   │   │   ├── tester.md
+│   │   │   └── web-researcher.md
+│   │   ├── skills/                  ← Skill logic in natural language (tool-agnostic .md)
+│   │   │   ├── team-flow.md
+│   │   │   ├── explore.md
+│   │   │   ├── build.md
+│   │   │   ├── review.md
+│   │   │   ├── storm.md
+│   │   │   └── ...
+│   │   └── templates/               ← Plan file templates (PROGRESS, USER_STORIES, etc.)
+│   │       └── plan/
+│   │
+│   ├── adapters/                    ← Thin tool-specific wrappers
+│   │   ├── claude/                  ← .claude-plugin/ + _meta/*.yaml per agent/skill
+│   │   ├── codex/                   ← .codex-plugin/ + _meta/*.yaml per agent/skill
+│   │   └── copilot/                 ← _meta/*.yaml per agent/skill
+│   │
+│   └── install_cli/                 ← Python CLI: detects host tools, stitches + deploys files
+│       ├── detect.py                ← Discovers installed AI tools
+│       ├── stitch.py                ← Combines core/ + adapter _meta/ into deployable files
+│       ├── materialize.py           ← Writes output files to ~/.claude/, ~/.codex/, etc.
+│       └── setup_command.py         ← Entry point for pathly-setup command
 │
-│   NOTE: adapters/copilot/ is not yet built. Copilot cross-tool support is planned.
+├── pathly-engine/                   ← pip package: pathly-engine
+│   │                                   installs via: pip install -e pathly-engine/
+│   │                                   CLI entry: pathly
+│   │
+│   ├── orchestrator/                ← Pure FSM library — rules only, no I/O
+│   │   ├── reducer.py               ← Pure function: (state, event) → new_state
+│   │   ├── state.py                 ← State data model
+│   │   ├── events.py                ← Event types
+│   │   ├── eventlog.py              ← Reads/writes event log file
+│   │   ├── feedback.py              ← Feedback file handling
+│   │   ├── agent_runner.py          ← Agent invocation contract
+│   │   └── constants.py
+│   │
+│   ├── runners/                     ← External CLI execution (claude, codex)
+│   │   ├── base.py
+│   │   ├── claude.py
+│   │   └── codex.py
+│   │
+│   ├── team_flow/                   ← Python driver — uses orchestrator/ + runners
+│   │   ├── manager.py               ← Main loop: read state → reduce → call runner → write event
+│   │   ├── prompts.py               ← Builds prompts to send to Claude/Codex
+│   │   ├── filesystem.py            ← Manages plan file paths
+│   │   └── config.py
+│   │
+│   └── engine_cli/                  ← CLI entry point (exposes `pathly` command)
 │
-├── orchestrator/                ← Pure FSM library — rules only, no I/O (top-level package)
-│   ├── reducer.py               ← Pure function: (state, event) → new_state
-│   ├── state.py                 ← State data model
-│   ├── events.py                ← Event types
-│   ├── eventlog.py              ← Reads/writes event log file
-│   ├── feedback.py              ← Feedback file handling
-│   ├── agent_runner.py          ← Agent invocation contract
-│   └── constants.py
+├── .agents/                         ← Codex marketplace metadata
+│   └── plugins/marketplace.json
 │
-├── pathly/                      ← Python package (CLI + hooks + runner)
-│   ├── cli/                     ← pathly install, pathly help, pathly status (KEEP)
-│   ├── hooks/                   ← Claude Code event hooks (KEEP)
-│   ├── runners/                 ← Optional: external CLI execution
-│   └── team_flow/               ← Python driver — uses orchestrator/ + runners (KEEP)
-│       ├── manager.py           ← Main loop: read state → reduce → call runner → write event
-│       ├── prompts.py           ← Builds prompts to send to Claude/Codex
-│       └── filesystem.py        ← Manages plan file paths
-│
-└── docs/                        ← Documentation
+├── docs/                            ← Documentation
+├── plans/                           ← Feature plans (runtime state per project)
+├── tests/                           ← Root-level integration tests
+├── install.sh / install.ps1         ← Bootstrap installers
+└── AGENTS.md                        ← Root agent/skill wiring for this repo
 ```
 
 ---
@@ -149,18 +171,24 @@ Each spawned agent gets a **fresh context window** — only the task prompt and 
 ## How pathly install works
 
 ```
-pathly install
+pathly-setup
         │
-        ├── adapters/claude-code/agents/**  ──────► ~/.claude/agents/
+        ├── detect.py detects which tools are installed
         │
-        ├── adapters/claude-code/skills/**  ──────► ~/.claude/skills/
+        ├── stitch.py merges core/ + adapters/<tool>/_meta/*.yaml
+        │       into deployable agent and skill files
         │
-        └── adapters/codex/skills/**        ──────► ~/.codex/skills/
+        ├── materialize.py writes stitched files:
+        │   ├── adapters/claude/_meta/**  ──────► ~/.claude/agents/ + ~/.claude/skills/
+        │   ├── adapters/codex/_meta/**   ──────► ~/.codex/agents/ + ~/.codex/skills/
+        │   └── adapters/copilot/_meta/** ──────► Copilot workspace config
+        │
+        └── setup_command.py is the CLI entry point (registered as `pathly-setup`)
 ```
 
-For Claude Code: copy adapter files as-is (Markdown with Agent() calls).
-For Codex: copy adapter files as-is (SKILL.md natural language, no slash commands).
-For Copilot: **not yet implemented** — `adapters/copilot/` does not exist yet.
+For Claude Code: stitched files include Agent() spawn calls, deployed to `~/.claude/`.
+For Codex: stitched files use natural language skill prompts, deployed to `~/.codex/`.
+For Copilot: stitched files use Copilot-compatible format, deployed to workspace config.
 
 ---
 
@@ -175,46 +203,55 @@ For Copilot: **not yet implemented** — `adapters/copilot/` does not exist yet.
 
 **Key constraint:** Subagent spawning syntax is tool-specific. There is no universal standard.
 
-**Copilot status:** Listed in the table above as a target but `adapters/copilot/` is not yet built.
-
-**Solution (thin adapters):** `core/prompts/` contains the skill *logic* in natural language.
-Adapters add only the tool-specific spawn call on top:
+**Solution (thin adapters):** `core/skills/` contains the skill *logic* in natural language.
+Each adapter's `_meta/*.yaml` adds only the tool-specific spawn call on top:
 
 ```
-# core/prompts/team-flow.md
+# core/skills/team-flow.md
 Delegate implementation to the builder agent.
 Then delegate review to the reviewer agent.
 
-# adapters/claude-code/skills/team-flow/SKILL.md (adds Agent() spawn calls)
+# adapters/claude/_meta/go_skill.yaml  (adds Agent() spawn calls for Claude Code)
 Spawn Agent(subagent_type="builder") for implementation.
 Spawn Agent(subagent_type="reviewer") for review.
 ```
 
 ---
 
-## Python code — what to keep vs delete
+## Python packages — what each does
 
-| Module | Keep? | Reason |
-|---|---|---|
-| `pathly/cli/` | **YES** | `pathly install` — needed for setup |
-| `pathly/hooks/` | **YES** | Claude Code event hooks — real automation value |
-| `pathly/runners/` | **Optional** | Only if you want `pathly team-flow` as a terminal CLI |
-| `pathly/orchestrator/` | **Keep as reference** | Pure FSM library — documents the state machine that orchestrator.md implements in natural language |
-| `pathly/team_flow/` | **YES** | Python driver — keeps the terminal CLI path (`pathly team-flow`) alive |
+### pathly-adapters (`pathly-setup` command)
+
+| Module | Purpose |
+|---|---|
+| `install_cli/detect.py` | Discovers which AI tools (Claude Code, Codex, Copilot) are installed |
+| `install_cli/stitch.py` | Merges `core/` content with adapter `_meta/*.yaml` into deployable files |
+| `install_cli/materialize.py` | Writes stitched output to `~/.claude/`, `~/.codex/`, etc. |
+| `install_cli/setup_command.py` | CLI entry point registered as `pathly-setup` |
+| `core/` | Source-of-truth agent contracts, skill logic, plan templates — never edited by install |
+| `adapters/` | Per-tool YAML metadata (`_meta/`) and plugin manifests |
+
+### pathly-engine (`pathly` command)
+
+| Module | Purpose |
+|---|---|
+| `orchestrator/` | Pure FSM library — `reducer.py` is `(state, event) → new_state`, no I/O |
+| `runners/` | External subprocess runners for Claude Code and Codex CLI |
+| `team_flow/` | Python driver that wires orchestrator + runners + filesystem for terminal use |
+| `engine_cli/` | CLI entry point registered as `pathly` |
 
 ### orchestrator/ vs team_flow/
 
-**`pathly/orchestrator/`** — pure FSM library. No I/O, no side effects.
+**`orchestrator/`** — pure FSM library. No I/O, no side effects.
 - `reducer.py` is a pure function: `(state, event) → new_state`
 - Defines all state transitions, retry logic, feedback priority, state stack for nested blocking
 - When the orchestrator agent reads `orchestrator.md`, it implements the same logic in natural language
-- Worth keeping: auditable, testable, documents edge cases precisely
+- Auditable and testable; documents edge cases precisely
 
-**`pathly/team_flow/`** — Python driver. Has side effects (file I/O, subprocess calls).
-- `manager.py` reads STATE.json → calls reducer → calls claude runner → writes events → loops
-- This is what wires orchestrator/ + runners/ + filesystem together
+**`team_flow/`** — Python driver. Has side effects (file I/O, subprocess calls).
+- `manager.py` reads STATE.json → calls reducer → calls runner → writes events → loops
+- Wires orchestrator/ + runners/ + filesystem together
 - Keeps the terminal CLI path alive: `pathly team-flow my-feature` works outside Claude Code
-- Both paths coexist: skills (inside the tool) and team_flow (from terminal) share the same FSM logic via orchestrator/
 
 ---
 

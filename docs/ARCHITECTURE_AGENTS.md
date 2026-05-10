@@ -5,29 +5,42 @@ and a deterministic filesystem state machine.
 
 ## Repository Layers
 
+This is a monorepo containing two pip packages.
+
 ```text
-core/             host-neutral prompts, agent contracts, and templates
-adapters/         Claude Code, Codex, and CLI packaging surfaces
-.agents/          Codex marketplace metadata and direct skill mirror
-pathly/           Python package, CLI, hooks, runners, and team-flow driver
-orchestrator/     top-level Python FSM runtime package
-plans/            feature plans and runtime state in a target project
-docs/             design, release, and review documentation
-tests/            automated checks for CLI, packaging, hooks, runners, FSM
+pathly-adapters/      pip package — installer + core content + adapter metadata
+  core/               host-neutral agent contracts, skill logic, and plan templates
+  adapters/           per-tool YAML metadata (_meta/) and plugin manifests
+    claude/           Claude Code adapter (includes .claude-plugin/)
+    codex/            Codex adapter (includes .codex-plugin/)
+    copilot/          Copilot adapter
+  install_cli/        pathly-setup command: detect → stitch → materialize
+
+pathly-engine/        pip package — FSM runtime + CLI
+  orchestrator/       pure FSM library (reducer, state, events, feedback)
+  runners/            subprocess runners for Claude Code and Codex
+  team_flow/          Python driver: wires orchestrator + runners for terminal use
+  engine_cli/         pathly command entry point
+
+.agents/              Codex marketplace metadata (plugins/marketplace.json)
+plans/                feature plans and runtime state in a target project
+docs/                 design, release, and review documentation
+tests/                root-level integration tests
 ```
 
-`core/` is content, not runtime code. The Python import contract keeps
-`orchestrator` as a top-level package and `pathly` as the installable package
-that exposes the `pathly` console command.
+`core/` is content, not runtime code. `install_cli/` stitches `core/` content
+with adapter `_meta/*.yaml` files at install time and deploys the result to the
+host tool's config directory. The `pathly-engine` package exposes the `pathly`
+console command for terminal-driven workflows.
 
 ## Adapter Surfaces
 
 | Host | User surface | Source files |
 |---|---|---|
-| Claude Code | `/pathly ...`, `/path ...` | `adapters/claude-code/skills/` |
-| Codex | `Use Pathly ...` natural-language plugin skills | `adapters/codex/skills/` |
-| Direct skill discovery | `.agents/skills/<skill>/SKILL.md` | mirror of `adapters/codex/skills/` |
-| Terminal | `pathly ...` | `pathly/cli/` |
+| Claude Code | `/pathly ...`, `/go ...` | `pathly-adapters/adapters/claude/_meta/` |
+| Codex | `Use Pathly ...` natural-language plugin skills | `pathly-adapters/adapters/codex/_meta/` |
+| Copilot | Copilot-native skill invocation | `pathly-adapters/adapters/copilot/_meta/` |
+| Terminal | `pathly ...` | `pathly-engine/engine_cli/` |
 
 Current Codex builds do not expose Pathly as `/pathly`. Use natural-language
 skill prompts in Codex docs.
@@ -129,11 +142,11 @@ auto-advance through human approval gates.
 Claude Code:
 
 ```text
-/pathly help
-/pathly flow <feature>
-/pathly debug <symptom>
-/pathly explore <question>
-/pathly meet [feature]
+/go help
+/go flow <feature>
+/go debug <symptom>
+/go explore <question>
+/go meet [feature]
 ```
 
 Codex:
@@ -145,11 +158,17 @@ Use Pathly to debug <symptom>
 Use Pathly to explore <question>
 ```
 
-CLI:
+CLI (pathly-engine):
 
 ```text
 pathly help [feature]
 pathly init <feature>
 pathly flow <feature> [--entry discovery|build|test] [--fast]
 pathly meet [feature] --role planner --question "..."
+```
+
+Install (pathly-adapters):
+
+```text
+pathly-setup          # detect tools, stitch core + adapter meta, deploy
 ```
