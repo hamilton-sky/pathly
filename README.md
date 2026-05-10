@@ -117,7 +117,7 @@ Local development install:
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
 pip install -e pathly-adapters/
-pathly-setup claude --apply
+pathly-setup --apply          # installs into all detected hosts (Claude Code, Codex, Copilot)
 ```
 
 ```powershell
@@ -125,7 +125,7 @@ pathly-setup claude --apply
 git clone https://github.com/hamilton-sky/pathly
 cd pathly
 pip install -e pathly-adapters/
-pathly-setup claude --apply
+pathly-setup --apply          # installs into all detected hosts (Claude Code, Codex, Copilot)
 ```
 
 Then open any project in Claude Code and run:
@@ -674,7 +674,7 @@ Then continue normally with `/pathly continue hotel-search` or `/pathly flow hot
         └── *.template.md
 ```
 
-Run `pathly-setup claude --apply` after cloning to install agent files into `~/.claude/agents/`.
+Run `pathly-setup --apply` after cloning to install agent files into all detected hosts.
 
 ---
 
