@@ -271,18 +271,11 @@ layer through plugin skills and the `pathly` CLI fallback. Claude-style custom
 agent files remain available as role contracts, but full multi-tool adapter
 packaging is tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
 
-Pathly also ships `.agents/skills/` as a direct skill-discovery compatibility
-layer. Those files mirror `pathly-adapters/adapters/codex/skills/` exactly, so tools that scan
-`.agents/skills/<name>/SKILL.md` can use the same Codex-safe wrappers without a
-Codex marketplace install. Do not edit `.agents/skills/` directly; update the
-Codex adapter wrappers in `pathly-adapters/adapters/codex/skills/` and refresh the mirror.
-
 Supported surfaces:
 
 ```text
 Claude Code:  /pathly <request> or /path <request>
 Codex:        Use Pathly <request>
-Direct skill: .agents/skills/pathly/SKILL.md
 CLI fallback: pathly --project-dir <project> help
 ```
 
@@ -523,6 +516,11 @@ tier rules, per-agent sub-agent lists, and ownership guarantees.
 | `debug` | `/pathly debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
 | `explore` | `/pathly explore <question>` | Investigation mode: answer codebase questions without building anything |
 | `help` | `/pathly help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
+| `pathly` | `/pathly <request>` | Main dispatcher: routes free-form requests and subcommands to the right skill |
+| `path` | `/path <request>` | Short alias for `/pathly`; identical routing |
+| `go` | `/pathly go [feature]` | Director entry: reads project state and routes to the appropriate next skill |
+| `start` | `/pathly start` | Session opener: shows the workflow menu and routes to the chosen entry point |
+| `end` | `/pathly end` | Session wrap-up: records progress summary for any in-progress feature |
 
 ---
 
@@ -596,7 +594,7 @@ conversations are caught before any agent spawns.
 
 6 files in `plans/<feature>/feedback/`. **File exists = issue open. Deleted = resolved.**
 
-Every feedback file carries a YAML frontmatter block (injected by `inject_feedback_ttl.py`):
+Every feedback file carries a YAML frontmatter block:
 ```yaml
 ---
 created_at: 2026-05-04T08:12:00Z

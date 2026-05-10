@@ -18,8 +18,7 @@ File present means issue open. File deleted means resolved.
 
 ## Frontmatter
 
-When hooks are installed, `pathly/hooks/inject_feedback_ttl.py` injects YAML
-frontmatter into feedback files after write events:
+Each agent should inject YAML frontmatter into feedback files when creating them:
 
 ```yaml
 ---
@@ -56,9 +55,9 @@ Builder questions should be tagged:
 - `[UNSURE]` when ownership is unclear; write both question files and let the
   correct owner discard what is not theirs.
 
-`pathly/hooks/classify_feedback.py` can classify and split
-`IMPL_QUESTIONS.md` when `ANTHROPIC_API_KEY` is available. It exits silently
-when unavailable so hooks stay optional.
+A classify-feedback hook can classify and split `IMPL_QUESTIONS.md` when
+`ANTHROPIC_API_KEY` is available. It exits silently when unavailable so hooks
+stay optional.
 
 ## Auto-Fix Review Findings
 

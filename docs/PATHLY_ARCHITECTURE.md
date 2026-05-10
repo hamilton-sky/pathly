@@ -125,7 +125,6 @@ Orchestrator (top-level — spawns all)
 ├── tester          → no subagents
 ├── po              → no subagents
 ├── web-researcher  → no subagents
-├── discoverer      → no subagents
 ├── scout           → TERMINAL (cannot spawn)
 └── quick           → TERMINAL (cannot spawn)
 ```
