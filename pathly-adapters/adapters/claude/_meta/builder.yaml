@@ -6,18 +6,36 @@ can_spawn: [quick, scout]
 
 spawn_section: |
   ## Sub-agent invocation
+
+  ### Pre-implementation: spawn two scouts in parallel (single message, two Agent() calls)
+  # Scout A — target layer: what exists in the files about to be modified
   Agent(
     subagent_type="scout",
     model="haiku",
-    description="<task-name>",   # e.g. "map-modal-implementation-patterns"
+    description="map-target-layer",   # e.g. "map-stitch-module-patterns"
     prompt="""
-    [ROLE: Builder — read-only codebase investigation before implementation begins]
-    [WAY OF THINKING: Look for the dominant pattern to follow. Flag deviations, inconsistencies, or anything that would make a straightforward implementation impossible.]
-    [CONSTRAINTS: Read only. Do not suggest refactors. Stay within the stated scope directories.]
-    [SCOPE: ...]
-    [QUESTION: ...]
+    [ROLE: Builder — read-only investigation of the target layer before implementation]
+    [WAY OF THINKING: Look for the dominant pattern to follow. Flag deviations or anything that would make a straightforward implementation impossible.]
+    [CONSTRAINTS: Read only. Do not suggest refactors. Stay within the target files and their immediate directory.]
+    [SCOPE: target layer — files and directories about to be modified]
+    [QUESTION: What currently exists here? File structure, function signatures, dominant patterns.]
     """
   )
+  # Scout B — dependency layer: contracts and callers this implementation must respect
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="map-dependency-layer",   # e.g. "map-setup-command-calling-conventions"
+    prompt="""
+    [ROLE: Builder — read-only investigation of the dependency layer before implementation]
+    [WAY OF THINKING: Look for contracts, interfaces, and calling conventions this implementation must conform to. Flag anything that would break existing callers.]
+    [CONSTRAINTS: Read only. Do not suggest refactors. Focus on import paths, function signatures, and public interfaces.]
+    [SCOPE: dependency layer — callers, imports, and interfaces the target code must conform to]
+    [QUESTION: What contracts must this implementation respect? What do callers expect?]
+    """
+  )
+
+  ### During implementation: single factual lookup
   Agent(
     subagent_type="quick",
     model="haiku",

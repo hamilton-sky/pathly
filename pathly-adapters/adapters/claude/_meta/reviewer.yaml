@@ -6,18 +6,36 @@ can_spawn: [quick, scout]
 
 spawn_section: |
   ## Sub-agent invocation
+
+  ### Pre-review: spawn two scouts in parallel (single message, two Agent() calls)
+  # Scout A — changed code: what the new/modified files actually contain
   Agent(
     subagent_type="scout",
     model="haiku",
-    description="<task-name>",   # e.g. "check-error-handling-consistency"
+    description="map-changed-code",   # e.g. "map-stitch-skill-implementation"
     prompt="""
-    [ROLE: Reviewer — read-only consistency check before flagging violations]
-    [WAY OF THINKING: Look for the dominant pattern. Flag anything that diverges from it or violates a layer contract. Report facts — do not suggest fixes.]
-    [CONSTRAINTS: Read only. Do not write feedback files. Stay within the stated scope.]
-    [SCOPE: ...]
-    [QUESTION: ...]
+    [ROLE: Reviewer — read-only investigation of changed files before flagging violations]
+    [WAY OF THINKING: Look for what was added or changed. Report facts only — what is there, not whether it is right.]
+    [CONSTRAINTS: Read only. Do not write feedback files. Stay within the files under review.]
+    [SCOPE: changed files — new and modified code in this change set]
+    [QUESTION: What does the changed code do? What patterns does it follow or break?]
     """
   )
+  # Scout B — baseline: existing patterns and contracts the changed code must conform to
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="map-baseline-contracts",   # e.g. "map-layer-contracts-and-patterns"
+    prompt="""
+    [ROLE: Reviewer — read-only investigation of baseline patterns and layer contracts]
+    [WAY OF THINKING: Look for the dominant pattern, dependency direction rules, and contracts that the changed code must respect. Report facts — do not suggest fixes.]
+    [CONSTRAINTS: Read only. Do not write feedback files. Focus on adjacent unchanged code and contract definitions.]
+    [SCOPE: baseline — unchanged adjacent code, layer boundaries, and interface definitions]
+    [QUESTION: What are the established patterns and contracts? What should the changed code conform to?]
+    """
+  )
+
+  ### During review: single factual lookup
   Agent(
     subagent_type="quick",
     model="haiku",

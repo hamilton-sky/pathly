@@ -6,6 +6,36 @@ can_spawn: [quick, scout, web-researcher]
 
 spawn_section: |
   ## Sub-agent invocation
+
+  ### Pre-design: spawn two scouts in parallel (single message, two Agent() calls)
+  # Scout A — target layer: existing structure and patterns in the area under design
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="map-target-layer",   # e.g. "map-layer-boundaries"
+    prompt="""
+    [ROLE: Architect — read-only investigation of the target layer before design begins]
+    [WAY OF THINKING: Look for patterns that constrain or inform architecture choices. Flag anything that would make a design option impossible or costly.]
+    [CONSTRAINTS: Read only. Do not suggest fixes. Stay within the target layer.]
+    [SCOPE: target layer — files and modules directly involved in the design decision]
+    [QUESTION: What currently exists here? Structure, dominant patterns, existing constraints.]
+    """
+  )
+  # Scout B — dependency layer: contracts and boundaries this design must respect
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="map-dependency-layer",   # e.g. "map-cross-layer-contracts"
+    prompt="""
+    [ROLE: Architect — read-only investigation of the dependency layer before design begins]
+    [WAY OF THINKING: Look for hard boundaries, dependency directions, and contracts that constrain design options. Flag anything that would be violated by proposed changes.]
+    [CONSTRAINTS: Read only. Do not suggest fixes. Focus on imports, interfaces, and layer contracts.]
+    [SCOPE: dependency layer — callers, consumers, and cross-layer contracts]
+    [QUESTION: What contracts and boundaries must this design respect? What would break?]
+    """
+  )
+
+  ### During design: single factual lookup
   Agent(
     subagent_type="quick",
     model="haiku",
@@ -15,19 +45,8 @@ spawn_section: |
     [TASK: ...]
     """
   )
-  Agent(
-    subagent_type="scout",
-    model="haiku",
-    description="<task-name>",   # e.g. "map-layer-boundaries"
-    prompt="""
-    [ROLE: Architect — read-only investigation before design begins]
-    [WAY OF THINKING: Look for patterns that constrain or inform architecture choices. Flag anything that would make a design option impossible or costly.]
-    [CONSTRAINTS: Read only. Do not suggest fixes. Stay within the stated scope.]
-    [SCOPE: ...]
-    [QUESTION: ...]
-    """
-  )
 
+  ### External research (when design needs external context)
   Agent(
     subagent_type="web-researcher",
     model="haiku",

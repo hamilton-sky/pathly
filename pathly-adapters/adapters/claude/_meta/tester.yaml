@@ -6,25 +6,42 @@ can_spawn: [quick, scout]
 
 spawn_section: |
   ## Sub-agent invocation
+
+  ### Pre-test-plan: spawn two scouts in parallel (single message, two Agent() calls)
+  # Scout A — implementation: what the code under test actually does
   Agent(
     subagent_type="scout",
     model="haiku",
-    description="<task-name>",   # e.g. "map-existing-modal-test-coverage"
+    description="map-implementation",   # e.g. "map-stitch-skill-implementation"
     prompt="""
-    [ROLE: Tester — read-only coverage mapping before writing a test plan]
-    [WAY OF THINKING: Look for untested paths, missing fixtures, and coverage gaps. Flag anything that would make an acceptance criterion unverifiable.]
-    [CONSTRAINTS: Read only. Do not suggest implementation changes. Stay within test and source directories for the stated module.]
-    [SCOPE: ...]
-    [QUESTION: ...]
+    [ROLE: Tester — read-only investigation of the implementation before writing a test plan]
+    [WAY OF THINKING: Look for branching paths, edge cases, and error conditions that need coverage. Flag anything that would make an acceptance criterion unverifiable.]
+    [CONSTRAINTS: Read only. Do not suggest implementation changes. Stay within the source files for the stated module.]
+    [SCOPE: implementation — source files of the module under test]
+    [QUESTION: What code paths exist? What are the inputs, outputs, error branches, and edge cases?]
     """
   )
+  # Scout B — existing tests: what coverage already exists and what patterns the new tests must follow
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="map-existing-tests",   # e.g. "map-existing-stitch-test-coverage"
+    prompt="""
+    [ROLE: Tester — read-only investigation of existing tests before writing a test plan]
+    [WAY OF THINKING: Look for coverage gaps, fixture patterns, and test conventions to follow. Flag untested paths and missing edge cases.]
+    [CONSTRAINTS: Read only. Do not suggest implementation changes. Stay within the test directory for the stated module.]
+    [SCOPE: existing tests — test files for the module and adjacent modules]
+    [QUESTION: What is already tested? What patterns (fixtures, assertions, helpers) should new tests follow?]
+    """
+  )
+
+  ### During test planning or execution: single factual lookup
   Agent(
     subagent_type="quick",
     model="haiku",
     description="<task-name>",
     prompt="""
     [ROLE: Tester — single factual lookup during test planning or execution]
-    [ ]
     [TASK: ...]
     """
   )

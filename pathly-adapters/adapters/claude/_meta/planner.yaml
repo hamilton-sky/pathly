@@ -6,6 +6,36 @@ can_spawn: [quick, scout]
 
 spawn_section: |
   ## Sub-agent invocation
+
+  ### Pre-planning: spawn two scouts in parallel (single message, two Agent() calls)
+  # Scout A — current state: what already exists in plans/, stories, and code that is relevant
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="map-current-state",   # e.g. "map-existing-plans-and-stories"
+    prompt="""
+    [ROLE: Planner — read-only investigation of existing plans and related code before planning begins]
+    [WAY OF THINKING: Look for existing stories, prior decisions, and constraints that the new plan must align with. Flag gaps or contradictions.]
+    [CONSTRAINTS: Read only. Do not suggest implementation changes. Focus on plans/, stories, and related config files.]
+    [SCOPE: current state — plans/, stories, and any related existing implementations]
+    [QUESTION: What already exists? Prior stories, decisions, scope already committed to.]
+    """
+  )
+  # Scout B — dependency layer: code or config that shapes what can realistically be planned
+  Agent(
+    subagent_type="scout",
+    model="haiku",
+    description="map-dependency-layer",   # e.g. "map-install-cli-interfaces"
+    prompt="""
+    [ROLE: Planner — read-only investigation of the implementation layer before planning begins]
+    [WAY OF THINKING: Look for interfaces, file structures, and patterns that constrain what stories are realistic. Flag anything that would make a proposed story impossible or very costly.]
+    [CONSTRAINTS: Read only. Do not suggest fixes. Focus on public interfaces, file layout, and conventions.]
+    [SCOPE: dependency layer — code or config the planned stories will touch or extend]
+    [QUESTION: What do the relevant layers look like today? What constraints should the plan respect?]
+    """
+  )
+
+  ### During planning: single factual lookup
   Agent(
     subagent_type="quick",
     model="haiku",
