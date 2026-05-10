@@ -112,8 +112,7 @@ Files reviewed:
 - `pathly-adapters/core/skills/team-flow.md`
 - `pathly-adapters/core/skills/go.md`
 - `pathly-adapters/core/skills/plan.md`
-- `pathly-adapters/core/skills/prd-import.md`
-- `pathly-adapters/core/skills/bmad-import.md`
+- `pathly-adapters/core/skills/prd-import.md` (handles all PRD formats including BMAD)
 - `pathly-adapters/core/agents/director.md`
 - adapter wrappers under `pathly-adapters/adapters/claude/` and
   `pathly-adapters/adapters/codex/`

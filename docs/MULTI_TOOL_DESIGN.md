@@ -11,7 +11,7 @@ pathly/                              ← monorepo root
 |-- pathly-adapters/                 ← pip package: pathly-adapters (CLI: pathly-setup)
 |   |-- core/                        ← single source of truth (tool-agnostic)
 |   |   |-- agents/                  ← 11 agent behavior contracts
-|   |   |-- skills/                  ← 20 skill definitions
+|   |   |-- skills/                  ← 19 skill definitions
 |   |   `-- templates/plan/          ← plan file templates
 |   |-- adapters/                    ← thin tool-specific wrappers
 |   |   |-- claude/                  ← .claude-plugin/ + _meta/*.yaml

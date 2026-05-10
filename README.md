@@ -360,8 +360,8 @@ pytest -q
 ```
 
 Pick your path, type the number, and the pipeline runs from there.
-The other skills (`/pathly storm`, `/pathly plan`, `/pathly prd-import`, `/pathly bmad-import`) exist for manual control
-when you need to jump into the middle of a pipeline.
+The other skills (`/pathly storm`, `/pathly plan`, `/pathly prd-import`) exist for manual control
+when you need to jump into the middle of a pipeline. (`/pathly bmad-import` is an alias for `prd-import`.)
 
 Choose process rigor with `lite`, `standard`, or `strict`:
 ```
@@ -530,18 +530,17 @@ tier rules, per-agent sub-agent lists, and ownership guarantees.
 | `retro` | `/pathly retro <feature>` | Writes RETRO.md with cost summary + appends to LESSONS_CANDIDATE.md |
 | `lessons` | `/pathly lessons` | Promotes candidate lessons to LESSONS.md for planner |
 | `archive` | `/pathly archive <feature>` | Moves completed plan to `plans/.archive/` |
-| `prd-import` | `/pathly prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file into plan files |
-| `bmad-import` | `/pathly bmad-import <feature> <prd.md> [lite|standard|strict]` | Translates a BMAD PRD into plan files |
+| `prd-import` | `/pathly prd-import <feature> <prd.md> [lite|standard|strict]` | Translates any PRD file (generic, AI-generated, or BMAD-structured) into plan files. `/pathly bmad-import` is an alias that routes here. |
 | `verify-state` | `/pathly verify-state [feature]` | Checks orphan/expired feedback files (TTL), PROGRESS drift, dead code references |
 | `meet` | `/pathly meet [feature]` | Consult one relevant role during an active feature flow; writes a read-only consult note and offers planner/architect promotion |
 | `debug` | `/pathly debug <symptom>` | Bug pipeline: scout traces → builder fixes → tester verifies before + after |
 | `explore` | `/pathly explore <question>` | Investigation mode: answer codebase questions without building anything |
 | `help` | `/pathly help [--doctor] [feature]` | State menu; `--doctor` diagnoses stuck FSM and orphan files with action suggestions |
 | `pathly` | `/pathly <request>` | Main dispatcher: routes free-form requests and subcommands to the right skill |
-| `path` | `/path <request>` | Short alias for `/pathly`; identical routing |
-| `go` | `/pathly go [feature]` | Director entry: reads project state and routes to the appropriate next skill |
+| `go` | `/pathly go [intent]` | Director entry: reads project state and routes to the appropriate next skill |
 | `start` | `/pathly start` | Session opener: shows the workflow menu and routes to the chosen entry point |
-| `end` | `/pathly end` | Session wrap-up: records progress summary for any in-progress feature |
+| `pause` | `/pathly pause` | Saves session state cleanly (writes PAUSED to PROGRESS.md); resume with `/pathly go` |
+| `end` | `/pathly end` | Session wrap-up: offers retro for any in-progress feature, then closes |
 
 ---
 
@@ -671,7 +670,7 @@ Then continue normally with `/pathly continue hotel-search` or `/pathly flow hot
 ├── agents/                    ← 11 behavioral contracts (.md files)
 ├── skills/                    ← installed Claude Code lifecycle skills
 └── plugins/pathly/
-    └── templates/pathly plan/             ← plan file templates used by /pathly plan, /pathly prd-import, /pathly bmad-import
+    └── templates/pathly plan/             ← plan file templates used by /pathly plan and /pathly prd-import
         └── *.template.md
 ```
 

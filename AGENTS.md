@@ -13,7 +13,7 @@ delivery.
 ```
 pathly-adapters/   ← pip package (pathly-setup CLI)
   core/agents/     ← 11 agent behavior contracts — single source of truth
-  core/skills/     ← 20 skill definitions — single source of truth
+  core/skills/     ← 19 skill definitions — single source of truth
   core/templates/  ← plan file templates
   adapters/claude/ ← Claude Code adapter (_meta/*.yaml + .claude-plugin/)
   adapters/codex/  ← Codex adapter (_meta/*.yaml + .codex-plugin/)

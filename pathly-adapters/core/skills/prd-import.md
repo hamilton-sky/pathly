@@ -1,6 +1,8 @@
 # prd-import
 
 This is the canonical, tool-agnostic Pathly behavior for the prd-import workflow.
+This skill handles all PRD formats — generic hand-written PRDs, AI-generated PRDs,
+and BMAD-structured PRDs. The `bmad-import` route is an alias; both resolve here.
 Adapter skills should load and follow this prompt instead of duplicating workflow logic.
 
 ## Workflow Surface
@@ -10,7 +12,7 @@ for rendering those routes in their host-native form.
 
 ## Skill Contract
 
-**Consumes:** Any PRD file (path provided as second argument)
+**Consumes:** Any PRD file — generic, AI-generated, or BMAD-structured (path provided as second argument)
 **Produces:** `plans/$FEATURE/` — 4 files in lite, all 8 plan files in standard/strict, pre-populated from the PRD
 **Consumed by:** `build` skill reads `CONVERSATION_PROMPTS.md` and `PROGRESS.md`
 
