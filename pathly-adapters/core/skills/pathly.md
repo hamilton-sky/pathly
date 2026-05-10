@@ -66,12 +66,7 @@ Typical path for a new feature:
      (review + test happen automatically inside the pipeline)
   4. /pathly end     — retro + archive
 
-Quick actions:
-  /pathly debug <symptom>   — investigate a bug
-  /pathly explore <question>— read-only codebase Q&A
-  /pathly verify            — check for stale feedback or FSM drift
-  /pathly meet              — consult a role mid-flow
-  /pathly help              — state-aware menu
+Also: debug · explore · verify · meet · help
 
 What would you like to do?
 
@@ -95,11 +90,6 @@ Wait for user input. Then route:
 ---
 
 ## Behavior: go
-
-You are the Director entry point for the agent pipeline. Read project state,
-understand intent, choose the lightest safe workflow, invoke the right skill.
-
-Never execute implementation work yourself. Route to the right skill and let it run.
 
 **Step 0 — Get Intent**
 
@@ -340,40 +330,17 @@ Reply with 1–4:
 **Step 3 — Full command reference (shown on "See all commands")**
 
 ```
-╔═══════════════════════════════════════════╗
-║         Pathly — All Commands             ║
-╚═══════════════════════════════════════════╝
+── Core ──────────────────────────────────
+  /pathly start   /pathly go      /pathly storm
+  /pathly build   /pathly pause   /pathly meet
+  /pathly end     /pathly help
 
-── CORE FSM COMMANDS ──────────────────────
-  /pathly start              welcome menu + full journey map
-  /pathly go [intent]        Director — reads state, routes intelligently
-  /pathly storm [topic]      brainstorm with architect → STORM_SEED.md
-  /pathly build              continue next conversation in pipeline
-  /pathly pause              save state, exit cleanly
-  /pathly meet [feature]     consult a role mid-flow (context-aware menu)
-  /pathly end                wrap up session, offer retro
-  /pathly help [feature]     state-aware menu + diagnostics
+── Specialized ───────────────────────────
+  /pathly po      /pathly debug
+  /pathly explore /pathly verify
 
-── SPECIALIZED COMMANDS ───────────────────
-  /pathly po [feature]       Product Owner session — clarify requirements
-  /pathly debug <symptom>    bug investigation pipeline
-  /pathly explore <question> read-only codebase Q&A
-  /pathly verify [feature]   health check: stale feedback, FSM drift
+── Catch-all ─────────────────────────────
+  /pathly <anything>   Director routes intent
 
-── CATCH-ALL ──────────────────────────────
-  /pathly <anything>         Director routes natural language intent
-
-── FEEDBACK FILES ─────────────────────────
-  plans/<feature>/feedback/
-  ARCH_FEEDBACK.md     reviewer → architect  (BLOCKING — pipeline halts)
-  REVIEW_FAILURES.md   reviewer → builder
-  IMPL_QUESTIONS.md    builder  → planner
-  DESIGN_QUESTIONS.md  builder  → architect
-  TEST_FAILURES.md     tester   → builder
-  HUMAN_QUESTIONS.md   any      → user      (BLOCKED_ON_HUMAN)
-
-── TELEMETRY ──────────────────────────────
-  pathly-tokens         show token/cost activity by feature (run in terminal)
-
-╚═══════════════════════════════════════════╝
+Run /pathly help for full descriptions and state-aware guidance.
 ```
