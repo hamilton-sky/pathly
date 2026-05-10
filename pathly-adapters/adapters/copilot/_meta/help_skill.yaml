@@ -1,0 +1,4 @@
+skill: help
+filename: help.md
+invocation: "@pathly /help"
+natural_language: "help, what can you do, show commands"

@@ -87,11 +87,11 @@ install.yaml, and skill loop in _run_host() are all done.
 Working directory for all paths: pathly-adapters/
 
 ** Before implementing, spawn a Scout agent with this question:**
-"Map the following in pathly-adapters/:
- 1. core/skills/ — what .md files already exist?
- 2. adapters/claude/_meta/, adapters/codex/_meta/, adapters/copilot/_meta/ — what files exist, what is the naming pattern?
- 3. install_cli/stitch.py — what is the current signature of stitch_skill()?
-Report: directory contents, file names, any patterns you notice."
+"In pathly-adapters/: what skill .md files already exist in core/skills/, and what
+ naming convention and file pattern do the three adapter _meta/ directories follow?
+ Also confirm the current signature of stitch_skill() in install_cli/stitch.py.
+ I need to know what already exists before creating new files — focus on gaps and patterns,
+ not an exhaustive listing."
 Use scout findings to confirm paths and avoid overwriting existing files.
 
 Scope:
@@ -156,8 +156,12 @@ Phase 5 — Codex and Copilot skill YAML metadata (10 files total):
 Codex: same structure as Claude but invocation: @<name> (e.g., @go, @start).
 Create adapters/codex/_meta/{go,start,end,help,pause}_skill.yaml.
 
-Copilot: invocation: "#pathly" for all 5 (placeholder — Copilot prefix spec TBD).
-Add a YAML comment on the invocation line: # TODO: confirm Copilot prefix spec
+Copilot: invocation follows @pathly /command pattern (chat participant + subcommand).
+  go_skill:    invocation: "@pathly /go"
+  start_skill: invocation: "@pathly /start"
+  end_skill:   invocation: "@pathly /end"
+  help_skill:  invocation: "@pathly /help"
+  pause_skill: invocation: "@pathly /pause"
 Create adapters/copilot/_meta/{go,start,end,help,pause}_skill.yaml.
 Copilot pause_skill.yaml uses the same wrapper content as claude.
 
