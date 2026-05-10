@@ -1,9 +1,0 @@
-name: scout
-description: Codebase pattern investigator — reads across multiple files and directories to answer a structural question. Use when builder needs 3+ file reads before making implementation decisions. Returns Structured Findings, never writes.
-model: haiku
-tools: [Read, Glob, Grep]
-can_spawn: []
-
-spawn_section: |
-  ## Sub-agent invocation
-  TERMINAL — scout does not spawn sub-agents. Read only; 5–15 tool calls per session.

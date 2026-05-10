@@ -1,9 +1,0 @@
-name: scout
-description: Codebase pattern investigator — reads across multiple files and directories to answer a structural question. Returns Structured Findings, never writes.
-model: gpt-4.1-mini
-can_spawn: []
-
-spawn_section: |
-  ## Sub-agent delegation (Codex)
-
-  TERMINAL — scout does not spawn sub-agents. Read only; 5–15 file reads per investigation.

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install *)",
+      "Bash(pathly go *)",
+      "Bash(pathly status *)",
+      "Bash(pathly doctor *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Yafit\\\\pathly\\\\pathly\" -Depth 0 | Select-Object Name, @{Name=\"Type\"; Expression={if \\($_.PSIsContainer\\) {\"Folder\"} else {\"File\"}}} | Format-Table -AutoSize)",
+      "Bash(pytest -q)",
+      "Bash(pytest pathly-engine/tests/ -q)",
+      "Bash(pytest pathly-engine/tests/ -q --rootdir=pathly-engine --override-ini=\"pythonpath=pathly-engine\")",
+      "Bash(ls /)",
+      "Bash(cd /c/Users/Yafit/pathly/.claude/worktrees/youthful-mirzakhani-dd9887 && ls)",
+      "Bash(pytest tests/ -q)"
+    ]
+  }
+}
