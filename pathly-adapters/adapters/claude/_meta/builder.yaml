@@ -50,7 +50,9 @@ spawn_section: |
     """
   )
 
-  ### During implementation: single factual lookup
+  ### During implementation: factual lookups (spawn in parallel, up to 4)
+  # One quick per independent question — if you have 3 unrelated lookups, send 3 at once.
+  # Never use quick for multi-file investigation — use scout instead.
   Agent(
     subagent_type="quick",
     model="haiku",
