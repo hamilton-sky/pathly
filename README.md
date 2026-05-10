@@ -385,7 +385,8 @@ because strict mode requires human approval gates.
 Install development dependencies:
 
 ```bash
-python -m pip install -e ".[dev]"
+pip install -e pathly-adapters/
+pip install -e pathly-engine/
 ```
 
 Run tests:
@@ -655,7 +656,7 @@ Then continue normally with `/pathly continue hotel-search` or `/pathly flow hot
         └── *.template.md
 ```
 
-Run `pathly hooks install claude` after installing the Python package to register the optional feedback hooks in `settings.json`. The hook command uses `python -m pathly.hooks`.
+Run `pathly-setup claude --apply` after cloning to install agent files into `~/.claude/agents/`.
 
 ---
 
