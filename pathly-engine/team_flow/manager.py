@@ -31,7 +31,7 @@ from orchestrator.events import (
 from orchestrator.feedback import highest_priority_feedback
 from orchestrator.reducer import reduce
 from orchestrator.state import State
-from pathly.runners import ClaudeRunner, CodexRunner, Runner
+from runners import ClaudeRunner, CodexRunner, Runner
 from .prompts import PromptFactory
 
 
