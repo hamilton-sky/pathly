@@ -277,7 +277,7 @@ Do not expect `/pathly` to work in current Codex builds; Codex reserves slash
 commands for its own UI. Codex support currently exposes the skill workflow
 layer through plugin skills and the `pathly` CLI fallback. Claude-style custom
 agent files remain available as role contracts, but full multi-tool adapter
-packaging is tracked in [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
+packaging is tracked in [pathly-adapters/docs/MULTI_TOOL_DESIGN.md](https://github.com/hamilton-sky/pathly-adapters/blob/master/docs/MULTI_TOOL_DESIGN.md).
 
 Supported surfaces:
 
@@ -401,7 +401,7 @@ because strict mode requires human approval gates.
 - Codex plugin support is available through
   `adapters/codex/.codex-plugin/plugin.json`.
 - Cursor, Windsurf, BMAD, and generic prompt adapters are planned in
-  [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md).
+  [pathly-adapters/docs/MULTI_TOOL_DESIGN.md](https://github.com/hamilton-sky/pathly-adapters/blob/master/docs/MULTI_TOOL_DESIGN.md).
 - Python 3.11+ is required for local development and tests.
 - CI runs the test suite on Python 3.11, 3.12, and 3.13.
 - The Python package exposes the `pathly` CLI used by local development,
@@ -486,17 +486,25 @@ four specialized commands handle specific situations; the catch-all routes anyth
 
 ## Docs
 
+Engine documentation lives in `pathly-engine/docs/`:
+
 | Doc | What's in it |
 |---|---|
-| [docs/FLOW_DIAGRAM.md](docs/FLOW_DIAGRAM.md) | Full pipeline flow — Mermaid overview + ASCII lifecycle, feedback loops, agents, entry points |
-| [docs/FAST_MODE_FLOW.md](docs/FAST_MODE_FLOW.md) | Fast mode flow — ASCII + Mermaid diagrams showing auto-advance vs hard stops |
-| [docs/ARCHITECTURE_AGENTS.md](docs/ARCHITECTURE_AGENTS.md) | Full pipeline, agent map, file handoff protocol, quick reference |
-| [docs/ORCHESTRATOR_FSM.md](docs/ORCHESTRATOR_FSM.md) | Deterministic state machine model, events, recovery, guards |
-| [docs/FEEDBACK_PROTOCOL.md](docs/FEEDBACK_PROTOCOL.md) | Each feedback file format with templates + escalation rules |
-| [docs/SECURITY_RELIABILITY_REVIEW.md](docs/SECURITY_RELIABILITY_REVIEW.md) | Security/reliability posture, risks, mitigations, and production checklist |
-| [docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md) | Release criteria, install checks, naming tasks, and adapter-readiness gaps |
-| [docs/CONCEPTS.md](docs/CONCEPTS.md) | Philosophy — why files as protocol, why feedback loops |
-| [docs/MULTI_TOOL_DESIGN.md](docs/MULTI_TOOL_DESIGN.md) | Roadmap for Cursor / Windsurf / BMAD adapter layer |
+| [pathly-engine/docs/FLOW_DIAGRAM.md](pathly-engine/docs/FLOW_DIAGRAM.md) | Full pipeline flow — Mermaid overview, FSM state transitions, feedback routing loops, file outputs per stage |
+| [pathly-engine/docs/FAST_MODE_FLOW.md](pathly-engine/docs/FAST_MODE_FLOW.md) | Fast mode flow — auto-advance vs hard stops |
+| [pathly-engine/docs/ARCHITECTURE.md](pathly-engine/docs/ARCHITECTURE.md) | Agent roles and boundaries, consultation policy, feedback routing, workflow files, rigor modes, FSM command map |
+| [pathly-engine/docs/ORCHESTRATOR_FSM.md](pathly-engine/docs/ORCHESTRATOR_FSM.md) | Deterministic state machine model, events, recovery, guards |
+| [pathly-engine/docs/FEEDBACK_PROTOCOL.md](pathly-engine/docs/FEEDBACK_PROTOCOL.md) | Each feedback file format with templates + escalation rules |
+| [pathly-engine/docs/SECURITY.md](pathly-engine/docs/SECURITY.md) | Security/reliability posture, risks, mitigations, and production checklist |
+| [pathly-engine/docs/PRODUCTION_READINESS.md](pathly-engine/docs/PRODUCTION_READINESS.md) | Engine release criteria: FSM tests, team-flow driver, CLI commands, hook policy, state recovery |
+| [pathly-engine/docs/CONCEPTS.md](pathly-engine/docs/CONCEPTS.md) | Philosophy — why files as protocol, why feedback loops |
+| [pathly-engine/docs/PATHLY_ARCHITECTURE.md](pathly-engine/docs/PATHLY_ARCHITECTURE.md) | Orchestrator, runners, team_flow packages; STATE.json layout; Python CLI; agent spawning |
+| [pathly-engine/docs/TROUBLESHOOTING.md](pathly-engine/docs/TROUBLESHOOTING.md) | FSM recovery, state consistency, common stuck states |
+| [pathly-engine/docs/SYSTEM_REVIEW.md](pathly-engine/docs/SYSTEM_REVIEW.md) | Engine strengths, risks, design decisions, hardening recommendations |
+| [pathly-engine/docs/examples/](pathly-engine/docs/examples/) | Worked pipeline examples (add-cost-meter and routing guides) |
+
+For adapter-specific docs (install mechanics, host deployment, stitch pipeline, marketplace):
+see [github.com/hamilton-sky/pathly-adapters](https://github.com/hamilton-sky/pathly-adapters) — `docs/` folder.
 
 ---
 

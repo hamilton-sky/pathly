@@ -1,13 +1,7 @@
-# Security and Reliability Review
+# Pathly Engine Security and Reliability Review
 
-This document records the current security/reliability posture for Pathly and
-the remaining work before a production-ready label.
-
-Pathly currently ships as a Claude Code plugin, Codex plugin workflow, and Python CLI fallback. Its highest-risk areas are
-hooks, subprocess execution, generated prompts, file writes, and recovery from
-partial or corrupt filesystem state.
-
-## Summary
+This document records the current security/reliability posture for pathly-engine
+and the remaining hardening work before a production-ready label.
 
 Current status: public beta candidate.
 
@@ -17,53 +11,9 @@ roles. The main production gaps are end-to-end workflow tests, stricter
 validation around hook file paths, clearer subprocess failure policy, and a
 security pass over generated prompts and trusted/untrusted file boundaries.
 
-## Area: Hooks
+---
 
-Files reviewed:
-
-- Hooks infrastructure is planned but not yet implemented as Python files.
-- The pipeline functions correctly without hooks; TTL frontmatter injection
-  and feedback classification are planned additions.
-
-Risk:
-
-- Hooks can rewrite files after Claude Code tool calls.
-- `classify_feedback.py` may call the Anthropic API when `ANTHROPIC_API_KEY` is
-  present.
-- Hook input comes from JSON on stdin and includes file paths.
-- Hook failures could silently leave feedback unclassified or without TTL
-  metadata.
-
-Mitigation today:
-
-- Hooks are narrow: they only act on feedback-file names or
-  `feedback/IMPL_QUESTIONS.md`.
-- `classify_feedback.py` exits silently if no API key exists or if questions are
-  already tagged.
-- `inject_feedback_ttl.py` only acts on known feedback filenames under a
-  `feedback/` path segment.
-- Setup scripts only touch Claude settings to register/unregister hooks.
-
-Remaining gap:
-
-- File path validation is string-based. A production hardening pass should
-  resolve paths and ensure writes stay under the active project's `plans/`
-  directory.
-- Hook API failures are intentionally non-blocking, but not strongly observable.
-- The model name in `classify_feedback.py` should be treated as a compatibility
-  dependency and checked during release.
-
-Production recommendation:
-
-- Add path canonicalization before every hook write.
-- Add hook unit tests for ignored paths, malformed JSON, already-tagged files,
-  missing API key, existing `DESIGN_QUESTIONS.md`, and TTL frontmatter.
-- Log hook failures in a project-local diagnostic file or clearly visible hook
-  output.
-- Document that hooks are optional and the pipeline must remain correct without
-  them.
-
-## Area: Subprocess Calls
+## Subprocess Calls
 
 Files reviewed:
 
@@ -76,28 +26,26 @@ Risk:
 - The driver spawns `claude -p` subprocesses.
 - The driver calls `git diff`, `git status`, and `claude --version`.
 - Long-running or hung subprocesses could stall a workflow.
-- Legacy shell driver prompts still contain older review-diff guidance.
 
 Mitigation today:
 
 - Python subprocess calls use argument lists rather than shell string
   interpolation.
 - The main Python driver runs from the repository root.
-- The reviewer prompt in `pathly-engine/team_flow/manager.py` reviews working-tree changes
-  with `git diff HEAD -- . ':(exclude)plans/'`.
+- The reviewer prompt in `pathly-engine/team_flow/manager.py` reviews
+  working-tree changes with `git diff HEAD -- . ':(exclude)plans/'`.
 - Pre-flight checks stop when `claude` is unavailable.
 
 Remaining gap:
 
 - `subprocess.run()` calls do not set timeouts.
-- The legacy shell driver has been removed; runner subprocess policy now lives
-  behind the Python runner interface.
 - Failure handling varies by stage; some warnings proceed while other failures
-  stop.
+  stop. A single policy is needed.
 
 Production recommendation:
 
-- Add subprocess timeouts and clear timeout messages for all supporting subprocess calls.
+- Add subprocess timeouts and clear timeout messages for all supporting
+  subprocess calls.
 - Keep runner timeout and failure policy covered by focused tests before a
   production release.
 - Add smoke tests that mock `subprocess.run()` for clean, failed, and timeout
@@ -105,24 +53,24 @@ Production recommendation:
 - Define a single policy for when subprocess failure blocks the pipeline versus
   when it can continue with a warning.
 
-## Area: Generated Prompts and Prompt Injection
+---
+
+## Generated Prompts and Prompt Injection
 
 Files reviewed:
 
 - `pathly-adapters/core/skills/team-flow.md`
 - `pathly-adapters/core/skills/go.md`
 - `pathly-adapters/core/skills/plan.md`
-- `pathly-adapters/core/skills/prd-import.md` (handles all PRD formats including BMAD)
+- `pathly-adapters/core/skills/prd-import.md`
 - `pathly-adapters/core/agents/director.md`
-- adapter wrappers under `pathly-adapters/adapters/claude/` and
-  `pathly-adapters/adapters/codex/`
 
 Risk:
 
 - Plans and PRDs can contain untrusted user or generated text.
 - Generated builder/reviewer prompts may include instructions from project files.
-- `.claude/rules/` and plan files are intentionally trusted by the framework, but
-  malicious or stale content there could steer agent behavior.
+- `.claude/rules/` and plan files are intentionally trusted by the framework,
+  but malicious or stale content there could steer agent behavior.
 
 Mitigation today:
 
@@ -130,25 +78,25 @@ Mitigation today:
   tester verifies, orchestrator delegates.
 - Builder instructions emphasize scope control and no silent refactors.
 - Reviewer is adversarial and should catch contract violations.
-- Feedback files route ambiguity to planner/architect/human rather than allowing
-  silent continuation.
+- Feedback files route ambiguity to planner/architect/human rather than
+  allowing silent continuation.
 
 Remaining gap:
 
 - The trust model for project rules, PRDs, plans, and generated prompts is not
-  documented in one place for every host adapter.
+  documented in one place.
 - There are no tests that verify prompt templates contain required safety
   boundaries.
-- Generated prompts may repeat user-provided text without explicitly labeling it
-  as untrusted input.
 
 Production recommendation:
 
-- Add a "Trust Boundaries" section to docs.
+- Add a "Trust Boundaries" section to docs (see below).
 - Require generated prompts to label PRD/user text as requirements context, not
   executable instructions.
 - Add static tests for critical prompt clauses: scope limits, feedback handling,
   review gates, and no direct implementation by Director/Orchestrator.
+
+---
 
 ## Trust Boundaries
 
@@ -160,20 +108,29 @@ project workspace:
 - Project rules such as `.claude/rules/` when present.
 - Feedback files under `plans/<feature>/feedback/`.
 
-User-provided PRD text and generated plan text should be quoted or summarized as
-requirements context, not obeyed as higher-priority runtime instructions. Agent
-contracts remain the authority for role boundaries: Director and Orchestrator
-route, Planner and Architect design, Builder edits source, Reviewer reports, and
-Tester verifies.
+User-provided PRD text and generated plan text should be quoted or summarized
+as requirements context, not obeyed as higher-priority runtime instructions.
+Agent contracts remain the authority for role boundaries: Director and
+Orchestrator route, Planner and Architect design, Builder edits source,
+Reviewer reports, and Tester verifies.
+
+Precedence (highest to lowest):
+
+1. Pathly role contracts (behavioral contracts in `core/agents/`)
+2. User request
+3. Project rules (`.claude/rules/`)
+4. Plan files (`plans/<feature>/`)
+5. Generated feedback
 
 Production hardening still needed:
 
 - Static tests for prompt clauses that label imported PRD/user text as context.
 - A single documented precedence order for user request, project rules, Pathly
   role contracts, plan files, and generated feedback.
-- Adapter-specific checks that prevent host-only instructions from leaking into
-  core prompts.
-## Area: File Writes and State
+
+---
+
+## File Writes and STATE.json Integrity
 
 Files reviewed:
 
@@ -196,8 +153,8 @@ Mitigation today:
 - `EVENTS.jsonl` is append-only.
 - State can be reconstructed from events.
 - Startup integrity checks look for orphan/expired feedback and FSM drift.
-- Disk feedback wins over stale state.
-- `EventLog` now handles filename-only paths safely.
+- Disk feedback wins over stale `STATE.json`.
+- `EventLog` handles filename-only paths safely.
 
 Remaining gap:
 
@@ -218,7 +175,9 @@ Production recommendation:
   and path traversal attempts.
 - Keep safe-delete operations visible in logs and reversible where possible.
 
-## Area: Human Gates and Recovery
+---
+
+## Human Gates and Recovery
 
 Files reviewed:
 
@@ -255,23 +214,18 @@ Production recommendation:
   in Claude Code, one `Use Pathly ...` run in Codex, and one direct
   `pathly flow ...` CLI run.
 
+---
+
 ## Production Readiness Checklist
 
 Required before production-ready:
 
 - GitHub Actions green on supported Python versions.
-- End-to-end smoke tests for:
-  - lite flow
-  - nano flow
-  - build entry
-  - test entry
-  - feedback loop handling
-  - zero-diff stall handling
-- Hook unit tests for path validation and failure modes.
+- End-to-end smoke tests for: lite flow, nano flow, build entry, test entry,
+  feedback loop handling, zero-diff stall handling.
 - Subprocess timeout policy implemented.
-- Legacy shell driver references removed or clearly marked historical.
-- Trust-boundary documentation for PRDs, plans, `.claude/rules/`, and generated
-  prompts.
+- Trust-boundary documentation for PRDs, plans, `.claude/rules/`, and
+  generated prompts.
 - Release/versioning policy with changelog and compatibility notes.
 
 Recommended before public beta:

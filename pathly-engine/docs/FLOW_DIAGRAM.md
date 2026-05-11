@@ -1,12 +1,6 @@
-# Pathly Flow Diagram
+# Pathly Engine Flow Diagram
 
-Pathly has three public front doors over the same core workflows:
-
-- Claude Code slash skills: `/pathly ...` and `/path ...`
-- Codex plugin skills: `Use Pathly ...`
-- CLI fallback: `pathly ...`
-
-## High-Level Flow
+## High-Level Command Routing
 
 ```mermaid
 flowchart TD
@@ -100,37 +94,45 @@ any role -> HUMAN_QUESTIONS.md  -> user
 File exists means open. Deleting the file means resolved. The FSM must not move
 forward while a known feedback file exists.
 
-## Invocation Examples
-
-Claude Code — FSM-style commands:
+## FSM State Transitions (summary)
 
 ```text
-/pathly start                           ← full journey map
-/pathly po checkout-flow                ← clarify requirements first
-/pathly storm                           ← brainstorm with architect
-/pathly go add password reset           ← director routes new feature
-/pathly build                           ← implement next conversation
-/pathly meet checkout-flow              ← context-aware role consultation
-/pathly debug checkout button does nothing
-/pathly explore how does checkout state flow through the app?
-/pathly verify                          ← check for stale feedback
-/pathly end                             ← wrap up + retro
+IDLE
+  → STORMING        (team-flow command; architect storms)
+  → EXPLORING       (explore first; scout maps codebase)
+  → PO_DISCUSSING   (full discovery path)
+  → BUILDING        (nano; direct to build)
+
+STORMING → STORM_PAUSED → PLANNING → PLAN_PAUSED → BUILDING
+
+BUILDING → REVIEWING
+REVIEWING
+  → BLOCKED_ON_FEEDBACK (ARCH_FEEDBACK.md → architect)
+  → BLOCKED_ON_FEEDBACK (REVIEW_FAILURES.md → builder)
+  → IMPLEMENT_PAUSED
+
+IMPLEMENT_PAUSED
+  → BUILDING (continue)
+  → TESTING  (all conversations done)
+  → DONE     (stop)
+
+TESTING
+  → BLOCKED_ON_FEEDBACK (TEST_FAILURES.md → builder)
+  → TEST_PAUSED → RETRO → DONE
+
+BLOCKED_ON_FEEDBACK
+  → restores previous state when feedback file is deleted
+  → BLOCKED_ON_HUMAN when retry > 2 or zero-diff stall
 ```
 
-Codex:
+See `docs/ORCHESTRATOR_FSM.md` for the full state machine specification with
+all transitions, guards, and recovery rules.
 
-```text
-Use Pathly help
-Use Pathly flow for checkout-flow
-Use Pathly po for checkout-flow
-Use Pathly to debug checkout button does nothing
-Use Pathly to explore how checkout state flows
-```
-
-CLI:
+## CLI Invocation Examples
 
 ```text
 pathly help
 pathly init checkout-flow
 pathly flow checkout-flow --entry build
+pathly flow checkout-flow --fast
 ```
