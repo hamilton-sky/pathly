@@ -456,67 +456,63 @@ guide to next       to commit"
 
 ## 12. team-flow — Full Feature Pipeline
 
-The orchestrator. Chains all stages with FSM checkpointing and feedback loops.
+Thin orchestrator. Reads `plans/<feature>/STATE.json`, routes to the correct
+sub-skill for the current FSM state, then re-reads state and routes again until DONE.
+Each sub-skill lives in `core/skills/team-flow/` and handles exactly one stage.
 
 ```
-team-flow <feature> [rigor] [flags]
+team-flow <feature> [rigor] [flags]      ← orchestrator (team-flow.md)
       │
       ▼
-  Parse args: rigor, nano, fast,
-              entry stage
+  Parse args → recover STATE.json/EVENTS.jsonl
       │
   ┌───┴─────────────────────┐
-  ▼ nano mode               ▼ normal
+  ▼ nano mode               ▼ normal (routes to sub-skills)
 builder → reviewer          │
-(≤2 files, no plan)    Stage 0: Discovery
-                    ┌──────────────────────┐
-                    │ 1. Quick storm       │
-                    │ 2. Skip to plan      │
-                    │ 3. Import PRD        │
-                    │ 4. Explore codebase  │
-                    │ 5. Full: PO+storm+   │
-                    │         plan         │
-                    └──────────────────────┘
-                             │
-                             ▼
-                    Stage 1: Storm
-                    architect explores
-                    → STORM_SEED.md
-                         [PAUSE]
-                             │
-                             ▼
-                    Stage 2: Plan
-                    planner → plan files
-                    rigor escalator offers
-                    extra files if signals fire
-                         [PAUSE]
-                             │
-                             ▼
-                    Stage 3: Implement loop
-                    ┌────────────────────────┐
-                    │ analyze → scout →      │
-                    │ implement (per conv)   │
-                    │        │               │
-                    │    reviewer            │
-                    │        │               │
-                    │  ARCH_FEEDBACK?        │
-                    │  → architect → builder │
-                    │  REVIEW_FAILURES?      │
-                    │  → builder (max 2)     │
-                    │        │               │
-                    │   [PAUSE] → next conv  │
-                    └────────────────────────┘
-                             │
-                             ▼
-                    Stage 4: Test
-                    tester verifies all ACs
-                    fail → builder (max 2)
-                         [PAUSE]
-                             │
-                             ▼
-                    Stage 5: Retro
-                    quick → RETRO.md
-                    + LESSONS_CANDIDATE.md
+(≤2 files, inline)          │
+                    ┌───────▼──────────────────────────┐
+                    │ FSM state → sub-skill             │
+                    │                                   │
+                    │ IDLE/STORMING  → team-flow/discover│
+                    │ PLANNING       → team-flow/plan   │
+                    │ BUILDING       → team-flow/build  │
+                    │ REVIEWING      → team-flow/review │
+                    │ TESTING        → team-flow/test   │
+                    │ RETRO          → team-flow/retro  │
+                    │ BLOCKED_ON_HUMAN → wait for user  │
+                    │ DONE           → stop             │
+                    └───────────────────────────────────┘
+
+Sub-skill responsibilities:
+
+  team-flow/discover  Stage 0 — 5-path discovery menu
+                      (quick storm / skip / PRD / explore / full PO+storm)
+                      → writes STATE.json → PLANNING, routes back
+
+  team-flow/plan      Stage 1+2 — architect storm + planner
+                      rigor escalator offers extra files if signals fire
+                      → writes STATE.json → BUILDING, routes back
+
+  team-flow/build     Stage 3a — analyze → scout → implement (one conv)
+                      feedback routing: IMPL_QUESTIONS → planner
+                                        DESIGN_QUESTIONS → architect
+                      → writes STATE.json → REVIEWING, routes back
+
+  team-flow/review    Stage 3b — pre-scout + reviewer (per rigor)
+                      feedback routing: ARCH_FEEDBACK → architect → rebuild
+                                        REVIEW_FAILURES → builder (max 2)
+                                        zero-diff stall → HUMAN_QUESTIONS
+                      → writes STATE.json → BUILDING or TESTING, routes back
+
+  team-flow/test      Stage 4 — scout + tester, TEST_FAILURES → builder (max 2)
+                      → writes STATE.json → RETRO, routes back
+
+  team-flow/retro     Stage 5 — quick → RETRO.md + LESSONS_CANDIDATE.md
+                      → writes STATE.json → DONE, routes back
+
+State is stored in two files per feature (filesystem-native, no Python required):
+  plans/<feature>/STATE.json    — current FSM state snapshot
+  plans/<feature>/EVENTS.jsonl  — append-only event log
 ```
 
 ---
