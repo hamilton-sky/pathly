@@ -1,4 +1,5 @@
 import argparse
+import importlib.metadata
 import subprocess
 import sys
 from pathlib import Path
@@ -145,10 +146,16 @@ def _run_host_uninstall(host: str, dry_run: bool) -> None:
 
 
 def main() -> None:
+    try:
+        _version = importlib.metadata.version("pathly-adapters")
+    except importlib.metadata.PackageNotFoundError:
+        _version = "dev"
+
     parser = argparse.ArgumentParser(
         prog="pathly-setup",
         description="Stitch and install Pathly agent files into AI host tools.",
     )
+    parser.add_argument("--version", action="version", version=f"%(prog)s {_version}")
     parser.add_argument(
         "host", nargs="?",
         help="Target host (claude, codex, copilot). Defaults to all detected.",

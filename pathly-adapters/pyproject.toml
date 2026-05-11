@@ -25,4 +25,10 @@ addopts = ["-p", "no:cacheprovider"]
 include = ["install_cli*", "pathly_telemetry*", "pathly_data*"]
 
 [tool.setuptools.package-data]
-"pathly_data" = ["core/**/*", "adapters/**/*"]
+"pathly_data" = [
+    "core/**/*",
+    "adapters/**/*",
+    "adapters/claude/.claude-plugin/*",
+    "adapters/codex/.codex-plugin/*",
+    "schemas/*.json",
+]

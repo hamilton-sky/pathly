@@ -2,3 +2,4 @@
 description: Write code, fix bugs, implement features, refactor existing code, and run tests. Use for all coding execution tasks after the plan is clear.
 model: claude-sonnet-4-6
 status: experimental
+can_spawn: [quick, scout]
