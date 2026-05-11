@@ -173,12 +173,7 @@ def main() -> None:
         return
 
     if not args.dry_run and not args.apply:
-        print("pathly-setup: no writes performed (pass --apply to install, --dry-run to preview).")
-        detected = detect_hosts()
-        if detected:
-            print(f"Detected hosts: {', '.join(detected)}")
-        else:
-            print("No supported hosts detected.")
+        _interactive_menu(hosts, repair=args.repair, force=args.force)
         return
 
     failed = False
@@ -190,4 +185,70 @@ def main() -> None:
             failed = True
 
     if failed:
+        sys.exit(1)
+
+
+def _interactive_menu(hosts: list[str], *, repair: bool, force: bool) -> None:
+    print()
+    print("Pathly Setup")
+    print("=" * 40)
+    print(f"Detected hosts: {', '.join(hosts)}")
+    print()
+    print("  1. Preview   — show what would be installed")
+    print("  2. Install   — deploy agents to all detected hosts")
+    print("  3. Uninstall — remove all Pathly-owned files")
+    print("  4. Exit")
+    print()
+
+    try:
+        choice = input("Choice [1-4]: ").strip().strip("﻿")
+    except (KeyboardInterrupt, EOFError):
+        print()
+        return
+
+    if choice == "1":
+        print()
+        for host in hosts:
+            try:
+                _run_host(host, dry_run=True, repair=repair, force=force)
+            except Exception as e:
+                print(f"[{host}] Error: {e}", file=sys.stderr)
+        print()
+        try:
+            confirm = input("Install now? [y/N]: ").strip().strip("﻿").lower()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            return
+        if confirm == "y":
+            choice = "2"
+        else:
+            return
+
+    if choice == "2":
+        print()
+        failed = False
+        for host in hosts:
+            try:
+                _run_host(host, dry_run=False, repair=repair, force=force)
+            except Exception as e:
+                print(f"[{host}] Error: {e}", file=sys.stderr)
+                failed = True
+        if failed:
+            sys.exit(1)
+        print()
+        print("Done. Run 'pathly-tokens' to view activity.")
+
+    elif choice == "3":
+        print()
+        for host in hosts:
+            try:
+                _run_host_uninstall(host, dry_run=False)
+            except Exception as e:
+                print(f"[{host}] Error: {e}", file=sys.stderr)
+
+    elif choice == "4" or choice == "":
+        return
+
+    else:
+        print(f"Unknown choice: {choice!r}")
         sys.exit(1)
