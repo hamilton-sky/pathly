@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 import sys
 from pathlib import Path
 
@@ -245,6 +246,14 @@ def _interactive_menu(hosts: list[str], *, repair: bool, force: bool) -> None:
                 _run_host_uninstall(host, dry_run=False)
             except Exception as e:
                 print(f"[{host}] Error: {e}", file=sys.stderr)
+        print()
+        try:
+            remove_pkg = input("Also remove the pathly-adapters package itself? [y/N]: ").strip().strip("﻿").lower()
+        except (KeyboardInterrupt, EOFError):
+            print()
+            return
+        if remove_pkg == "y":
+            _uninstall_package()
 
     elif choice == "4" or choice == "":
         return
@@ -252,3 +261,21 @@ def _interactive_menu(hosts: list[str], *, repair: bool, force: bool) -> None:
     else:
         print(f"Unknown choice: {choice!r}")
         sys.exit(1)
+
+
+def _uninstall_package() -> None:
+    # Prefer pipx if the executable lives inside a pipx venv
+    exe = Path(sys.executable)
+    use_pipx = "pipx" in str(exe).lower() or "pipx" in str(Path(sys.argv[0])).lower()
+
+    if use_pipx:
+        cmd = ["pipx", "uninstall", "pathly-adapters"]
+    else:
+        cmd = [sys.executable, "-m", "pip", "uninstall", "pathly-adapters", "-y"]
+
+    print(f"Running: {' '.join(cmd)}")
+    result = subprocess.run(cmd)
+    if result.returncode == 0:
+        print("pathly-adapters removed. Goodbye!")
+    else:
+        print("Package removal failed — run manually:", " ".join(cmd), file=sys.stderr)
