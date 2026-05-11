@@ -1,8 +1,0 @@
-﻿host: claude
-destination: ~/.claude/agents/
-files:
-  - source: agents/
-skills:
-  destination: ~/.claude/skills/
-  structure: nested
-telemetry: true

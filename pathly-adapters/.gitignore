@@ -1,8 +1,0 @@
-dist/
-*.egg-info/
-__pycache__/
-*.pyc
-*.pyo
-.vscode/
-.pytest_cache/
-*.egg

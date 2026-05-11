@@ -121,17 +121,17 @@ Then open any project in Claude Code and run:
 Local development install:
 
 ```bash
-git clone https://github.com/hamilton-sky/pathly
-cd pathly
-pip install -e pathly-adapters/
+git clone https://github.com/hamilton-sky/pathly-adapters
+cd pathly-adapters
+pip install -e .
 pathly-setup --apply          # installs into all detected hosts (Claude Code, Codex, Copilot)
 ```
 
 ```powershell
 # Windows (PowerShell)
-git clone https://github.com/hamilton-sky/pathly
-cd pathly
-pip install -e pathly-adapters/
+git clone https://github.com/hamilton-sky/pathly-adapters
+cd pathly-adapters
+pip install -e .
 pathly-setup --apply          # installs into all detected hosts (Claude Code, Codex, Copilot)
 ```
 
@@ -173,7 +173,8 @@ Use Pathly to add password reset
 
 Local development install:
 
-Pathly includes a Codex plugin manifest at `pathly-adapters/adapters/codex/.codex-plugin/plugin.json`.
+Pathly includes a Codex plugin manifest at `adapters/codex/.codex-plugin/plugin.json` inside the
+[pathly-adapters](https://github.com/hamilton-sky/pathly-adapters) repo.
 Current Codex builds load local plugins through a marketplace root. Let Pathly
 create a small local marketplace that points to the Codex adapter inside your
 checkout, then add that marketplace to Codex.
@@ -186,9 +187,9 @@ marketplaces point at local files.
 Example Windows setup after cloning:
 
 ```powershell
-git clone https://github.com/hamilton-sky/pathly
-cd pathly
-pip install -e pathly-adapters/
+git clone https://github.com/hamilton-sky/pathly-adapters
+cd pathly-adapters
+pip install -e .
 pathly-setup codex --apply
 codex plugin marketplace add C:\tmp\pathly-marketplace
 ```
@@ -203,9 +204,9 @@ $market = "C:\tmp\pathly-marketplace"
 $plugin = "$market\plugins\pathly"
 New-Item -ItemType Directory -Path "$market\.agents\plugins" -Force
 New-Item -ItemType Directory -Path "$plugin" -Force
-New-Item -ItemType Junction -Path "$plugin\.codex-plugin" -Target ".\pathly-adapters\adapters\codex\.codex-plugin"
-New-Item -ItemType Junction -Path "$plugin\skills" -Target ".\pathly-adapters\adapters\codex\skills"
-New-Item -ItemType Junction -Path "$plugin\core" -Target ".\pathly-adapters\core"
+New-Item -ItemType Junction -Path "$plugin\.codex-plugin" -Target ".\adapters\codex\.codex-plugin"
+New-Item -ItemType Junction -Path "$plugin\skills" -Target ".\adapters\codex\skills"
+New-Item -ItemType Junction -Path "$plugin\core" -Target ".\pathly_data\core"
 @'
 {
   "name": "pathly-local",
@@ -238,8 +239,8 @@ needed; upgrade is for Git-backed marketplaces.
 If a friend clones the repo, their next steps are:
 
 ```powershell
-cd pathly
-pip install -e pathly-adapters/
+cd pathly-adapters
+pip install -e .
 pathly-setup codex --apply
 codex plugin marketplace add C:\tmp\pathly-marketplace
 ```
@@ -310,7 +311,9 @@ The `pathly` command does **not** spawn AI agents. It writes filesystem state th
 Install agent files into VS Code with GitHub Copilot:
 
 ```bash
-pip install -e pathly-adapters/
+git clone https://github.com/hamilton-sky/pathly-adapters
+cd pathly-adapters
+pip install -e .
 pathly-setup copilot --apply
 ```
 
@@ -328,10 +331,10 @@ Each agent records its work to `~/.pathly/activity.jsonl` when it finishes a tas
 
 ### Pathly Setup (Adapter Installer)
 
-Install agent files into AI host tools:
+Install agent files into AI host tools (from the [pathly-adapters](https://github.com/hamilton-sky/pathly-adapters) repo):
 
 ```bash
-pip install -e pathly-adapters/
+pip install -e .
 pathly-setup                      # detect hosts; no writes
 pathly-setup --dry-run            # preview what would be written
 pathly-setup --apply              # install into all detected hosts
@@ -344,8 +347,13 @@ pathly-setup codex --apply        # install for Codex only
 Install both packages for local development and tests:
 
 ```bash
-pip install -e pathly-adapters/
+# Adapters (separate repo — github.com/hamilton-sky/pathly-adapters):
+git clone https://github.com/hamilton-sky/pathly-adapters ../pathly-adapters
+pip install -e ../pathly-adapters
+
+# Engine (this repo):
 pip install -e pathly-engine/
+
 pytest -q
 ```
 
@@ -406,7 +414,8 @@ because strict mode requires human approval gates.
 Install development dependencies:
 
 ```bash
-pip install -e pathly-adapters/
+git clone https://github.com/hamilton-sky/pathly-adapters ../pathly-adapters
+pip install -e ../pathly-adapters
 pip install -e pathly-engine/
 ```
 
