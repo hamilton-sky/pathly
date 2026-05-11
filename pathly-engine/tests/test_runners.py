@@ -1,5 +1,6 @@
 """Tests for Pathly runner implementations."""
 
+import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -76,3 +77,21 @@ def test_codex_runner_constructs_exec_command(capsys):
     assert calls[0][1]["text"] is True
     assert calls[0][1]["timeout"] == 1800
     assert capsys.readouterr().out == "done\n"
+
+
+def test_claude_is_available_returns_false_on_timeout():
+    def hanging_run(command, **kwargs):
+        raise subprocess.TimeoutExpired(command, kwargs.get("timeout", 5))
+
+    runner = ClaudeRunner(repo_root=Path.cwd(), run_command=hanging_run)
+
+    assert runner.is_available() is False
+
+
+def test_codex_is_available_returns_false_on_timeout():
+    def hanging_run(command, **kwargs):
+        raise subprocess.TimeoutExpired(command, kwargs.get("timeout", 5))
+
+    runner = CodexRunner(repo_root=Path.cwd(), run_command=hanging_run)
+
+    assert runner.is_available() is False

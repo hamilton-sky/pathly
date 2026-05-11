@@ -17,6 +17,12 @@ class DriverConfig:
     mode: str
     entry: str
 
+    def __post_init__(self) -> None:
+        if not self.feature:
+            raise ValueError("Feature name cannot be empty.")
+        if any(c in self.feature for c in ("..", "/", "\\")):
+            raise ValueError(f"Unsafe feature name: {self.feature!r}")
+
     @property
     def plan_dir(self) -> Path:
         return self.repo_root / "plans" / self.feature

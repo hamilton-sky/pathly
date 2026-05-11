@@ -59,7 +59,7 @@ class CodexRunner:
 
     def is_available(self) -> bool:
         try:
-            self.run_command(["codex", "--version"], capture_output=True, check=True)
-        except (FileNotFoundError, subprocess.CalledProcessError):
+            self.run_command(["codex", "--version"], capture_output=True, check=True, timeout=5)
+        except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
             return False
         return True

@@ -8,8 +8,8 @@ import pytest
 
 from orchestrator.constants import FeedbackFile, FSMState, Mode
 from orchestrator.state import State
-from pathly import team_flow
-from pathly.runners import ClaudeRunner, CodexRunner
+import team_flow
+from runners import ClaudeRunner, CodexRunner
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +24,7 @@ CORE_PLAN_FILES = {
 
 def test_team_flow_package_runs_as_module():
     result = subprocess.run(
-        [sys.executable, "-m", "pathly.team_flow", "--help"],
+        [sys.executable, "-m", "team_flow", "--help"],
         cwd=REPO_ROOT,
         capture_output=True,
         text=True,
@@ -143,6 +143,17 @@ def test_feedback_file_create_and_delete_blocks_then_resumes(tmp_path, monkeypat
 
     assert driver.state.current == FSMState.BUILDING
     assert driver.state.active_feedback_file is None
+
+
+def test_unsafe_feature_name_raises_value_error(tmp_path, monkeypatch):
+    """DriverConfig must reject feature names that could escape plans/."""
+    import pytest
+    from team_flow.config import DriverConfig
+    from orchestrator.constants import Mode
+
+    for bad_name in ("../../.env", "foo/bar", "foo\\bar", "a..b", ""):
+        with pytest.raises(ValueError):
+            DriverConfig(repo_root=tmp_path, feature=bad_name, mode=Mode.INTERACTIVE, entry="build")
 
 
 def test_review_feedback_zero_diff_escalates_to_human(tmp_path, monkeypatch):
