@@ -3,8 +3,7 @@ from pathlib import Path
 
 
 def _root() -> Path:
-    # Works for editable installs; install_cli/ sits alongside core/ and adapters/
-    return Path(str(files("install_cli"))).parent
+    return Path(str(files("pathly_data")))
 
 
 def core_agents_path() -> Path:

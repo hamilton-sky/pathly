@@ -79,19 +79,39 @@ def _run_host(host: str, dry_run: bool, repair: bool, force: bool) -> None:
             install_mcp_config(host, dry_run=True)
         return
 
-    written = materialize(agent_files, dest, repair=repair, force=force, dry_run=False)
-    if written:
-        print(f"[{host}] Wrote {len(written)} file(s) to {dest}")
-    else:
-        print(f"[{host}] Nothing to write (files already current or not Pathly-owned)")
-
-    if skills_dest and skill_files:
-        written = materialize(skill_files, skills_dest, repair=repair, force=force, dry_run=False)
+    written_dests: list[Path] = []
+    mcp_registered = False
+    try:
+        written = materialize(agent_files, dest, repair=repair, force=force, dry_run=False)
         if written:
-            print(f"[{host}] Wrote {len(written)} skill(s) to {skills_dest}")
+            written_dests.append(dest)
+            print(f"[{host}] Wrote {len(written)} file(s) to {dest}")
+        else:
+            print(f"[{host}] Nothing to write (files already current or not Pathly-owned)")
 
-    if telemetry_enabled:
-        install_mcp_config(host, dry_run=False)
+        if skills_dest and skill_files:
+            written = materialize(skill_files, skills_dest, repair=repair, force=force, dry_run=False)
+            if written:
+                written_dests.append(skills_dest)
+                print(f"[{host}] Wrote {len(written)} skill(s) to {skills_dest}")
+
+        if telemetry_enabled:
+            install_mcp_config(host, dry_run=False)
+            mcp_registered = True
+
+    except Exception:
+        print(f"[{host}] Install failed — rolling back.", file=sys.stderr)
+        for d in written_dests:
+            try:
+                uninstall(d)
+            except Exception:
+                pass
+        if mcp_registered:
+            try:
+                uninstall_mcp_config(host, dry_run=False)
+            except Exception:
+                pass
+        raise
 
 
 def _run_host_uninstall(host: str, dry_run: bool) -> None:

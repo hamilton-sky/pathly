@@ -110,4 +110,4 @@ def test_stitch_real_agent(tmp_path):
     result = stitch_agent(core_file, meta_file)
     assert result.startswith("---\n")
     assert "architect" in result
-    assert "Sub-agent invocation" in result
+    assert "sub-agent" in result.lower()

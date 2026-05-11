@@ -1,9 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "pathly-adapters"
-version = "0.1.0"
+version = "1.0.0"
 description = "Pathly adapter installer — stitches and deploys agent files to AI host tools."
 requires-python = ">=3.11"
 dependencies = ["pyyaml>=6.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "build", "twine"]
 
 [project.scripts]
 pathly-setup = "install_cli.__main__:main"
@@ -15,7 +22,7 @@ pythonpath = ["."]
 addopts = ["-p", "no:cacheprovider"]
 
 [tool.setuptools.packages.find]
-include = ["install_cli*", "pathly_telemetry*"]
+include = ["install_cli*", "pathly_telemetry*", "pathly_data*"]
 
 [tool.setuptools.package-data]
-"*" = ["core/**/*", "adapters/**/*"]
+"pathly_data" = ["core/**/*", "adapters/**/*"]

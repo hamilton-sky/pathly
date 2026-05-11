@@ -133,3 +133,20 @@ Each role is a clear ownership boundary:
 - **analyst** owns learning and reporting fast.
 - **reviewer** owns finding what is wrong before it ships.
 - **orchestrator** owns deterministic workflow state and feedback routing.
+
+
+# Core Agents
+
+Tool-agnostic behavioral contracts for Pathly roles belong here.
+
+Each agent file should describe:
+
+- role
+- responsibility boundaries
+- inputs it reads
+- files it may write
+- handoff rules
+- failure and escalation behavior
+
+Do not include Claude Code frontmatter, Codex plugin fields, or tool-specific
+model names in these core files. Adapters add that metadata.
