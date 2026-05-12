@@ -1,0 +1,12 @@
+{
+  "name": "DONE",
+  "feature": "engine-hardening",
+  "rigor": "standard",
+  "current_conversation": null,
+  "retry_count_by_key": {
+    "conv-4:ARCH_FEEDBACK.md": 1,
+    "conv-4:REVIEW_FAILURES.md": 1,
+    "test:TEST_FAILURES.md": 1
+  },
+  "updated_at": "2026-05-11T11:28:42Z"
+}

@@ -1,17 +1,17 @@
 # Production Readiness Hardening — Progress
 
-## Status: IN PROGRESS
+## Status: DONE
 
 ## Story Status
 
 | Story | Title | Delivered by | Status |
 |-------|-------|--------------|--------|
-| S1 | Reducer transition safety | Conv 1 | TODO |
-| S2 | Runner timeout validation | Conv 1 | TODO |
-| S3 | Input timeout | Conv 2 | TODO |
-| S4 | Feedback loop error handling | Conv 2 | TODO |
-| S5 | Git failure recovery | Conv 2 | TODO |
-| S6 | Lockfile protection | Conv 2 | TODO |
+| S1 | Reducer transition safety | Conv 1 | DONE |
+| S2 | Runner timeout validation | Conv 1 | DONE |
+| S3 | Input timeout | Conv 2 | DONE |
+| S4 | Feedback loop error handling | Conv 2 | DONE |
+| S5 | Git failure recovery | Conv 2 | DONE |
+| S6 | Lockfile protection | Conv 2 | DONE |
 
 ## Conversation Breakdown
 
@@ -19,7 +19,7 @@
 |------|--------|---------|--------|--------|
 | 1 | 1–3 | S1, S2 | DONE | `pytest pathly-engine/tests/ -q` |
 | 2 | 4–7 | S3, S4, S5, S6 | DONE | `pytest pathly-engine/tests/ -q` |
-| 3 | 8–10 | S1–S6 | TODO | `pytest pathly-engine/tests/ -q` |
+| 3 | 8–10 | S1–S6 | DONE | `pytest pathly-engine/tests/ -q` |
 
 See **CONVERSATION_PROMPTS.md** for exact prompts to paste in each conversation.
 
@@ -34,9 +34,9 @@ See **CONVERSATION_PROMPTS.md** for exact prompts to paste in each conversation.
 | 5 | Feedback loop return code | `team_flow/manager.py` | Check run_claude() result; escalate on failure | 2 | DONE |
 | 6 | Git failure → SystemEvent | `team_flow/manager.py` | Emit before sys.exit; preserve event log | 2 | DONE |
 | 7 | PID lockfile | `team_flow/manager.py` | Prevent two managers on same feature | 2 | DONE |
-| 8 | Tests — reducer | `tests/test_fsm.py` | Invalid transitions, bad metadata | 3 | TODO |
-| 9 | Tests — runners | `tests/test_runners.py` | Timeout clamp edge cases | 3 | TODO |
-| 10 | Tests — manager | `tests/test_team_flow_smoke.py` | Feedback errors, git failure, lockfile | 3 | TODO |
+| 8 | Tests — reducer | `tests/test_fsm.py` | Invalid transitions, bad metadata | 3 | DONE |
+| 9 | Tests — runners | `tests/test_runners.py` | Timeout clamp edge cases | 3 | DONE |
+| 10 | Tests — manager | `tests/test_team_flow_smoke.py` | Feedback errors, git failure, lockfile | 3 | DONE |
 
 ## Prerequisites
 - `pip install -e pathly-engine/`

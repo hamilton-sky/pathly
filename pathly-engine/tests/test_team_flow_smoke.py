@@ -1,5 +1,7 @@
 """Smoke tests for the Python team-flow driver."""
 
+import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -9,6 +11,7 @@ import pytest
 from orchestrator.constants import FeedbackFile, FSMState, Mode
 from orchestrator.state import State
 import team_flow
+import team_flow.manager as team_flow_manager
 from runners import ClaudeRunner, CodexRunner
 from runners.base import RunnerResult
 
@@ -218,3 +221,110 @@ def test_non_required_agent_failure_does_not_raise(tmp_path, monkeypatch):
 
     log_text = driver.log_file.read_text(encoding="utf-8")
     assert "[WARN]" in log_text
+
+
+def test_ask_timeout_emits_system_event(tmp_path, monkeypatch, capsys):
+    write_plan(tmp_path)
+    driver = make_driver(tmp_path, monkeypatch, entry="build")
+    monkeypatch.setattr(team_flow_manager, "_timed_input", lambda prompt, timeout: None)
+
+    with pytest.raises(SystemExit) as exc:
+        driver.ask("Proceed?", ["yes", "no"])
+
+    assert exc.value.code == 0
+    assert driver.state.current == FSMState.BLOCKED_ON_HUMAN
+    assert "No response after 120s" in capsys.readouterr().out
+
+
+def test_feedback_agent_failure_emits_error_and_preserves_feedback(tmp_path, monkeypatch):
+    plan_dir = write_plan(tmp_path)
+    feedback_dir = plan_dir / "feedback"
+    feedback_dir.mkdir()
+    feedback_file = feedback_dir / FeedbackFile.DESIGN_QUESTIONS
+    feedback_file.write_text("Need design answer\n", encoding="utf-8")
+    driver = make_driver(tmp_path, monkeypatch, entry="build")
+    driver.state = State(
+        current=FSMState.BLOCKED_ON_FEEDBACK,
+        active_feedback_file=FeedbackFile.DESIGN_QUESTIONS,
+        state_stack=[FSMState.BUILDING],
+    )
+    monkeypatch.setattr(driver, "run_claude", lambda prompt: (2, {}))
+
+    driver._handle_feedback()
+
+    assert feedback_file.exists()
+    assert (feedback_dir / FeedbackFile.HUMAN_QUESTIONS).exists()
+    assert driver.state.current == FSMState.BLOCKED_ON_HUMAN
+    events = [
+        json.loads(line)
+        for line in (plan_dir / "EVENTS.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert any(
+        event["type"] == "SYSTEM_EVENT" and event["action"] == "ERROR"
+        for event in events
+    )
+
+
+def test_review_feedback_agent_failure_preserves_feedback(tmp_path, monkeypatch):
+    plan_dir = write_plan(tmp_path)
+    feedback_dir = plan_dir / "feedback"
+    feedback_dir.mkdir()
+    feedback_file = feedback_dir / FeedbackFile.REVIEW_FAILURES
+    feedback_file.write_text("Fix this\n", encoding="utf-8")
+    driver = make_driver(tmp_path, monkeypatch, entry="build")
+    driver.state = State(
+        current=FSMState.BLOCKED_ON_FEEDBACK,
+        active_feedback_file=FeedbackFile.REVIEW_FAILURES,
+        state_stack=[FSMState.REVIEWING],
+    )
+    monkeypatch.setattr(driver, "run_claude", lambda prompt: (3, {}))
+
+    driver._handle_feedback()
+
+    assert feedback_file.exists()
+    assert (feedback_dir / FeedbackFile.HUMAN_QUESTIONS).exists()
+    assert driver.state.current == FSMState.BLOCKED_ON_HUMAN
+
+
+def test_building_dirty_tree_emits_error_before_exit(tmp_path, monkeypatch):
+    write_plan(tmp_path)
+    driver = make_driver(tmp_path, monkeypatch, entry="build")
+    driver.state = State(current=FSMState.BUILDING)
+    monkeypatch.setattr(driver, "git_is_clean", lambda: False)
+    monkeypatch.setattr(
+        team_flow_manager.subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(args[0], 0, stdout=" M demo.py\n", stderr=""),
+    )
+
+    with pytest.raises(SystemExit):
+        driver._run_building_state()
+
+    assert driver.state.current == FSMState.BLOCKED_ON_HUMAN
+
+
+def test_lockfile_blocks_live_pid(tmp_path, monkeypatch):
+    plan_dir = tmp_path / "plans" / "demo"
+    plan_dir.mkdir(parents=True)
+    (plan_dir / ".lock").write_text("12345", encoding="utf-8")
+    monkeypatch.setattr(team_flow_manager.os, "kill", lambda pid, signal: None)
+
+    with pytest.raises(SystemExit):
+        team_flow_manager._acquire_lock(plan_dir, "demo")
+
+
+def test_lockfile_removes_stale_pid(tmp_path, monkeypatch, capsys):
+    plan_dir = tmp_path / "plans" / "demo"
+    plan_dir.mkdir(parents=True)
+    lock = plan_dir / ".lock"
+    lock.write_text("12345", encoding="utf-8")
+
+    def stale_pid(pid, signal):
+        raise ProcessLookupError
+
+    monkeypatch.setattr(team_flow_manager.os, "kill", stale_pid)
+
+    team_flow_manager._acquire_lock(plan_dir, "demo")
+
+    assert lock.read_text(encoding="utf-8") == str(os.getpid())
+    assert "Removing stale lockfile" in capsys.readouterr().out

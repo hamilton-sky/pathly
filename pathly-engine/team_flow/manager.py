@@ -498,7 +498,10 @@ class TeamFlowDriver:
 
     def _handle_review_failure(self, before: set, active: str) -> None:
         diff_before = self.get_git_diff()
-        self.run_claude(self.prompts.fix_review())
+        rc, _ = self.run_claude(self.prompts.fix_review())
+        if rc != 0:
+            self._escalate_feedback_error(active, rc)
+            return
         self.check_feedback_changes(before, self.get_feedback_files())
         if self.get_git_diff() == diff_before:
             self.log("Zero-diff stall - builder made no changes.")
@@ -549,6 +552,10 @@ class TeamFlowDriver:
         self.feedback_dir.mkdir(parents=True, exist_ok=True)
         (self.feedback_dir / FeedbackFile.HUMAN_QUESTIONS).write_text(msg, encoding="utf-8")
         self.emit(FileCreatedEvent(file=FeedbackFile.HUMAN_QUESTIONS))
+        self.emit(SystemEvent(
+            action="ERROR",
+            metadata={"feedback_file": feedback_file, "return_code": return_code},
+        ))
 
     def _fast_forward_to_building(self) -> None:
         self.emit(CommandEvent(

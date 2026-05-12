@@ -1,7 +1,7 @@
 """Tests for the event-driven FSM orchestrator."""
 
 from orchestrator.state import State, initial_state
-from orchestrator.constants import FSMState, Agent, FeedbackFile, Mode
+from orchestrator.constants import FSMState, Agent, FeedbackFile, Mode, Rigor
 from orchestrator.events import (
     CommandEvent,
     AgentDoneEvent,
@@ -28,6 +28,47 @@ def test_command_event():
     assert new_state.current == FSMState.STORMING
     assert new_state.active_feature == "auth-service"
     assert new_state.event_count == 1
+
+
+def test_command_event_rejects_invalid_metadata():
+    state = initial_state()
+
+    for metadata in (
+        {"rigor": "garbage"},
+        {"mode": "garbage"},
+        {"entry_state": "garbage"},
+    ):
+        event = CommandEvent(value="/team-flow auth-service", metadata=metadata)
+
+        assert reduce(state, event).current == FSMState.BLOCKED_ON_HUMAN
+
+
+def test_command_event_accepts_valid_metadata():
+    state = initial_state()
+    event = CommandEvent(
+        value="/team-flow auth-service",
+        metadata={
+            "feature": "auth-service",
+            "rigor": Rigor.LITE,
+            "mode": Mode.FAST,
+            "entry_state": FSMState.BUILDING,
+        },
+    )
+
+    new_state = reduce(state, event)
+
+    assert new_state.current == FSMState.BUILDING
+    assert new_state.rigor == Rigor.LITE
+    assert new_state.mode == Mode.FAST
+
+
+def test_agent_done_rejects_invalid_agent_state_pair():
+    state = State(current=FSMState.PLANNING)
+    event = AgentDoneEvent(agent=Agent.BUILDER)
+
+    new_state = reduce(state, event)
+
+    assert new_state.current == FSMState.BLOCKED_ON_HUMAN
 
 
 def test_file_created_blocks():

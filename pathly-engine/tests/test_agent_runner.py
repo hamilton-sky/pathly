@@ -67,7 +67,7 @@ def test_agent_runner_timeout_returns_failure_and_notifies(monkeypatch):
     monkeypatch.setenv("CLAUDE_AGENT_TIMEOUT", "7")
 
     def fake_run(*args, **kwargs):
-        raise subprocess.TimeoutExpired(cmd=kwargs.get("args", "claude"), timeout=7)
+        raise subprocess.TimeoutExpired(cmd=kwargs.get("args", "claude"), timeout=kwargs["timeout"])
 
     runner = AgentRunner(
         repo_root=repo_root,
@@ -77,8 +77,8 @@ def test_agent_runner_timeout_returns_failure_and_notifies(monkeypatch):
     )
 
     assert runner.run("slow work") == (1, {})
-    assert timeouts == [7]
+    assert timeouts == [60]
     assert logs == [
         ">>> Spawning claude agent...",
-        "[ERROR] Agent timed out after 7s.",
+        "[ERROR] Agent timed out after 60s.",
     ]

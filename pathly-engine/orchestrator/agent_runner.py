@@ -5,8 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 
-from pathly.runners.claude import ALLOWED_TOOLS, TIMEOUT_ENV_VAR, ClaudeRunner, parse_usage
-from pathly.runners.base import DEFAULT_TIMEOUT_SECONDS
+from runners.claude import ALLOWED_TOOLS, TIMEOUT_ENV_VAR, ClaudeRunner, parse_usage
+from runners.base import DEFAULT_TIMEOUT_SECONDS
 
 
 class AgentRunner:

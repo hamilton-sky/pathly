@@ -1,3 +1,4 @@
 {"type": "STATE_TRANSITION", "to": "STORMING", "ts": "2026-05-12T13:27:18Z", "note": "started from exploration production-readiness"}
 {"type": "STATE_TRANSITION", "to": "PLANNING", "ts": "2026-05-12T13:47:06Z"}
 {"type": "STATE_TRANSITION", "to": "BUILDING", "ts": "2026-05-12T14:00:00Z", "note": "entry override: build"}
+{"type": "STATE_TRANSITION", "to": "DONE", "ts": "2026-05-12T14:17:25Z", "note": "implemented hardening gaps and completed test conversation; pytest pathly-engine/tests -q passed"}
