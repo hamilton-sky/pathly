@@ -7,9 +7,11 @@ access, logging, and configuration out to focused collaborators.
 from __future__ import annotations
 
 import argparse
+import atexit
 import os
 import subprocess
 import sys
+import threading
 from pathlib import Path
 
 from .config import DriverConfig, MAX_RETRIES
@@ -39,6 +41,54 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RUNNER_ENV_VAR = "PATHLY_RUNNER"
 RUNNER_CHOICES = ("claude", "codex", "auto")
 
+_INPUT_TIMEOUT_MSG = (
+    "[TIMEOUT] No response after {n}s. Exiting — "
+    "state preserved, resume with /pathly go {feature}."
+)
+
+
+def _timed_input(prompt: str, timeout: int) -> str | None:
+    """Read a line from stdin with a timeout. Returns None on timeout."""
+    result: list[str] = []
+    def _read():
+        try:
+            result.append(input(prompt))
+        except EOFError:
+            pass
+    t = threading.Thread(target=_read, daemon=True)
+    t.start()
+    t.join(timeout)
+    return result[0] if result else None
+
+
+def _lock_path(plan_dir: Path) -> Path:
+    return plan_dir / ".lock"
+
+def _acquire_lock(plan_dir: Path, feature: str) -> None:
+    lock = _lock_path(plan_dir)
+    if lock.exists():
+        try:
+            pid = int(lock.read_text().strip())
+            if pid == os.getpid():
+                return
+            try:
+                os.kill(pid, 0)
+                print(
+                    f"[ERROR] {feature} is already running (PID {pid}). "
+                    f"Stop it before starting a new one."
+                )
+                sys.exit(1)
+            except (ProcessLookupError, PermissionError):
+                print(f"[WARNING] Removing stale lockfile for {feature} (PID {pid} no longer running).")
+                lock.unlink(missing_ok=True)
+        except (ValueError, OSError):
+            lock.unlink(missing_ok=True)
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    lock.write_text(str(os.getpid()))
+
+def _release_lock(plan_dir: Path) -> None:
+    _lock_path(plan_dir).unlink(missing_ok=True)
+
 
 class TeamFlowDriver:
     def __init__(
@@ -59,6 +109,8 @@ class TeamFlowDriver:
         self.mode = mode
         self.entry = entry
         self.plan_dir = self.config.plan_dir
+        _acquire_lock(self.plan_dir, self.feature)
+        atexit.register(_release_lock, self.plan_dir)
         self.feedback_dir = self.config.feedback_dir
         self.progress_file = self.config.progress_file
 
@@ -152,9 +204,13 @@ class TeamFlowDriver:
 
     def ask(self, message: str, options: list[str]) -> str:
         print(f"\n{message}")
-        print(f"  [{' / '.join(options)}]: ", end="", flush=True)
         while True:
-            response = input().strip().lower()
+            response = _timed_input(f"  [{' / '.join(options)}]: ", timeout=120)
+            if response is None:
+                print(_INPUT_TIMEOUT_MSG.format(n=120, feature=self.feature))
+                self.emit(SystemEvent(action="TIMEOUT", metadata={"location": "ask"}))
+                sys.exit(0)
+            response = response.strip().lower()
             if response in options:
                 return response
             print(f"  Enter one of {options}: ", end="", flush=True)
@@ -249,14 +305,19 @@ class TeamFlowDriver:
         self.banner("STAGE 3 - Build (builder)")
         if not self.git_is_clean():
             self.log("Working directory not clean. Commit or stash first.")
-            status = subprocess.run(
-                ["git", "status", "--short"],
-                capture_output=True,
-                text=True,
-                cwd=str(self.config.repo_root),
-                timeout=30,
-            )
-            self.log(status.stdout)
+            try:
+                status = subprocess.run(
+                    ["git", "status", "--short"],
+                    capture_output=True,
+                    text=True,
+                    cwd=str(self.config.repo_root),
+                    timeout=30,
+                )
+                self.log(status.stdout)
+            except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
+                self.emit(SystemEvent(action="ERROR", metadata={"error": str(exc)}))
+                sys.exit(1)
+            self.emit(SystemEvent(action="ERROR", metadata={"error": "working tree not clean"}))
             sys.exit(1)
         self._run_agent(self.prompts.build(), Agent.BUILDER, required=True)
 
@@ -322,7 +383,12 @@ class TeamFlowDriver:
 
         print()
         if safe_deletes:
-            answer = input("  Delete orphan file(s) and continue? [yes / no]: ").strip().lower()
+            answer = _timed_input("  Delete orphan file(s) and continue? [yes / no]: ", timeout=120)
+            if answer is None:
+                print(_INPUT_TIMEOUT_MSG.format(n=120, feature=self.feature))
+                self.emit(SystemEvent(action="TIMEOUT", metadata={"location": "_startup_verify"}))
+                sys.exit(0)
+            answer = answer.strip().lower()
             if answer != "yes":
                 print("  Aborted. Run /help --doctor for full diagnostics.")
                 sys.exit(0)
@@ -331,7 +397,12 @@ class TeamFlowDriver:
                 self.log(f"[STARTUP] Removed orphan: {path.name}")
 
         if issues:
-            answer = input("  Real issues remain. Continue anyway? [yes / no]: ").strip().lower()
+            answer = _timed_input("  Real issues remain. Continue anyway? [yes / no]: ", timeout=120)
+            if answer is None:
+                print(_INPUT_TIMEOUT_MSG.format(n=120, feature=self.feature))
+                self.emit(SystemEvent(action="TIMEOUT", metadata={"location": "_startup_verify"}))
+                sys.exit(0)
+            answer = answer.strip().lower()
             if answer != "yes":
                 print("  Aborted. Run /help --doctor for full diagnostics.")
                 sys.exit(0)
@@ -397,20 +468,32 @@ class TeamFlowDriver:
         before = self.get_feedback_files()
 
         if active == FeedbackFile.ARCH_FEEDBACK:
-            self.run_claude(self.prompts.fix_arch())
+            rc, _ = self.run_claude(self.prompts.fix_arch())
+            if rc != 0:
+                self._escalate_feedback_error(active, rc)
+                return
             self.check_feedback_changes(before, self.get_feedback_files())
             if active not in self.get_feedback_files():
                 self.emit(StateTransitionEvent(from_state=self.state.current, to_state=FSMState.BUILDING))
         elif active == FeedbackFile.REVIEW_FAILURES:
             self._handle_review_failure(before, active)
         elif active == FeedbackFile.DESIGN_QUESTIONS:
-            self.run_claude(self.prompts.fix_design())
+            rc, _ = self.run_claude(self.prompts.fix_design())
+            if rc != 0:
+                self._escalate_feedback_error(active, rc)
+                return
             self.check_feedback_changes(before, self.get_feedback_files())
         elif active == FeedbackFile.IMPL_QUESTIONS:
-            self.run_claude(self.prompts.fix_impl_questions())
+            rc, _ = self.run_claude(self.prompts.fix_impl_questions())
+            if rc != 0:
+                self._escalate_feedback_error(active, rc)
+                return
             self.check_feedback_changes(before, self.get_feedback_files())
         elif active == FeedbackFile.TEST_FAILURES:
-            self.run_claude(self.prompts.fix_tests())
+            rc, _ = self.run_claude(self.prompts.fix_tests())
+            if rc != 0:
+                self._escalate_feedback_error(active, rc)
+                return
             self.check_feedback_changes(before, self.get_feedback_files())
 
     def _handle_review_failure(self, before: set, active: str) -> None:
@@ -442,13 +525,30 @@ class TeamFlowDriver:
             print(questions.read_text(encoding="utf-8"))
             print("=" * 46)
         before = self.get_feedback_files()
-        print("\nResolve HUMAN_QUESTIONS.md, then press Enter to continue (or type 'quit'): ", end="")
-        response = input().strip().lower()
+        response = _timed_input(
+            "\nResolve HUMAN_QUESTIONS.md, then press Enter to continue (or type 'quit'): ",
+            timeout=3600,
+        )
+        if response is None:
+            print(_INPUT_TIMEOUT_MSG.format(n=3600, feature=self.feature))
+            self.emit(SystemEvent(action="TIMEOUT", metadata={"location": "_handle_human_block"}))
+            sys.exit(0)
+        response = response.strip().lower()
         if response == "quit":
             self.log("Stopped at user request.")
             sys.exit(0)
         self.check_feedback_changes(before, self.get_feedback_files())
         self.emit(HumanResponseEvent(value="continue"))
+
+    def _escalate_feedback_error(self, feedback_file: str, return_code: int) -> None:
+        msg = (
+            f"[ERROR] Agent failed (exit {return_code}) while resolving {feedback_file}.\n"
+            f"Feedback file remains on disk. Human intervention required.\n"
+        )
+        self.log(msg)
+        self.feedback_dir.mkdir(parents=True, exist_ok=True)
+        (self.feedback_dir / FeedbackFile.HUMAN_QUESTIONS).write_text(msg, encoding="utf-8")
+        self.emit(FileCreatedEvent(file=FeedbackFile.HUMAN_QUESTIONS))
 
     def _fast_forward_to_building(self) -> None:
         self.emit(CommandEvent(
