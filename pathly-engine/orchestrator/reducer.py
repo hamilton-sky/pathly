@@ -17,6 +17,10 @@ _AGENT_TRANSITIONS = {
     (Agent.QUICK,      FSMState.RETRO):       (FSMState.DONE,            FSMState.DONE),
 }
 
+_VALID_RIGORS  = {Rigor.LITE, Rigor.STANDARD, Rigor.STRICT}
+_VALID_MODES   = {Mode.INTERACTIVE, Mode.FAST}
+_VALID_ENTRIES = {v for v in vars(FSMState).values() if isinstance(v, str)}
+
 # Maps paused state → next state when human says "go"
 # EXPLORE_PAUSED path A (plan) is default; paths B (nano/build) and C (stop) use STATE_TRANSITION
 _HUMAN_TRANSITIONS = {
@@ -60,12 +64,17 @@ def reduce(state: State, event: Event) -> State:
     )
 
     if event.type == Events.COMMAND:
+        rigor = event.metadata.get("rigor", Rigor.STANDARD)
+        mode = event.metadata.get("mode", Mode.INTERACTIVE)
         entry_state = event.metadata.get("entry_state", FSMState.STORMING)
+        if rigor not in _VALID_RIGORS or mode not in _VALID_MODES or entry_state not in _VALID_ENTRIES:
+            new_state.current = FSMState.BLOCKED_ON_HUMAN
+            return new_state
         new_state.current = entry_state
         new_state.active_command = getattr(event, "value", "")
         new_state.active_feature = event.metadata.get("feature", "")
-        new_state.rigor = event.metadata.get("rigor", Rigor.STANDARD)
-        new_state.mode = event.metadata.get("mode", Mode.INTERACTIVE)
+        new_state.rigor = rigor
+        new_state.mode = mode
         return new_state
 
     if event.type == Events.AGENT_DONE:
@@ -75,6 +84,8 @@ def reduce(state: State, event: Event) -> State:
         if key in _AGENT_TRANSITIONS:
             fast_next, paused_next = _AGENT_TRANSITIONS[key]
             new_state.current = fast_next if state.mode == Mode.FAST else paused_next
+        else:
+            new_state.current = FSMState.BLOCKED_ON_HUMAN
         return new_state
 
     if event.type == Events.FILE_CREATED:

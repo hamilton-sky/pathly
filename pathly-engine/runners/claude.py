@@ -15,6 +15,32 @@ from .base import DEFAULT_TIMEOUT_SECONDS, RUNNER_TIMEOUT_ENV_VAR, RunnerResult
 ALLOWED_TOOLS = "Edit,Write,Read,Glob,Grep,Bash,Skill,TodoWrite,WebSearch,WebFetch,Agent"
 TIMEOUT_ENV_VAR = "CLAUDE_AGENT_TIMEOUT"
 
+_TIMEOUT_MIN = 60
+_TIMEOUT_MAX = 7200
+
+
+def _validated_timeout(raw: str, env_var: str) -> int:
+    try:
+        value = int(raw)
+    except (ValueError, TypeError):
+        raise ValueError(
+            f"[pathly] {env_var}={raw!r} is not a valid integer. "
+            f"Set it to a number between {_TIMEOUT_MIN} and {_TIMEOUT_MAX}."
+        )
+    if value < _TIMEOUT_MIN:
+        print(
+            f"[WARNING] {env_var}={value} is below minimum ({_TIMEOUT_MIN}s). Using {_TIMEOUT_MIN}s.",
+            file=sys.stderr,
+        )
+        return _TIMEOUT_MIN
+    if value > _TIMEOUT_MAX:
+        print(
+            f"[WARNING] {env_var}={value} exceeds maximum ({_TIMEOUT_MAX}s). Using {_TIMEOUT_MAX}s.",
+            file=sys.stderr,
+        )
+        return _TIMEOUT_MAX
+    return value
+
 
 def parse_usage(stdout: str) -> dict:
     """Extract token and cost fields from claude JSON output."""
@@ -53,12 +79,14 @@ class ClaudeRunner:
         self.run_command = run_command
 
     def run(self, prompt: str) -> RunnerResult:
-        timeout = int(
-            os.environ.get(
-                TIMEOUT_ENV_VAR,
-                os.environ.get(RUNNER_TIMEOUT_ENV_VAR, str(DEFAULT_TIMEOUT_SECONDS)),
+        raw = os.environ.get(TIMEOUT_ENV_VAR) or os.environ.get(RUNNER_TIMEOUT_ENV_VAR)
+        if raw is not None:
+            timeout = _validated_timeout(
+                raw,
+                TIMEOUT_ENV_VAR if TIMEOUT_ENV_VAR in os.environ else RUNNER_TIMEOUT_ENV_VAR,
             )
-        )
+        else:
+            timeout = DEFAULT_TIMEOUT_SECONDS
         if self.log:
             self.log(">>> Spawning claude agent...")
         try:
