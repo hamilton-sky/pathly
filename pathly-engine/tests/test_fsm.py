@@ -235,3 +235,97 @@ def test_state_json_write_is_atomic(tmp_path):
     assert state_path.exists()
     assert not list(tmp_path.glob("STATE.*.tmp"))
     assert '"current": "IDLE"' in state_path.read_text(encoding="utf-8")
+
+
+def test_deep_block_two_levels():
+    """Test: BUILDING → BLOCKED_ON_FEEDBACK → BLOCKED_ON_HUMAN (two-level nesting)."""
+    state = State(current=FSMState.BUILDING)
+
+    state = reduce(state, FileCreatedEvent(
+        file=FeedbackFile.REVIEW_FAILURES,
+        metadata={"file": FeedbackFile.REVIEW_FAILURES},
+    ))
+    assert state.current == FSMState.BLOCKED_ON_FEEDBACK
+    assert len(state.state_stack) == len(state.feedback_stack)
+    assert state.state_stack == [FSMState.BUILDING]
+    assert state.feedback_stack == [None]
+
+    state = reduce(state, FileCreatedEvent(
+        file=FeedbackFile.HUMAN_QUESTIONS,
+        metadata={"file": FeedbackFile.HUMAN_QUESTIONS},
+    ))
+    assert state.current == FSMState.BLOCKED_ON_HUMAN
+    assert state.active_feedback_file == FeedbackFile.HUMAN_QUESTIONS
+    assert len(state.state_stack) == len(state.feedback_stack)
+    assert state.state_stack == [FSMState.BUILDING, FSMState.BLOCKED_ON_FEEDBACK]
+    assert state.feedback_stack == [None, FeedbackFile.REVIEW_FAILURES]
+
+
+def test_deep_block_unwind_one_level():
+    """Test: BLOCKED_ON_HUMAN → BLOCKED_ON_FEEDBACK when inner block resolves.
+
+    On unwind, active_feedback_file is restored from feedback_stack to the outer
+    block's value (REVIEW_FAILURES) rather than being cleared to None.
+    """
+    state = State(current=FSMState.BUILDING)
+    state = reduce(state, FileCreatedEvent(
+        file=FeedbackFile.REVIEW_FAILURES,
+        metadata={"file": FeedbackFile.REVIEW_FAILURES},
+    ))
+    state = reduce(state, FileCreatedEvent(
+        file=FeedbackFile.HUMAN_QUESTIONS,
+        metadata={"file": FeedbackFile.HUMAN_QUESTIONS},
+    ))
+
+    state = reduce(state, FileDeletedEvent(
+        file=FeedbackFile.HUMAN_QUESTIONS,
+        metadata={"file": FeedbackFile.HUMAN_QUESTIONS},
+    ))
+    assert state.current == FSMState.BLOCKED_ON_FEEDBACK
+    assert state.active_feedback_file == FeedbackFile.REVIEW_FAILURES
+    assert len(state.state_stack) == len(state.feedback_stack)
+    assert state.state_stack == [FSMState.BUILDING]
+    assert state.feedback_stack == [None]
+
+
+def test_deep_block_full_unwind():
+    """Test: BUILDING → two-level block → full unwind back to BUILDING."""
+    state = State(current=FSMState.BUILDING)
+
+    state = reduce(state, FileCreatedEvent(
+        file=FeedbackFile.REVIEW_FAILURES,
+        metadata={"file": FeedbackFile.REVIEW_FAILURES},
+    ))
+    assert state.current == FSMState.BLOCKED_ON_FEEDBACK
+    assert len(state.state_stack) == len(state.feedback_stack)
+    assert state.state_stack == [FSMState.BUILDING]
+    assert state.feedback_stack == [None]
+
+    state = reduce(state, FileCreatedEvent(
+        file=FeedbackFile.HUMAN_QUESTIONS,
+        metadata={"file": FeedbackFile.HUMAN_QUESTIONS},
+    ))
+    assert state.current == FSMState.BLOCKED_ON_HUMAN
+    assert len(state.state_stack) == len(state.feedback_stack)
+    assert state.state_stack == [FSMState.BUILDING, FSMState.BLOCKED_ON_FEEDBACK]
+    assert state.feedback_stack == [None, FeedbackFile.REVIEW_FAILURES]
+
+    state = reduce(state, FileDeletedEvent(
+        file=FeedbackFile.HUMAN_QUESTIONS,
+        metadata={"file": FeedbackFile.HUMAN_QUESTIONS},
+    ))
+    assert state.current == FSMState.BLOCKED_ON_FEEDBACK
+    assert state.active_feedback_file == FeedbackFile.REVIEW_FAILURES
+    assert len(state.state_stack) == len(state.feedback_stack)
+    assert state.state_stack == [FSMState.BUILDING]
+    assert state.feedback_stack == [None]
+
+    state = reduce(state, FileDeletedEvent(
+        file=FeedbackFile.REVIEW_FAILURES,
+        metadata={"file": FeedbackFile.REVIEW_FAILURES},
+    ))
+    assert state.current == FSMState.BUILDING
+    assert state.active_feedback_file is None
+    assert len(state.state_stack) == len(state.feedback_stack)
+    assert state.state_stack == []
+    assert state.feedback_stack == []

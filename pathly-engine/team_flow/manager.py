@@ -343,6 +343,11 @@ class TeamFlowDriver:
         return True
 
     def _run_agent(self, prompt: str, agent_name: str, required: bool) -> None:
+        """Run an agent subprocess and advance the FSM.
+
+        required=True  -> non-zero exit causes sys.exit(1); use for stages where failure is unrecoverable
+        required=False -> non-zero exit logs a warning and continues; FSM still advances via AgentDoneEvent
+        """
         before = self.get_feedback_files()
         return_code, usage = self.run_claude(prompt)
         after = self.get_feedback_files()
@@ -350,6 +355,8 @@ class TeamFlowDriver:
         if return_code != 0 and required:
             self.log(f"Agent {agent_name} failed (exit {return_code}). Stopping.")
             sys.exit(1)
+        elif return_code != 0:
+            self.log(f"[WARN] Agent {agent_name} exited {return_code} (non-critical, continuing).")
         if self.state.current not in (FSMState.BLOCKED_ON_FEEDBACK, FSMState.BLOCKED_ON_HUMAN):
             self.emit(AgentDoneEvent(
                 agent=agent_name,

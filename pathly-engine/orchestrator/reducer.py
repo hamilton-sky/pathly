@@ -52,6 +52,7 @@ def reduce(state: State, event: Event) -> State:
         retry_count_by_key=dict(state.retry_count_by_key),
         last_actor=state.last_actor,
         state_stack=list(state.state_stack),
+        feedback_stack=list(state.feedback_stack),
         created_at=state.created_at,
         updated_at=utc_now(),
         event_count=state.event_count + 1,
@@ -79,6 +80,9 @@ def reduce(state: State, event: Event) -> State:
     if event.type == Events.FILE_CREATED:
         file = getattr(event, "file", "")
         new_state.state_stack = [*state.state_stack, state.current]
+        # Push the prior active_feedback_file BEFORE overwriting it,
+        # so a later FILE_DELETED can restore it on unwind.
+        new_state.feedback_stack = [*state.feedback_stack, state.active_feedback_file]
         new_state.active_feedback_file = file
         if file == FeedbackFile.HUMAN_QUESTIONS:
             new_state.current = FSMState.BLOCKED_ON_HUMAN
@@ -90,7 +94,12 @@ def reduce(state: State, event: Event) -> State:
         if new_state.state_stack:
             new_state.current = new_state.state_stack[-1]
             new_state.state_stack = new_state.state_stack[:-1]
-        new_state.active_feedback_file = None
+        if new_state.feedback_stack:
+            # Restore the active_feedback_file that was active before the push.
+            new_state.active_feedback_file = new_state.feedback_stack[-1]
+            new_state.feedback_stack = new_state.feedback_stack[:-1]
+        else:
+            new_state.active_feedback_file = None
         return new_state
 
     if event.type == Events.HUMAN_RESPONSE:

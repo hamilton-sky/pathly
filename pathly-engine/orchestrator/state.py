@@ -28,6 +28,10 @@ class State:
     last_actor: Optional[str] = None
     # Stack of states before BLOCKED transitions — supports nested blocks
     state_stack: list = field(default_factory=list)
+    # Parallel stack mirroring state_stack — stores the active_feedback_file
+    # value at the moment of each push, so unwinding can restore it.
+    # Invariant: len(feedback_stack) == len(state_stack) at all times.
+    feedback_stack: list = field(default_factory=list)
 
     # Timestamps
     created_at: str = field(default_factory=utc_now)
@@ -49,6 +53,7 @@ class State:
             "retry_count_by_key": self.retry_count_by_key,
             "last_actor": self.last_actor,
             "state_stack": self.state_stack,
+            "feedback_stack": self.feedback_stack,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
             "event_count": self.event_count,

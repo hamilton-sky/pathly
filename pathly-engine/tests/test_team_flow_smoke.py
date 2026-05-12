@@ -10,6 +10,7 @@ from orchestrator.constants import FeedbackFile, FSMState, Mode
 from orchestrator.state import State
 import team_flow
 from runners import ClaudeRunner, CodexRunner
+from runners.base import RunnerResult
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -179,3 +180,41 @@ def test_review_feedback_zero_diff_escalates_to_human(tmp_path, monkeypatch):
 
     assert (feedback_dir / FeedbackFile.HUMAN_QUESTIONS).exists()
     assert driver.state.current == FSMState.BLOCKED_ON_HUMAN
+
+
+class _FailingRunner:
+    """Stub runner that always returns a non-zero exit code."""
+
+    name = "stub"
+
+    def __init__(self, tmp_path):
+        self.repo_root = tmp_path
+
+    def run(self, prompt: str) -> RunnerResult:
+        return RunnerResult(return_code=1)
+
+    def is_available(self) -> bool:
+        return True
+
+
+def test_required_agent_failure_raises_system_exit(tmp_path, monkeypatch):
+    """_run_agent with required=True must call sys.exit(1) on non-zero return code."""
+    write_plan(tmp_path)
+    driver = make_driver(tmp_path, monkeypatch, entry="build")
+    driver.runner = _FailingRunner(tmp_path)
+
+    with pytest.raises(SystemExit):
+        driver._run_agent(prompt="x", agent_name="builder", required=True)
+
+
+def test_non_required_agent_failure_does_not_raise(tmp_path, monkeypatch):
+    """_run_agent with required=False must not raise and must log a [WARN] message."""
+    write_plan(tmp_path)
+    driver = make_driver(tmp_path, monkeypatch, entry="build")
+    driver.state = State(current=FSMState.BUILDING)
+    driver.runner = _FailingRunner(tmp_path)
+
+    driver._run_agent(prompt="x", agent_name="reviewer", required=False)
+
+    log_text = driver.log_file.read_text(encoding="utf-8")
+    assert "[WARN]" in log_text
